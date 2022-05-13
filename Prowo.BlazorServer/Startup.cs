@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Prowo.BlazorServer.Data;
 using Microsoft.Graph;
+using Microsoft.Azure.Cosmos;
 
 namespace Prowo.BlazorServer
 {
@@ -53,6 +54,12 @@ namespace Prowo.BlazorServer
             services.AddServerSideBlazor()
                 .AddMicrosoftIdentityConsentHandler();
             services.AddSingleton<WeatherForecastService>();
+
+            services.AddSingleton(provider =>
+            {
+                string connectionString = Configuration.GetConnectionString("CosmosDb");
+                return new CosmosClient(connectionString);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

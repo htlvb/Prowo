@@ -1,9 +1,24 @@
 {
   "dependencies": {
+    "cosmosdb1": {
+      "restored": true,
+      "restoreTime": "2022-05-13T10:48:50.9919673Z"
+    },
     "secrets1": {
       "restored": true,
       "restoreTime": "2022-05-13T04:21:27.5936241Z"
     }
   },
-  "parameters": {}
+  "parameters": {
+    "cosmosdb1.subscriptionId": {
+      "Name": "cosmosdb1.subscriptionId",
+      "Type": "subscription",
+      "Value": "d6bb6b37-f5a1-4a14-9e7b-287da5178a74"
+    },
+    "cosmosdb1.resourceGroupName": {
+      "Name": "cosmosdb1.resourceGroupName",
+      "Type": "resourceGroup",
+      "Value": "prowo-rg"
+    }
+  }
 }

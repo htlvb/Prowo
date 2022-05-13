@@ -1,0 +1,50 @@
+﻿@page "/projects"
+
+@inject Microsoft.Azure.Cosmos.CosmosClient CosmosClient
+
+@if (projects == null)
+{
+    <p><em>Projekte werden geladen...</em></p>
+}
+else
+{
+    <h2>Projekte</h2>
+    <a href="projects/edit">Neues Projekt anlegen</a>
+    <div class="projects">
+        @foreach (var project in projects)
+        {
+            <div class="project">
+                @project.Title
+            </div>
+        }
+    </div>
+}
+
+@code {
+
+    private List<Project> projects = new List<Project>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = CosmosClient
+            .GetDatabase("ProjectsDB")
+            .GetContainer("ProwoContext")
+            .GetItemQueryIterator<Project>();
+        while (query.HasMoreResults)
+        {
+            var response = await query.ReadNextAsync();
+            projects.AddRange(response.ToList());
+        }
+    }
+
+    public record Project(
+        string Title,
+        string Description,
+        string OrganizerId,
+        IReadOnlyList<string> CoOrganizerIds,
+        string Location,
+        DateOnly Date,
+        TimeOnly StartTime,
+        TimeOnly? EndTime
+    );
+}
