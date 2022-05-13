@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "identityapp.aad1": {
+      "type": "identityapp.aad",
+      "connectionId": "AzureAD:ClientSecret"
+    },
+    "secrets1": {
+      "type": "secrets"
+    },
+    "cosmosdb1": {
+      "type": "cosmosdb",
+      "connectionId": "ACDBConnectionString"
+    }
+  }
+}
