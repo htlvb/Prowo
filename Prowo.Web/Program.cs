@@ -7,6 +7,8 @@ using Microsoft.Identity.Web.UI;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Prowo.Web;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +25,13 @@ builder.Services.AddAuthorization(options =>
 // Add services to the container.
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddDbContext<ProwoContext>(options =>
+{
+    options.UseCosmos(
+        builder.Configuration["ConnectionString"],
+        databaseName: "ProjectsDB"
+    );
+});
 builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
