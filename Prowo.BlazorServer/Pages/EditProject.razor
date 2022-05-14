@@ -99,9 +99,8 @@
     [Parameter]
     public string? ProjectId { get; set; }
 
-    Project EditingProject = new();
-
-    List<AadUser> OrganizerCandidates;
+    private Project EditingProject = new();
+    private List<AadUser> OrganizerCandidates;
 
     protected override async Task OnInitializedAsync()
     {
