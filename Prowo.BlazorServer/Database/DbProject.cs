@@ -14,7 +14,7 @@ namespace Prowo.BlazorServer.Database
         public string OrganizerId { get; set; }
         public DateOnly Date { get; set; }
         public TimeOnly StartTime { get; set; }
-        public TimeOnly EndTime { get; set; }
+        public TimeOnly? EndTime { get; set; }
         public int MaxParticipants { get; set; }
     }
 }

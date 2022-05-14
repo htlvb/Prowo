@@ -65,8 +65,9 @@
     </div>
 
     <div class="form-group">
-        <label for="end-time">Bis: </label>
-        <input type="time" @bind=EditingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" id="end-time" />
+        <InputCheckbox @bind-Value=EditingProject.HasEndTime id="has-end-time" />
+        <label for="has-end-time">Bis: </label>
+        <input type="time" @bind=EditingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!EditingProject.HasEndTime) />
     </div>
 
     <ValidationSummary />
@@ -133,6 +134,7 @@
         public string OrganizerId { get; set; }
         public DateTime Date { get; set; } = DateTime.Today;
         public DateTime StartTime { get; set; }
+        public bool HasEndTime { get; set; }
         public DateTime EndTime { get; set; }
         [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
         public int MaxParticipants { get; set; } = 10;
@@ -147,7 +149,8 @@
                 OrganizerId = dbProject.OrganizerId,
                 Date = dbProject.Date.ToDateTime(TimeOnly.MinValue),
                 StartTime = dbProject.Date.ToDateTime(dbProject.StartTime),
-                EndTime = dbProject.Date.ToDateTime(dbProject.EndTime),
+                HasEndTime = dbProject.EndTime.HasValue,
+                EndTime = dbProject.Date.ToDateTime(dbProject.EndTime.GetValueOrDefault(TimeOnly.MinValue)),
                 MaxParticipants = dbProject.MaxParticipants
             };
         }
@@ -163,7 +166,7 @@
                 OrganizerId = OrganizerId,
                 Date = DateOnly.FromDateTime(Date),
                 StartTime = TimeOnly.FromDateTime(StartTime),
-                EndTime = TimeOnly.FromDateTime(EndTime),
+                EndTime = (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
                 MaxParticipants = MaxParticipants
             };
         }
