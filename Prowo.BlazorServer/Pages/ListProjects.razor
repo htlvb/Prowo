@@ -1,6 +1,8 @@
 ﻿@page "/projects"
 
-@inject Microsoft.Azure.Cosmos.CosmosClient CosmosClient
+@using Prowo.BlazorServer.Database
+
+@inject Db Db
 
 @if (projects == null)
 {
@@ -26,25 +28,17 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var query = CosmosClient
-            .GetDatabase("ProjectsDB")
-            .GetContainer("ProwoContext")
-            .GetItemQueryIterator<Project>();
-        while (query.HasMoreResults)
+        await foreach (var dbProject in Db.GetAllProjects())
         {
-            var response = await query.ReadNextAsync();
-            projects.AddRange(response.ToList());
+            projects.Add(Project.FromDbProject(dbProject));
         }
     }
 
-    public record Project(
-        string Title,
-        string Description,
-        string OrganizerId,
-        IReadOnlyList<string> CoOrganizerIds,
-        string Location,
-        DateOnly Date,
-        TimeOnly StartTime,
-        TimeOnly? EndTime
-    );
+    public record Project(string Title)
+    {
+        public static Project FromDbProject(DbProject dbProject)
+        {
+            return new(dbProject.Title);
+        }
+    }
 }

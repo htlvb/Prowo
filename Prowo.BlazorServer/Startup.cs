@@ -18,6 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Prowo.BlazorServer.Data;
 using Microsoft.Graph;
 using Microsoft.Azure.Cosmos;
+using Prowo.BlazorServer.Database;
 
 namespace Prowo.BlazorServer
 {
@@ -58,7 +59,7 @@ namespace Prowo.BlazorServer
             services.AddSingleton(provider =>
             {
                 string connectionString = Configuration.GetConnectionString("CosmosDb");
-                return new CosmosClient(connectionString);
+                return new Db(new CosmosClient(connectionString));
             });
         }
 
