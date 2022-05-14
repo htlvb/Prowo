@@ -12,6 +12,7 @@ namespace Prowo.BlazorServer.Database
         public string Description { get; set; }
         public string Location { get; set; }
         public string OrganizerId { get; set; }
+        public string[] CoOrganizerIds { get; set; }
         public DateOnly Date { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly? EndTime { get; set; }

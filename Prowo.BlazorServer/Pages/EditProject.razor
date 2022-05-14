@@ -50,6 +50,23 @@
     </div>
 
     <div class="form-group">
+        <label for="co-organizer-ids">Betreuer: </label>
+        <InputSelect @bind-Value=EditingProject.CoOrganizerIds id="co-organizer-ids">
+        @if (OrganizerCandidates == null)
+        {
+            <option value="">Personen werden geladen...</option>
+        }
+        else
+        {
+            @foreach (var person in OrganizerCandidates)
+            {
+                <option value=@person.UserPrincipalName>@person.DisplayName</option>
+            }
+        }
+        </InputSelect>
+    </div>
+
+    <div class="form-group">
         <label for="max-participants">Maximale Anzahl der Teilnehmer: </label>
         <InputNumber @bind-Value=EditingProject.MaxParticipants ParsingErrorMessage="Keine gültige Zahl" id="max-participants" />
     </div>
@@ -132,6 +149,7 @@
         public string Location { get; set; }
         [Required]
         public string OrganizerId { get; set; }
+        public string[] CoOrganizerIds { get; set; } = Array.Empty<string>();
         public DateTime Date { get; set; } = DateTime.Today;
         public DateTime StartTime { get; set; }
         public bool HasEndTime { get; set; }
@@ -147,6 +165,7 @@
                 Description = dbProject.Description,
                 Location = dbProject.Location,
                 OrganizerId = dbProject.OrganizerId,
+                CoOrganizerIds = dbProject.CoOrganizerIds,
                 Date = dbProject.Date.ToDateTime(TimeOnly.MinValue),
                 StartTime = dbProject.Date.ToDateTime(dbProject.StartTime),
                 HasEndTime = dbProject.EndTime.HasValue,
@@ -164,6 +183,7 @@
                 Description = Description,
                 Location = Location,
                 OrganizerId = OrganizerId,
+                CoOrganizerIds = CoOrganizerIds,
                 Date = DateOnly.FromDateTime(Date),
                 StartTime = TimeOnly.FromDateTime(StartTime),
                 EndTime = (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
