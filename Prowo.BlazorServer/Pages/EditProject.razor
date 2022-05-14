@@ -132,6 +132,7 @@
     {
         var dbProject = EditingProject.ToDbProject();
         await Db.CreateProject(dbProject);
+        // TODO show success/error message
     }
 
     public record AadUser(
