@@ -32,22 +32,31 @@
         <InputText @bind-Value=EditingProject.Location id="location" />
     </div>
     
-    <div class="form-group">
-        <label for="organizer-id">Organisator: </label>
-        <InputSelect @bind-Value=EditingProject.OrganizerId id="organizer-id">
-        @if (OrganizerCandidates == null)
-        {
-            <option value="">Personen werden geladen...</option>
-        }
-        else
-        {
-            @foreach (var person in OrganizerCandidates)
-            {
-                <option value=@person.UserPrincipalName>@person.DisplayName</option>
-            }
-        }
-        </InputSelect>
-    </div>
+    <AuthorizeView Context="Auth" Roles="Project.Write.All">
+        <Authorized>
+            <div class="form-group">
+                <label for="organizer-id">Organisator: </label>
+                <InputSelect @bind-Value=EditingProject.OrganizerId id="organizer-id">
+                @if (OrganizerCandidates == null)
+                {
+                    <option value="">Personen werden geladen...</option>
+                }
+                else
+                {
+                    @foreach (var person in OrganizerCandidates)
+                    {
+                        <option value=@person.UserPrincipalName>@person.DisplayName</option>
+                    }
+                }
+                </InputSelect>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="form-group">
+                Organisator: @EditingProject.OrganizerId
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
 
     <div class="form-group">
         <label for="co-organizer-ids">Betreuer: </label>
@@ -104,6 +113,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await authenticationStateTask;
+
         try
         {
             var organizerGroupId = Configuration.GetSection("AppSettings")["OrganizerGroupId"];
@@ -119,7 +130,7 @@
         {
             ConsentHandler.HandleException(ex);
         }
-        EditingProject.OrganizerId = (await authenticationStateTask).User.Identity.Name;
+        EditingProject.OrganizerId = authState.User.Identity.Name;
 
         if(ProjectId != null)
         {
