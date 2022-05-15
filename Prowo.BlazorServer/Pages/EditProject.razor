@@ -174,11 +174,11 @@ else
         public string OrganizerId { get; set; }
         public string[] CoOrganizerIds { get; set; } = Array.Empty<string>();
         public DateTime Date { get; set; } = DateTime.Today;
-        public DateTime StartTime { get; set; }
-        public bool HasEndTime { get; set; }
-        public DateTime EndTime { get; set; }
+        public DateTime StartTime { get; set; } = DateTime.Today.AddHours(9);
+        public bool HasEndTime { get; set; } = true;
+        public DateTime EndTime { get; set; } = DateTime.Today.AddHours(13);
         [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
-        public int MaxParticipants { get; set; } = 10;
+        public int MaxParticipants { get; set; } = 20;
 
         public static Project FromDbProject(DbProject dbProject)
         {
