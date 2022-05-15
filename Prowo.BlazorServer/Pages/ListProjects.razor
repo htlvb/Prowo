@@ -1,23 +1,30 @@
 ﻿@page "/projects"
 
 @using Prowo.BlazorServer.Database
+@using System.Globalization
 
 @inject Db Db
 
-@if (projects == null)
+<h2 class="text-2xl mb-2">Projekte</h2>
+@if (IsLoading)
 {
     <p><em>Projekte werden geladen...</em></p>
 }
 else
 {
-    <h2>Projekte</h2>
-    <a href="projects/edit">Neues Projekt anlegen</a>
-    <div class="projects">
-        @foreach (var project in projects)
+    <div class="grid gap-4">
+        <NavLink class="group border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href="projects/new">
+            <span class="text-4xl text-black align-middle">+</span>
+            <span class="text-xl text-black align-middle">Neues Projekt anlegen</span>
+        </NavLink>
+        @foreach (var project in Enumerable.Repeat(projects, 3).SelectMany(v => v))
         {
-            <div class="project">
-                @project.Title
-            </div>
+            var location = $"projects/edit/{project.Id}";
+            <NavLink class="group border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href=@location>
+                <span class="text-xl text-black">@project.Title</span><br />
+                <span class="text-sm text-gray-600">@project.OrganizerId</span><br />
+                <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
+            </NavLink>
         }
     </div>
 }
@@ -25,20 +32,43 @@ else
 @code {
 
     private List<Project> projects = new List<Project>();
+    private bool IsLoading;
 
     protected override async Task OnInitializedAsync()
     {
-        await foreach (var dbProject in Db.GetAllProjects())
+        IsLoading = true;
+        try
         {
-            projects.Add(Project.FromDbProject(dbProject));
+            await foreach (var dbProject in Db.GetAllProjects())
+            {
+                projects.Add(Project.FromDbProject(dbProject));
+            }
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
-    public record Project(string Title)
+    public record Project(
+        string Id,
+        string Title,
+        string OrganizerId,
+        DateOnly Date,
+        TimeOnly StartTime,
+        TimeOnly? EndTime
+    )
     {
         public static Project FromDbProject(DbProject dbProject)
         {
-            return new(dbProject.Title);
+            return new(
+                dbProject.Id,
+                dbProject.Title,
+                dbProject.OrganizerId,
+                DateOnly.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture),
+                TimeOnly.ParseExact(dbProject.StartTime, "HH:mm", CultureInfo.InvariantCulture),
+                dbProject.EndTime == null ? null : TimeOnly.ParseExact(dbProject.EndTime, "HH:mm", CultureInfo.InvariantCulture)
+            );
         }
     }
 }
