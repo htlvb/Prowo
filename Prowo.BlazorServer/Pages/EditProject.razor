@@ -6,6 +6,7 @@
 @using Prowo.BlazorServer.Database
 @using System.ComponentModel.DataAnnotations
 @using System.Text.RegularExpressions
+@using System.Globalization
 
 @inject IConfiguration Configuration
 @inject Microsoft.Graph.GraphServiceClient GraphServiceClient
@@ -170,6 +171,7 @@
 
         public static Project FromDbProject(DbProject dbProject)
         {
+            var date = DateTime.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture);
             return new Project
             {
                 Title = dbProject.Title,
@@ -177,10 +179,10 @@
                 Location = dbProject.Location,
                 OrganizerId = dbProject.OrganizerId,
                 CoOrganizerIds = dbProject.CoOrganizerIds,
-                Date = dbProject.Date.ToDateTime(TimeOnly.MinValue),
-                StartTime = dbProject.Date.ToDateTime(dbProject.StartTime),
-                HasEndTime = dbProject.EndTime.HasValue,
-                EndTime = dbProject.Date.ToDateTime(dbProject.EndTime.GetValueOrDefault(TimeOnly.MinValue)),
+                Date = date,
+                StartTime = date.Add(TimeSpan.ParseExact(dbProject.StartTime, "hh\\:mm", CultureInfo.InvariantCulture)),
+                HasEndTime = dbProject.EndTime != null,
+                EndTime = dbProject.EndTime == null ? date : date.Add(TimeSpan.ParseExact(dbProject.EndTime, "hh\\:mm", CultureInfo.InvariantCulture)),
                 MaxParticipants = dbProject.MaxParticipants
             };
         }
@@ -195,9 +197,9 @@
                 Location = Location,
                 OrganizerId = OrganizerId,
                 CoOrganizerIds = CoOrganizerIds,
-                Date = DateOnly.FromDateTime(Date),
-                StartTime = TimeOnly.FromDateTime(StartTime),
-                EndTime = (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
+                Date = Date.ToString("d", CultureInfo.InvariantCulture),
+                StartTime = StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
+                EndTime = (HasEndTime ? EndTime.ToString("HH:mm", CultureInfo.InvariantCulture) : null),
                 MaxParticipants = MaxParticipants
             };
         }
