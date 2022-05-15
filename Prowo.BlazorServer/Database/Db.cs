@@ -37,9 +37,9 @@ namespace Prowo.BlazorServer.Database
                 .ReadItemAsync<DbProject>(projectId, new PartitionKey(projectId));
         }
 
-        public async Task CreateProject(DbProject project)
+        public async Task UpsertProject(DbProject project)
         {
-            await ProjectContainer.CreateItemAsync(project);
+            await ProjectContainer.UpsertItemAsync(project);
         }
 
         public void Dispose()

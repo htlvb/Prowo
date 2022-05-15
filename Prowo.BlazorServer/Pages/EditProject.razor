@@ -1,4 +1,5 @@
-﻿@page "/projects/edit/{projectId?}"
+﻿@page "/projects/new"
+@page "/projects/edit/{ProjectId}"
 
 @using Microsoft.Extensions.Configuration
 @using Microsoft.Graph
@@ -13,7 +14,14 @@
 @inject MicrosoftIdentityConsentAndConditionalAccessHandler ConsentHandler
 @inject Db Db
 
-<h2>Projekt bearbeiten</h2>
+@if (ProjectId == null)
+{
+    <h2 class="text-2xl">Projekt anlegen</h2>
+}
+else
+{
+    <h2 class="text-2xl">Projekt bearbeiten</h2>
+}
 
 <EditForm Model=@EditingProject OnValidSubmit=@ValidFormSubmitted>
     <DataAnnotationsValidator/>
@@ -99,7 +107,10 @@
 
     <ValidationSummary />
 
-    <input type="submit" value="Projekt anlegen" class="btn btn-primary"/>
+    @{
+        var submitText = ProjectId == null ? "Projekt anlegen" : "Projekt aktualisieren";
+    }
+    <input type="submit" value=@submitText class="btn btn-primary"/>
 </EditForm>
 
 @code {
@@ -142,9 +153,9 @@
 
     async Task ValidFormSubmitted(EditContext editContext)
     {
-        var dbProject = EditingProject.ToDbProject();
-        await Db.CreateProject(dbProject);
-        // TODO show success/error message
+        var dbProject = EditingProject.ToDbProject(ProjectId);
+        await Db.UpsertProject(dbProject);
+        // TODO show success/error message, navigate to overview
     }
 
     public record AadUser(
@@ -187,11 +198,11 @@
             };
         }
 
-        public DbProject ToDbProject()
+        public DbProject ToDbProject(string? projectId)
         {
             return new DbProject
             {
-                Id = Guid.NewGuid(),
+                Id = projectId ?? Guid.NewGuid().ToString(),
                 Title = Title,
                 Description = Description,
                 Location = Location,
