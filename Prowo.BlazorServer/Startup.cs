@@ -35,6 +35,8 @@ namespace Prowo.BlazorServer
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddLocalization();
+
             var initialScopes = Configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
 
             services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
@@ -74,6 +76,8 @@ namespace Prowo.BlazorServer
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseRequestLocalization("de-AT");
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
