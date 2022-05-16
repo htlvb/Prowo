@@ -2,16 +2,13 @@
 @page "/projects/edit/{ProjectId}"
 
 @using Microsoft.Extensions.Configuration
-@using Microsoft.Graph
 @using Microsoft.Identity.Web
 @using Prowo.BlazorServer.Data
 @using System.ComponentModel.DataAnnotations
 @using System.Text.RegularExpressions
 @using System.Globalization
 
-@inject IConfiguration Configuration
-@inject Microsoft.Graph.GraphServiceClient GraphServiceClient
-@inject MicrosoftIdentityConsentAndConditionalAccessHandler ConsentHandler
+@inject UserStore UserStore
 @inject ProjectStore ProjectStore
 
 @if (ProjectId == null)
@@ -54,7 +51,7 @@ else
                 {
                     @foreach (var person in OrganizerCandidates)
                     {
-                        <option value=@person.UserPrincipalName>@person.DisplayName</option>
+                        <option value=@person.Id>@person.DisplayName</option>
                     }
                 }
                 </InputSelect>
@@ -78,7 +75,7 @@ else
         {
             @foreach (var person in OrganizerCandidates)
             {
-                <option value=@person.UserPrincipalName>@person.DisplayName</option>
+                <option value=@person.Id>@person.DisplayName</option>
             }
         }
         </InputSelect>
@@ -121,27 +118,13 @@ else
     public string? ProjectId { get; set; }
 
     private Project EditingProject = new();
-    private List<AadUser> OrganizerCandidates;
+    private List<DbUser> OrganizerCandidates;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await authenticationStateTask;
 
-        try
-        {
-            var organizerGroupId = Configuration.GetSection("AppSettings")["OrganizerGroupId"];
-            var userPage = await GraphServiceClient.Groups[organizerGroupId].Members.Request().GetAsync();
-            OrganizerCandidates = new List<AadUser>();
-            var users = userPage
-                .OfType<Microsoft.Graph.User>()
-                .OrderBy(v => v.UserPrincipalName)
-                .Select(v => new AadUser(v.UserPrincipalName, $"{v.DisplayName} ({Regex.Replace(v.UserPrincipalName, "@.*$", "")})"));
-            OrganizerCandidates.AddRange(users);
-        }
-        catch (Exception ex)
-        {
-            ConsentHandler.HandleException(ex);
-        }
+        OrganizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
         EditingProject.OrganizerId = authState.User.Identity.Name;
 
         if(ProjectId != null)
@@ -157,11 +140,6 @@ else
         await ProjectStore.CreateOrUpdate(dbProject);
         // TODO show success/error message, navigate to overview
     }
-
-    public record AadUser(
-        string UserPrincipalName,
-        string DisplayName
-    );
 
     public class Project
     {

@@ -61,6 +61,14 @@ namespace Prowo.BlazorServer
                 string connectionString = Configuration.GetConnectionString("CosmosDb");
                 return new ProjectStore(new CosmosClient(connectionString));
             });
+
+            services.AddScoped(provider =>
+            {
+                return new UserStore(
+                    Configuration.GetSection("AppSettings")["OrganizerGroupId"],
+                    provider.GetRequiredService<GraphServiceClient>(),
+                    provider.GetRequiredService<MicrosoftIdentityConsentAndConditionalAccessHandler>());
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
