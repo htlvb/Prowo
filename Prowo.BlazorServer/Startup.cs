@@ -18,7 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Prowo.BlazorServer.Data;
 using Microsoft.Graph;
 using Microsoft.Azure.Cosmos;
-using Prowo.BlazorServer.Database;
+using Prowo.BlazorServer.Data;
 
 namespace Prowo.BlazorServer
 {

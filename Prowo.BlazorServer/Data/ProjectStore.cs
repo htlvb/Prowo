@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Prowo.BlazorServer.Database
+namespace Prowo.BlazorServer.Data
 {
     public class ProjectStore : IDisposable
     {
