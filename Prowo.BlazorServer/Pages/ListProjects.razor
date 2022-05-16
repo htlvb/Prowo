@@ -23,11 +23,20 @@ else
         @foreach (var project in Enumerable.Repeat(projects, 3).SelectMany(v => v))
         {
             var location = $"projects/edit/{project.Id}";
-            <NavLink class="group border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href=@location>
-                <span class="text-xl text-black">@project.Title</span><br />
-                <span class="text-sm text-gray-600">@project.OrganizerName</span><br />
-                <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
-            </NavLink>
+            <div class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow">
+                <div class="flex divide-x">
+                    <div class="flex flex-col p-2">
+                        <span class="text-xl text-black">@project.Title</span>
+                        <span class="text-sm text-gray-600">@project.OrganizerName</span>
+                        <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
+                    </div>
+                    <div>
+                        <pre class="text-sm font-sans p-2" style="font-family: inherit">
+                            @project.Description
+                        </pre>
+                    </div>
+                </div>
+            </div>
         }
     </div>
 }
@@ -47,6 +56,7 @@ else
     public record Project(
         string Id,
         string Title,
+        string Description,
         string OrganizerName,
         DateOnly Date,
         TimeOnly StartTime,
@@ -58,6 +68,7 @@ else
             return new(
                 dbProject.Id,
                 dbProject.Title,
+                dbProject.Description,
                 users.TryGetValue(dbProject.OrganizerId, out var organizer) ? organizer.DisplayName : "",
                 DateOnly.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture),
                 TimeOnly.ParseExact(dbProject.StartTime, "HH:mm", CultureInfo.InvariantCulture),
