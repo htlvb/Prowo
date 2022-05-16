@@ -20,36 +20,36 @@ else
     <h2 class="text-2xl">Projekt bearbeiten</h2>
 }
 
-<EditForm Model=@EditingProject OnValidSubmit=@ValidFormSubmitted>
+<EditForm Model=@editingProject OnValidSubmit=@ValidFormSubmitted>
     <DataAnnotationsValidator/>
 
     <div class="form-group">
         <label for="title">Titel: </label>
-        <InputText @bind-Value=EditingProject.Title id="title" />
+        <InputText @bind-Value=editingProject.Title id="title" />
     </div>
 
     <div class="form-group">
         <label for="description">Beschreibung: </label>
-        <InputTextArea @bind-Value=EditingProject.Description id="description" />
+        <InputTextArea @bind-Value=editingProject.Description id="description" />
     </div>
 
     <div class="form-group">
         <label for="location">Ort: </label>
-        <InputText @bind-Value=EditingProject.Location id="location" />
+        <InputText @bind-Value=editingProject.Location id="location" />
     </div>
     
     <AuthorizeView Context="Auth" Roles="Project.Write.All">
         <Authorized>
             <div class="form-group">
                 <label for="organizer-id">Organisator: </label>
-                <InputSelect @bind-Value=EditingProject.OrganizerId id="organizer-id">
-                @if (OrganizerCandidates == null)
+                <InputSelect @bind-Value=editingProject.OrganizerId id="organizer-id">
+                @if (organizerCandidates == null)
                 {
                     <option value="">Personen werden geladen...</option>
                 }
                 else
                 {
-                    @foreach (var person in OrganizerCandidates)
+                    @foreach (var person in organizerCandidates)
                     {
                         <option value=@person.Id>@person.DisplayName</option>
                     }
@@ -59,21 +59,21 @@ else
         </Authorized>
         <NotAuthorized>
             <div class="form-group">
-                Organisator: @EditingProject.OrganizerId
+                Organisator: @editingProject.OrganizerId
             </div>
         </NotAuthorized>
     </AuthorizeView>
 
     <div class="form-group">
         <label for="co-organizer-ids">Betreuer: </label>
-        <InputSelect @bind-Value=EditingProject.CoOrganizerIds id="co-organizer-ids">
-        @if (OrganizerCandidates == null)
+        <InputSelect @bind-Value=editingProject.CoOrganizerIds id="co-organizer-ids">
+        @if (organizerCandidates == null)
         {
             <option value="">Personen werden geladen...</option>
         }
         else
         {
-            @foreach (var person in OrganizerCandidates)
+            @foreach (var person in organizerCandidates)
             {
                 <option value=@person.Id>@person.DisplayName</option>
             }
@@ -83,23 +83,23 @@ else
 
     <div class="form-group">
         <label for="max-participants">Maximale Anzahl der Teilnehmer: </label>
-        <InputNumber @bind-Value=EditingProject.MaxParticipants ParsingErrorMessage="Keine gültige Zahl" id="max-participants" />
+        <InputNumber @bind-Value=editingProject.MaxParticipants ParsingErrorMessage="Keine gültige Zahl" id="max-participants" />
     </div>
 
     <div class="form-group">
         <label for="date">Datum: </label>
-        <InputDate @bind-Value=EditingProject.Date ParsingErrorMessage="Kein gültiges Datum" id="date" />
+        <InputDate @bind-Value=editingProject.Date ParsingErrorMessage="Kein gültiges Datum" id="date" />
     </div>
 
     <div class="form-group">
         <label for="start-time">Von: </label>
-        <input type="time" @bind=EditingProject.StartTime ParsingErrorMessage="Keine gültige Startzeit" id="start-time" />
+        <input type="time" @bind=editingProject.StartTime ParsingErrorMessage="Keine gültige Startzeit" id="start-time" />
     </div>
 
     <div class="form-group">
-        <InputCheckbox @bind-Value=EditingProject.HasEndTime id="has-end-time" />
+        <InputCheckbox @bind-Value=editingProject.HasEndTime id="has-end-time" />
         <label for="has-end-time">Bis: </label>
-        <input type="time" @bind=EditingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!EditingProject.HasEndTime) />
+        <input type="time" @bind=editingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!editingProject.HasEndTime) />
     </div>
 
     <ValidationSummary />
@@ -112,31 +112,31 @@ else
 
 @code {
     [CascadingParameter]
-    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
 
     [Parameter]
     public string? ProjectId { get; set; }
 
-    private Project EditingProject = new();
-    private List<DbUser> OrganizerCandidates;
+    private Project editingProject = new();
+    private List<DbUser> organizerCandidates;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await authenticationStateTask;
+        var authState = await AuthenticationStateTask;
 
-        OrganizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
-        EditingProject.OrganizerId = authState.User.Identity.Name;
+        organizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
+        editingProject.OrganizerId = authState.User.Identity.Name;
 
         if(ProjectId != null)
         {
             var dbProject = await ProjectStore.Get(ProjectId);
-            EditingProject = Project.FromDbProject(dbProject);
+            editingProject = Project.FromDbProject(dbProject);
         }
     }
 
     async Task ValidFormSubmitted(EditContext editContext)
     {
-        var dbProject = EditingProject.ToDbProject(ProjectId);
+        var dbProject = editingProject.ToDbProject(ProjectId);
         await ProjectStore.CreateOrUpdate(dbProject);
         // TODO show success/error message, navigate to overview
     }
