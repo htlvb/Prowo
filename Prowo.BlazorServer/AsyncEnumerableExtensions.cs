@@ -1,10 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Prowo.BlazorServer
 {
     public static class AsyncEnumerableExtensions
     {
+        public static async IAsyncEnumerable<TOut> Select<TIn, TOut>(this IAsyncEnumerable<TIn> list, Func<TIn, TOut> fn)
+        {
+            await foreach (var item in list)
+            {
+                yield return fn(item);
+            }
+        }
+
         public static async Task<List<T>> ToList<T>(this IAsyncEnumerable<T> list)
         {
             List<T> result = new();

@@ -4,9 +4,10 @@
 @using System.Globalization
 
 @inject ProjectStore ProjectStore
+@inject UserStore UserStore
 
 <h2 class="text-2xl mb-2">Projekte</h2>
-@if (IsLoading)
+@if (projects == null)
 {
     <p><em>Projekte werden geladen...</em></p>
 }
@@ -22,7 +23,7 @@ else
             var location = $"projects/edit/{project.Id}";
             <NavLink class="group border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href=@location>
                 <span class="text-xl text-black">@project.Title</span><br />
-                <span class="text-sm text-gray-600">@project.OrganizerId</span><br />
+                <span class="text-sm text-gray-600">@project.OrganizerName</span><br />
                 <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
             </NavLink>
         }
@@ -30,41 +31,32 @@ else
 }
 
 @code {
-
-    private List<Project> projects = new List<Project>();
-    private bool IsLoading;
+    private List<Project> projects;
 
     protected override async Task OnInitializedAsync()
     {
-        IsLoading = true;
-        try
-        {
-            await foreach (var dbProject in ProjectStore.GetAll())
-            {
-                projects.Add(Project.FromDbProject(dbProject));
-            }
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        var users = await UserStore.GetOrganizerCandidates().ToList();
+        var userLookup = users.ToDictionary(v => v.Id);
+        projects = await ProjectStore.GetAll()
+            .Select(v => Project.FromDbProject(v, userLookup))
+            .ToList();
     }
 
     public record Project(
         string Id,
         string Title,
-        string OrganizerId,
+        string OrganizerName,
         DateOnly Date,
         TimeOnly StartTime,
         TimeOnly? EndTime
     )
     {
-        public static Project FromDbProject(DbProject dbProject)
+        public static Project FromDbProject(DbProject dbProject, IReadOnlyDictionary<string, DbUser> users)
         {
             return new(
                 dbProject.Id,
                 dbProject.Title,
-                dbProject.OrganizerId,
+                users.TryGetValue(dbProject.OrganizerId, out var organizer) ? organizer.DisplayName : "",
                 DateOnly.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture),
                 TimeOnly.ParseExact(dbProject.StartTime, "HH:mm", CultureInfo.InvariantCulture),
                 dbProject.EndTime == null ? null : TimeOnly.ParseExact(dbProject.EndTime, "HH:mm", CultureInfo.InvariantCulture)
