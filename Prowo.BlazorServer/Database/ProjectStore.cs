@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Prowo.BlazorServer.Database
 {
-    public class Db : IDisposable
+    public class ProjectStore : IDisposable
     {
         private readonly CosmosClient cosmosClient;
 
@@ -13,12 +13,12 @@ namespace Prowo.BlazorServer.Database
             .GetDatabase("ProjectsDB")
             .GetContainer("Project");
 
-        public Db(CosmosClient cosmosClient)
+        public ProjectStore(CosmosClient cosmosClient)
         {
             this.cosmosClient = cosmosClient;
         }
 
-        public async IAsyncEnumerable<DbProject> GetAllProjects()
+        public async IAsyncEnumerable<DbProject> GetAll()
         {
             var query = ProjectContainer.GetItemQueryIterator<DbProject>();
             while (query.HasMoreResults)
@@ -31,13 +31,13 @@ namespace Prowo.BlazorServer.Database
             }
         }
 
-        public async Task<DbProject> GetProject(string projectId)
+        public async Task<DbProject> Get(string projectId)
         {
             return await ProjectContainer
                 .ReadItemAsync<DbProject>(projectId, new PartitionKey(projectId));
         }
 
-        public async Task UpsertProject(DbProject project)
+        public async Task CreateOrUpdate(DbProject project)
         {
             await ProjectContainer.UpsertItemAsync(project);
         }

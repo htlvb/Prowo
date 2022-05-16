@@ -3,7 +3,7 @@
 @using Prowo.BlazorServer.Database
 @using System.Globalization
 
-@inject Db Db
+@inject ProjectStore ProjectStore
 
 <h2 class="text-2xl mb-2">Projekte</h2>
 @if (IsLoading)
@@ -39,7 +39,7 @@ else
         IsLoading = true;
         try
         {
-            await foreach (var dbProject in Db.GetAllProjects())
+            await foreach (var dbProject in ProjectStore.GetAll())
             {
                 projects.Add(Project.FromDbProject(dbProject));
             }

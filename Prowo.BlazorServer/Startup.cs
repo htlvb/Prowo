@@ -59,7 +59,7 @@ namespace Prowo.BlazorServer
             services.AddSingleton(provider =>
             {
                 string connectionString = Configuration.GetConnectionString("CosmosDb");
-                return new Db(new CosmosClient(connectionString));
+                return new ProjectStore(new CosmosClient(connectionString));
             });
         }
 
