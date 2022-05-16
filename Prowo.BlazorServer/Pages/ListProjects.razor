@@ -14,10 +14,12 @@
 else
 {
     <div class="grid gap-4">
-        <NavLink class="group border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href="projects/new">
-            <span class="text-4xl text-black align-middle">+</span>
-            <span class="text-xl text-black align-middle">Neues Projekt anlegen</span>
-        </NavLink>
+        <AuthorizeView Roles="Project.Write">
+            <NavLink class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href="projects/new">
+                <span class="text-4xl text-black align-middle">+</span>
+                <span class="text-xl text-black align-middle">Neues Projekt anlegen</span>
+            </NavLink>
+        </AuthorizeView>
         @foreach (var project in Enumerable.Repeat(projects, 3).SelectMany(v => v))
         {
             var location = $"projects/edit/{project.Id}";
