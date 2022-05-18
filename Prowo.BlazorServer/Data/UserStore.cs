@@ -53,7 +53,7 @@ namespace Prowo.BlazorServer.Data
             catch (Exception ex)
             {
                 consentHandler.HandleException(ex);
-                throw;
+                throw new LoginRequiredException("Login is required.", ex);
             }
         }
     }

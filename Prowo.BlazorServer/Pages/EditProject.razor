@@ -124,13 +124,19 @@ else
     {
         var authState = await AuthenticationStateTask;
 
-        organizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
-        editingProject.OrganizerId = authState.User.GetObjectId();
-
-        if(ProjectId != null)
+        try
         {
-            var dbProject = await ProjectStore.Get(ProjectId);
-            editingProject = Project.FromDbProject(dbProject);
+            organizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
+            editingProject.OrganizerId = authState.User.GetObjectId();
+
+            if(ProjectId != null)
+            {
+                var dbProject = await ProjectStore.Get(ProjectId);
+                editingProject = Project.FromDbProject(dbProject);
+            }
+        }
+        catch (LoginRequiredException)
+        {
         }
     }
 

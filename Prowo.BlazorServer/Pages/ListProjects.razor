@@ -104,11 +104,17 @@
         var authState = await AuthenticationStateTask;
         currentUserId = authState.User.GetObjectId();
 
-        var users = await UserStore.GetOrganizerCandidates().ToList();
-        var userLookup = users.ToDictionary(v => v.Id);
-        projects = await ProjectStore.GetAll()
-            .Select(v => Project.FromDbProject(v, userLookup))
-            .ToList();
+        try
+        {
+            var users = await UserStore.GetOrganizerCandidates().ToList();
+            var userLookup = users.ToDictionary(v => v.Id);
+            projects = await ProjectStore.GetAll()
+                .Select(v => Project.FromDbProject(v, userLookup))
+                .ToList();
+        }
+        catch (LoginRequiredException)
+        {
+        }
     }
 
     private async Task RegisterCurrentUserForProject(Project project)
