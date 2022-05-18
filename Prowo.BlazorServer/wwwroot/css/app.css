@@ -1,3 +1,25 @@
 ﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.btn {
+    @apply inline-block text-center bg-transparent font-semibold hover:text-white py-2 px-4 border hover:border-transparent rounded;
+}
+.btn-blue {
+    @apply text-blue-700 border-blue-500;
+}
+.btn-blue:hover {
+    @apply bg-blue-500;
+}
+.btn-red {
+    @apply text-red-700 border-red-500;
+}
+.btn-red:hover {
+    @apply bg-red-500;
+}
+.btn-green {
+    @apply text-green-700 border-green-500;
+}
+.btn-green:hover {
+    @apply bg-green-500;
+}

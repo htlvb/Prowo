@@ -1,5 +1,6 @@
 ﻿@page "/projects"
 
+@using Microsoft.Identity.Web
 @using Prowo.BlazorServer.Data
 @using System.Globalization
 
@@ -7,50 +8,139 @@
 @inject UserStore UserStore
 
 <h2 class="text-2xl mb-2">Projekte</h2>
-@if (projects == null)
-{
-    <p><em>Projekte werden geladen...</em></p>
-}
-else
-{
-    <div class="grid gap-4">
-        <AuthorizeView Roles="Project.Write">
-            <NavLink class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href="projects/new">
-                <span class="text-4xl text-black align-middle">+</span>
-                <span class="text-xl text-black align-middle">Neues Projekt anlegen</span>
-            </NavLink>
-        </AuthorizeView>
-        @foreach (var project in Enumerable.Repeat(projects, 3).SelectMany(v => v))
+<div class="flex flex-col gap-4">
+    <AuthorizeView Roles="Project.Write">
+        <NavLink class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow p-2" href="projects/new">
+            <span class="text-4xl text-black align-middle">+</span>
+            <span class="text-xl text-black align-middle">Neues Projekt anlegen</span>
+        </NavLink>
+    </AuthorizeView>
+    @if (projects == null)
+    {
+        <p><em>Projekte werden geladen...</em></p>
+    }
+    else if (projects.Count == 0)
+    {
+        <p>Keine Projekte vorhanden.</p>
+    }
+    else
+    {
+        foreach (var project in projects)
         {
-            var location = $"projects/edit/{project.Id}";
+            var currentUserRegistrationStatus = GetCurrentUserRegistrationStatus(project);
+
             <div class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow">
-                <div class="flex divide-x">
+                <div class="flex flex-col divide-y md:divide-x md:flex-row">
                     <div class="flex flex-col p-2">
                         <span class="text-xl text-black">@project.Title</span>
                         <span class="text-sm text-gray-600">@project.OrganizerName</span>
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
+                        @{
+                            double workload = (double)project.Attendees.Count / project.MaxAttendees;
+                            string workloadClassNames;
+                            if (workload < 0.8)
+                            {
+                                workloadClassNames = "bg-green-500 text-white";
+                            }
+                            else if (workload < 1)
+                            {
+                                workloadClassNames = "bg-yellow-500";
+                            }
+                            else
+                            {
+                                workloadClassNames = "bg-red-500 text-white";
+                            }
+                        }
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm p-2 rounded @workloadClassNames">@project.Attendees.Count / @project.MaxAttendees</span>
+                            @if (currentUserRegistrationStatus == RegistrationStatus.Registered)
+                            {
+                                <span class="text-sm text-green-500">Du bist angemeldet.</span>
+                            }
+                            else if (currentUserRegistrationStatus == RegistrationStatus.Waiting)
+                            {
+                                <span class="text-sm text-yellow-500">Du bist auf der Warteliste.</span>
+                            }
+                        </div>
                     </div>
                     <div>
-                        <pre class="text-sm font-sans p-2" style="font-family: inherit">
+                        <pre class="text-sm font-sans p-2">
                             @project.Description
                         </pre>
+                    </div>
+                    <div class="flex flex-col gap-2 p-2">
+                        <AuthorizeView Roles="Project.Write.All">
+                            @{
+                                var editLocation = $"projects/edit/{project.Id}";
+                            }
+                            <a class="btn btn-blue" href=@editLocation>Bearbeiten</a>
+                        </AuthorizeView>
+                        <AuthorizeView Roles="Project.Attend">
+                            @if (currentUserRegistrationStatus == RegistrationStatus.Registered || currentUserRegistrationStatus == RegistrationStatus.Waiting)
+                            {
+                                <button class="btn btn-red" onclick=@(() => DeregisterCurrentUserFromProject(project))>Abmelden</button>
+                            }
+                            else if (currentUserRegistrationStatus == RegistrationStatus.NotRegistered)
+                            {
+                                <button class="btn btn-green" onclick=@(() => RegisterCurrentUserForProject(project))>Anmelden</button>
+                            }
+                        </AuthorizeView>
                     </div>
                 </div>
             </div>
         }
-    </div>
-}
+    }
+</div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+
     private List<Project> projects;
+    private string currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateTask;
+        currentUserId = authState.User.GetObjectId();
+
         var users = await UserStore.GetOrganizerCandidates().ToList();
         var userLookup = users.ToDictionary(v => v.Id);
         projects = await ProjectStore.GetAll()
             .Select(v => Project.FromDbProject(v, userLookup))
             .ToList();
+    }
+
+    private async Task RegisterCurrentUserForProject(Project project)
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.GetObjectId();
+        await ProjectStore.AddAttendee(project.Id, userId);
+        project.Attendees.Add(userId);
+        this.StateHasChanged();
+    }
+
+    private async Task DeregisterCurrentUserFromProject(Project project)
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.GetObjectId();
+        await ProjectStore.RemoveAttendee(project.Id, userId);
+        project.Attendees.Remove(userId);
+        this.StateHasChanged();
+    }
+
+    private RegistrationStatus GetCurrentUserRegistrationStatus(Project project)
+    {
+        var currentUserIndex = project.Attendees.IndexOf(currentUserId);
+        if (currentUserIndex == -1)
+        {
+            return RegistrationStatus.NotRegistered;
+        }
+        else if (currentUserIndex >= project.MaxAttendees)
+        {
+            return RegistrationStatus.Waiting;
+        }
+        return RegistrationStatus.Registered;
     }
 
     public record Project(
@@ -60,10 +150,14 @@ else
         string OrganizerName,
         DateOnly Date,
         TimeOnly StartTime,
-        TimeOnly? EndTime
+        TimeOnly? EndTime,
+        int MaxAttendees,
+        List<string> Attendees
     )
     {
-        public static Project FromDbProject(DbProject dbProject, IReadOnlyDictionary<string, DbUser> users)
+        public static Project FromDbProject(
+            DbProject dbProject,
+            IReadOnlyDictionary<string, DbUser> users)
         {
             return new(
                 dbProject.Id,
@@ -72,8 +166,17 @@ else
                 users.TryGetValue(dbProject.OrganizerId, out var organizer) ? organizer.DisplayName : "",
                 DateOnly.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture),
                 TimeOnly.ParseExact(dbProject.StartTime, "HH:mm", CultureInfo.InvariantCulture),
-                dbProject.EndTime == null ? null : TimeOnly.ParseExact(dbProject.EndTime, "HH:mm", CultureInfo.InvariantCulture)
+                dbProject.EndTime == null ? null : TimeOnly.ParseExact(dbProject.EndTime, "HH:mm", CultureInfo.InvariantCulture),
+                dbProject.MaxAttendees,
+                dbProject.CalculateActualAttendees()
             );
         }
+    }
+
+    public enum RegistrationStatus
+    {
+        NotRegistered,
+        Registered,
+        Waiting
     }
 }

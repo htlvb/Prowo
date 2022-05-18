@@ -82,8 +82,8 @@ else
     </div>
 
     <div class="form-group">
-        <label for="max-participants">Maximale Anzahl der Teilnehmer: </label>
-        <InputNumber @bind-Value=editingProject.MaxParticipants ParsingErrorMessage="Keine gültige Zahl" id="max-participants" />
+        <label for="max-attendees">Maximale Anzahl der Teilnehmer: </label>
+        <InputNumber @bind-Value=editingProject.MaxAttendees ParsingErrorMessage="Keine gültige Zahl" id="max-attendees" />
     </div>
 
     <div class="form-group">
@@ -137,7 +137,14 @@ else
     async Task ValidFormSubmitted(EditContext editContext)
     {
         var dbProject = editingProject.ToDbProject(ProjectId);
-        await ProjectStore.CreateOrUpdate(dbProject);
+        if (ProjectId == null)
+        {
+            await ProjectStore.CreateProject(dbProject);
+        }
+        else
+        {
+            await ProjectStore.UpdateProject(dbProject);
+        }
         // TODO show success/error message, navigate to overview
     }
 
@@ -156,7 +163,7 @@ else
         public bool HasEndTime { get; set; } = true;
         public DateTime EndTime { get; set; } = DateTime.Today.AddHours(13);
         [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
-        public int MaxParticipants { get; set; } = 20;
+        public int MaxAttendees { get; set; } = 20;
 
         public static Project FromDbProject(DbProject dbProject)
         {
@@ -172,7 +179,7 @@ else
                 StartTime = date.Add(TimeSpan.ParseExact(dbProject.StartTime, "hh\\:mm", CultureInfo.InvariantCulture)),
                 HasEndTime = dbProject.EndTime != null,
                 EndTime = dbProject.EndTime == null ? date : date.Add(TimeSpan.ParseExact(dbProject.EndTime, "hh\\:mm", CultureInfo.InvariantCulture)),
-                MaxParticipants = dbProject.MaxParticipants
+                MaxAttendees = dbProject.MaxAttendees
             };
         }
 
@@ -189,7 +196,8 @@ else
                 Date = Date.ToString("d", CultureInfo.InvariantCulture),
                 StartTime = StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
                 EndTime = (HasEndTime ? EndTime.ToString("HH:mm", CultureInfo.InvariantCulture) : null),
-                MaxParticipants = MaxParticipants
+                MaxAttendees = MaxAttendees,
+                RegistrationEvents = Array.Empty<DbProject.RegistrationEvent>()
             };
         }
     }
