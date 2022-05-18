@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Graph;
+﻿using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using System;
 using System.Collections.Generic;
