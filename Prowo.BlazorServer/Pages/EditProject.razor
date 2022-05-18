@@ -125,7 +125,7 @@ else
         var authState = await AuthenticationStateTask;
 
         organizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
-        editingProject.OrganizerId = authState.User.Identity.Name;
+        editingProject.OrganizerId = authState.User.GetObjectId();
 
         if(ProjectId != null)
         {
