@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace Prowo.BlazorServer.Data
+namespace Prowo.Web.Data
 {
     [Serializable]
     internal class LoginRequiredException : Exception

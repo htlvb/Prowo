@@ -8,9 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Graph;
 using Microsoft.Azure.Cosmos;
-using Prowo.BlazorServer.Data;
+using Prowo.Web.Data;
 
-namespace Prowo.BlazorServer
+namespace Prowo.Web
 {
     public class Startup
     {

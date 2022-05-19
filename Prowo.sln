@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.BlazorServer", "Prowo.BlazorServer\Prowo.BlazorServer.csproj", "{AF31019E-9824-4985-8867-5F33F4473244}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.Web", "Prowo.Web\Prowo.Web.csproj", "{AF31019E-9824-4985-8867-5F33F4473244}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.CosmosDBTest", "Prowo.CosmosDBTest\Prowo.CosmosDBTest.csproj", "{71B48DA5-D039-4D00-8D14-8E44C34F9D16}"
 EndProject

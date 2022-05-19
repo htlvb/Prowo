@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace Prowo.BlazorServer
+namespace Prowo.Web
 {
     public class Program
     {

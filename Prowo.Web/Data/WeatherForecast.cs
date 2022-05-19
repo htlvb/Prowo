@@ -1,6 +1,6 @@
 using System;
 
-namespace Prowo.BlazorServer.Data
+namespace Prowo.Web.Data
 {
     public class WeatherForecast
     {

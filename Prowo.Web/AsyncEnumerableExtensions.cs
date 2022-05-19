@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Prowo.BlazorServer
+namespace Prowo.Web
 {
     public static class AsyncEnumerableExtensions
     {

@@ -3,4 +3,4 @@ bin/
 obj/
 *.csproj.user
 .tools/
-/Prowo.BlazorServer/wwwroot/css/app.min.css
+/Prowo.Web/wwwroot/css/app.min.css

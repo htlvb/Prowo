@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Prowo.BlazorServer.Data
+namespace Prowo.Web.Data
 {
     public class UserStore
     {
