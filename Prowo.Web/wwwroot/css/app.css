@@ -28,7 +28,7 @@
     @apply text-white;
 }
 .btn-white:hover {
-    @apply bg-white text-blue-500;
+    @apply bg-white text-blue-700;
 }
 
 .input {
