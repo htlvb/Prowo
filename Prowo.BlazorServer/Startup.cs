@@ -41,6 +41,34 @@ namespace Prowo.BlazorServer
             {
                 // By default, all incoming requests will be authorized according to the default policy
                 options.FallbackPolicy = options.DefaultPolicy;
+
+                options.AddPolicy("EditProject", policy =>
+                {
+                    policy.RequireAssertion(context =>
+                    {
+                        if (context.User.IsInRole("Project.Write.All"))
+                        {
+                            return true;
+                        }
+                        if (context.Resource is Pages.ListProjects.Project lp)
+                        {
+                            return lp.OrganizerId == context.User.GetObjectId();
+                        }
+                        if (context.Resource is Pages.EditProject ep)
+                        {
+                            if (ep.EditingProject.OrganizerId == context.User.GetObjectId())
+                            {
+                                return true;
+                            }
+                            if (context.User.IsInRole("Project.Write") && ep.ProjectId == null)
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        return false;
+                    });
+                });
             });
 
             services.AddRazorPages().AddMvcOptions(options => {}).AddMicrosoftIdentityUI();

@@ -69,7 +69,7 @@
                         </pre>
                     </div>
                     <div class="flex flex-col gap-2 p-2">
-                        <AuthorizeView Roles="Project.Write.All">
+                        <AuthorizeView Policy="EditProject" Resource=@project>
                             @{
                                 var editLocation = $"projects/edit/{project.Id}";
                             }
@@ -153,6 +153,7 @@
         string Id,
         string Title,
         string Description,
+        string OrganizerId,
         string OrganizerName,
         DateOnly Date,
         TimeOnly StartTime,
@@ -171,6 +172,7 @@
                 dbProject.Id,
                 dbProject.Title,
                 dbProject.Description,
+                dbProject.OrganizerId,
                 users.TryGetValue(dbProject.OrganizerId, out var organizer) ? organizer.DisplayName : "",
                 DateOnly.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture),
                 TimeOnly.ParseExact(dbProject.StartTime, "HH:mm", CultureInfo.InvariantCulture),
