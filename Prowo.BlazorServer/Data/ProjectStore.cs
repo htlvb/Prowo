@@ -60,7 +60,7 @@ namespace Prowo.BlazorServer.Data
             );
         }
 
-        public async Task AddAttendee(string projectId, string userId)
+        public async Task<DbProject> AddAttendee(string projectId, string userId)
         {
             DbProject.RegistrationEvent registrationEvent = new()
             {
@@ -75,10 +75,10 @@ namespace Prowo.BlazorServer.Data
                     PatchOperation.Add("/registrationEvents/-", registrationEvent)
                 }
             );
-            // TODO update UI model because new attendees could have registered in the meantime
+            return response.Resource;
         }
 
-        public async Task RemoveAttendee(string projectId, string userId)
+        public async Task<DbProject> RemoveAttendee(string projectId, string userId)
         {
             DbProject.RegistrationEvent registrationEvent = new()
             {
@@ -93,7 +93,7 @@ namespace Prowo.BlazorServer.Data
                     PatchOperation.Add("/registrationEvents/-", registrationEvent)
                 }
             );
-            // TODO update UI model because new attendees could have registered in the meantime
+            return response.Resource;
         }
 
         public void Dispose()

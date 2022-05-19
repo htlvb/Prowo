@@ -121,8 +121,8 @@
     {
         var authState = await AuthenticationStateTask;
         var userId = authState.User.GetObjectId();
-        await ProjectStore.AddAttendee(project.Id, userId);
-        project.Attendees.Add(userId);
+        var dbProject = await ProjectStore.AddAttendee(project.Id, userId);
+        project.Attendees = dbProject.CalculateActualAttendees();
         this.StateHasChanged();
     }
 
@@ -130,8 +130,8 @@
     {
         var authState = await AuthenticationStateTask;
         var userId = authState.User.GetObjectId();
-        await ProjectStore.RemoveAttendee(project.Id, userId);
-        project.Attendees.Remove(userId);
+        var dbProject = await ProjectStore.RemoveAttendee(project.Id, userId);
+        project.Attendees = dbProject.CalculateActualAttendees();
         this.StateHasChanged();
     }
 
@@ -161,6 +161,8 @@
         List<string> Attendees
     )
     {
+        public List<string> Attendees { get; set; } = Attendees;
+
         public static Project FromDbProject(
             DbProject dbProject,
             IReadOnlyDictionary<string, DbUser> users)
