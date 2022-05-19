@@ -1,9 +1,11 @@
-﻿<AuthorizeView>
+﻿@using Microsoft.Identity.Web
+
+<AuthorizeView>
     <Authorized>
-        Hello, @context.User.Identity.Name!
-        <a href="MicrosoftIdentity/Account/SignOut">Log out</a>
+        <span class="inline-block mr-2">Hallo, @context.User.GetDisplayName()!</span>
+        <a class="btn btn-white" href="MicrosoftIdentity/Account/SignOut">Abmelden</a>
     </Authorized>
     <NotAuthorized>
-        <a href="MicrosoftIdentity/Account/SignIn">Log in</a>
+        <a class="btn btn-white" href="MicrosoftIdentity/Account/SignIn">Anmelden</a>
     </NotAuthorized>
 </AuthorizeView>
