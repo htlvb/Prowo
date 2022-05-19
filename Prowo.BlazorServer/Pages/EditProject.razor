@@ -8,6 +8,7 @@
 @using System.Text.RegularExpressions
 @using System.Globalization
 
+@inject NavigationManager NavigationManager
 @inject UserStore UserStore
 @inject ProjectStore ProjectStore
 
@@ -24,91 +25,111 @@ else
     <EditForm Context="Edit" Model=@EditingProject OnValidSubmit=@ValidFormSubmitted>
         <DataAnnotationsValidator/>
 
-        <div class="form-group">
-            <label for="title">Titel: </label>
-            <InputText @bind-Value=EditingProject.Title id="title" />
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Titel</span> 
+                <InputText @bind-Value=EditingProject.Title class="input-text" />
+            </label>
         </div>
 
-        <div class="form-group">
-            <label for="description">Beschreibung: </label>
-            <InputTextArea @bind-Value=EditingProject.Description id="description" />
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Beschreibung</span> 
+                <InputTextArea @bind-Value=EditingProject.Description class="input-text" rows="5" cols="70" />
+            </label>
         </div>
 
-        <div class="form-group">
-            <label for="location">Ort: </label>
-            <InputText @bind-Value=EditingProject.Location id="location" />
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Ort</span> 
+                <InputText @bind-Value=EditingProject.Location class="input-text" />
+            </label>
         </div>
     
-        <AuthorizeView Context="Auth" Roles="Project.Write.All" >
-            <Authorized>
-                <div class="form-group">
-                    <label for="organizer-id">Organisator: </label>
-                    <InputSelect @bind-Value=EditingProject.OrganizerId id="organizer-id">
-                    @if (organizerCandidates == null)
-                    {
-                        <option value="">Personen werden geladen...</option>
-                    }
-                    else
-                    {
-                        @foreach (var person in organizerCandidates)
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Organisator</span>
+                <AuthorizeView Context="Auth" Roles="Project.Write.Alll" >
+                    <Authorized>
+                        <InputSelect @bind-Value=EditingProject.OrganizerId class="input-select">
+                        @if (organizerCandidates == null)
                         {
-                            <option value=@person.Id>@person.DisplayName</option>
+                            <option value="">Personen werden geladen...</option>
                         }
-                    }
-                    </InputSelect>
-                </div>
-            </Authorized>
-            <NotAuthorized>
-                <div class="form-group">
-                    Organisator: @organizerCandidates?.FirstOrDefault(v => v.Id == EditingProject.OrganizerId)?.DisplayName
-                </div>
-            </NotAuthorized>
-        </AuthorizeView>
+                        else
+                        {
+                            @foreach (var person in organizerCandidates)
+                            {
+                                <option value=@person.Id>@person.DisplayName</option>
+                            }
+                        }
+                        </InputSelect>
+                    </Authorized>
+                    <NotAuthorized>
+                        @organizerCandidates?.FirstOrDefault(v => v.Id == EditingProject.OrganizerId)?.DisplayName
+                    </NotAuthorized>
+                </AuthorizeView>
+            </label>
+        </div>
 
-        <div class="form-group">
-            <label for="co-organizer-ids">Betreuer: </label>
-            <InputSelect @bind-Value=EditingProject.CoOrganizerIds id="co-organizer-ids">
-            @if (organizerCandidates == null)
-            {
-                <option value="">Personen werden geladen...</option>
-            }
-            else
-            {
-                @foreach (var person in organizerCandidates)
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Betreuer</span>
+                <InputSelect @bind-Value=EditingProject.CoOrganizerIds class="input-select">
+                @if (organizerCandidates == null)
                 {
-                    <option value=@person.Id>@person.DisplayName</option>
+                    <option value="">Personen werden geladen...</option>
                 }
-            }
-            </InputSelect>
+                else
+                {
+                    @foreach (var person in organizerCandidates)
+                    {
+                        <option value=@person.Id>@person.DisplayName</option>
+                    }
+                }
+                </InputSelect>
+            </label>
         </div>
 
-        <div class="form-group">
-            <label for="max-attendees">Maximale Anzahl der Teilnehmer: </label>
-            <InputNumber @bind-Value=EditingProject.MaxAttendees ParsingErrorMessage="Keine gültige Zahl" id="max-attendees" />
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Maximale Teilnehmerzahl</span>
+                <InputNumber @bind-Value=EditingProject.MaxAttendees ParsingErrorMessage="Keine gültige Teilnehmerzahl." class="input-text" />
+            </label>
         </div>
 
-        <div class="form-group">
-            <label for="date">Datum: </label>
-            <InputDate @bind-Value=EditingProject.Date ParsingErrorMessage="Kein gültiges Datum" id="date" />
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Datum</span>
+                <InputDate @bind-Value=EditingProject.Date ParsingErrorMessage="Kein gültiges Datum." class="input-text" />
+            </label>
         </div>
 
-        <div class="form-group">
-            <label for="start-time">Von: </label>
-            <input type="time" @bind=EditingProject.StartTime ParsingErrorMessage="Keine gültige Startzeit" id="start-time" />
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Von</span>
+                <input type="time" @bind=EditingProject.StartTime ParsingErrorMessage="Keine gültige Startzeit." class="input-text" />
+            </label>
         </div>
 
-        <div class="form-group">
-            <InputCheckbox @bind-Value=EditingProject.HasEndTime id="has-end-time" />
-            <label for="has-end-time">Bis: </label>
-            <input type="time" @bind=EditingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!EditingProject.HasEndTime) />
+        <div class="input">
+            <label class="block">
+                <span class="input-label">
+                    <InputCheckbox @bind-Value=EditingProject.HasEndTime /> Bis
+                </span>
+            </label>
+            <input type="time" @bind=EditingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!EditingProject.HasEndTime) class="input-text" />
         </div>
 
         <ValidationSummary />
 
-        @{
-            var submitText = ProjectId == null ? "Projekt anlegen" : "Projekt aktualisieren";
-        }
-        <input type="submit" value=@submitText class="btn btn-primary"/>
+        <div class="input">
+            <input type="submit" value=@(ProjectId == null ? "Projekt anlegen" : "Projekt aktualisieren") class="btn btn-green"/>
+            @if (errorMessage != null)
+            {
+                <span class="inline-block ml-2 text-red-500">@errorMessage</span>
+            }
+        </div>
     </EditForm>
 </AuthorizeView>
 
@@ -121,6 +142,8 @@ else
 
     public Project EditingProject { get; private set; } = new();
     private List<DbUser> organizerCandidates;
+
+    private string errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -147,26 +170,35 @@ else
 
     async Task ValidFormSubmitted(EditContext editContext)
     {
-        var dbProject = EditingProject.ToDbProject(ProjectId);
-        if (ProjectId == null)
+        errorMessage = null;
+        try
         {
-            await ProjectStore.CreateProject(dbProject);
+            var dbProject = EditingProject.ToDbProject(ProjectId);
+            if (ProjectId == null)
+            {
+                await ProjectStore.CreateProject(dbProject);
+            }
+            else
+            {
+                await ProjectStore.UpdateProject(dbProject);
+            }
+            NavigationManager.NavigateTo("/projects");
         }
-        else
+        catch
         {
-            await ProjectStore.UpdateProject(dbProject);
+            errorMessage = "Projekt konnte nicht gespeichert werden.";
         }
-        // TODO show success/error message, navigate to overview
     }
 
     public class Project
     {
-        [Required]
+        [Required(ErrorMessage = "Titel darf nicht leer sein.")]
         public string Title { get; set; }
+        [Required(ErrorMessage = "Beschreibung darf nicht leer sein.")]
         public string Description { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Ort darf nicht leer sein.")]
         public string Location { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Organisator muss ausgewählt werden.")]
         public string OrganizerId { get; set; }
         public string[] CoOrganizerIds { get; set; } = Array.Empty<string>();
         public DateTime Date { get; set; } = DateTime.Today;
