@@ -71,7 +71,6 @@
                     <div class="flex flex-col gap-2 p-2">
                         <AuthorizeView Policy="EditProject" Resource=@project>
                             <a class="btn btn-blue" href=@($"/projects/edit/{project.Id}")>Bearbeiten</a>
-                            <a class="btn btn-blue" href=@($"/projects/report/{project.Id}")>Anmeldungen drucken</a>
                         </AuthorizeView>
                         <AuthorizeView Roles="Project.Attend">
                             @if (currentUserRegistrationStatus == RegistrationStatus.Registered || currentUserRegistrationStatus == RegistrationStatus.Waiting)
