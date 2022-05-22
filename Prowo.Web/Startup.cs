@@ -74,7 +74,6 @@ namespace Prowo.Web
             services.AddRazorPages().AddMvcOptions(options => {}).AddMicrosoftIdentityUI();
             services.AddServerSideBlazor()
                 .AddMicrosoftIdentityConsentHandler();
-            services.AddSingleton<WeatherForecastService>();
 
             services.AddSingleton(provider =>
             {
