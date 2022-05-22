@@ -70,10 +70,7 @@
                     </div>
                     <div class="flex flex-col gap-2 p-2">
                         <AuthorizeView Policy="EditProject" Resource=@project>
-                            @{
-                                var editLocation = $"projects/edit/{project.Id}";
-                            }
-                            <a class="btn btn-blue" href=@editLocation>Bearbeiten</a>
+                            <a class="btn btn-blue" href=@($"/projects/edit/{project.Id}")>Bearbeiten</a>
                         </AuthorizeView>
                         <AuthorizeView Roles="Project.Attend">
                             @if (currentUserRegistrationStatus == RegistrationStatus.Registered || currentUserRegistrationStatus == RegistrationStatus.Waiting)
