@@ -24,7 +24,13 @@ namespace Prowo.Web.Data
             this.consentHandler = consentHandler;
         }
 
-        public async IAsyncEnumerable<DbUser> GetOrganizerCandidates()
+        public async Task<ProjectAttendee> GetSelfAsProjectAttendee()
+        {
+            var user = await graphServiceClient.Me.Request().Select("id,givenName,surname,department").GetAsync();
+            return new ProjectAttendee(user.Id, user.GivenName, user.Surname, user.Department);
+        }
+
+        public async IAsyncEnumerable<OrganizerCandidate> GetOrganizerCandidates()
         {
             var userPageRequest = graphServiceClient.Groups[organizerGroupId].Members.Request();
             while (userPageRequest != null)
@@ -33,7 +39,7 @@ namespace Prowo.Web.Data
                 var users = userPage
                     .OfType<User>()
                     .OrderBy(v => v.UserPrincipalName)
-                    .Select(v => new DbUser(v.Id, $"{v.DisplayName} ({Regex.Replace(v.UserPrincipalName, "@.*$", "")})"));
+                    .Select(v => new OrganizerCandidate(v.Id, $"{v.DisplayName} ({Regex.Replace(v.UserPrincipalName, "@.*$", "")})"));
                 foreach (var user in users)
                 {
                     yield return user;

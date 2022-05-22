@@ -36,7 +36,7 @@
                         <span class="text-sm text-gray-600">@project.OrganizerName</span>
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
                         @{
-                            double workload = (double)project.Attendees.Count / project.MaxAttendees;
+                            double workload = (double)project.AttendeeIds.Count / project.MaxAttendees;
                             string workloadClassNames;
                             if (workload < 0.8)
                             {
@@ -52,7 +52,7 @@
                             }
                         }
                         <div class="flex items-center gap-2">
-                            <span class="text-sm p-2 rounded @workloadClassNames">@project.Attendees.Count / @project.MaxAttendees</span>
+                            <span class="text-sm p-2 rounded @workloadClassNames">@project.AttendeeIds.Count / @project.MaxAttendees</span>
                             @if (currentUserRegistrationStatus == RegistrationStatus.Registered)
                             {
                                 <span class="text-sm text-green-500">Du bist angemeldet.</span>
@@ -119,10 +119,9 @@
 
     private async Task RegisterCurrentUserForProject(Project project)
     {
-        var authState = await AuthenticationStateTask;
-        var userId = authState.User.GetObjectId();
-        var dbProject = await ProjectStore.AddAttendee(project.Id, userId);
-        project.Attendees = dbProject.CalculateActualAttendees();
+        var attendee = await UserStore.GetSelfAsProjectAttendee();
+        var dbProject = await ProjectStore.AddAttendee(project.Id, attendee);
+        project.AttendeeIds = dbProject.CalculateActualAttendees().Select(v => v.UserId).ToList();
         this.StateHasChanged();
     }
 
@@ -131,13 +130,13 @@
         var authState = await AuthenticationStateTask;
         var userId = authState.User.GetObjectId();
         var dbProject = await ProjectStore.RemoveAttendee(project.Id, userId);
-        project.Attendees = dbProject.CalculateActualAttendees();
+        project.AttendeeIds = dbProject.CalculateActualAttendees().Select(v => v.UserId).ToList();
         this.StateHasChanged();
     }
 
     private RegistrationStatus GetCurrentUserRegistrationStatus(Project project)
     {
-        var currentUserIndex = project.Attendees.IndexOf(currentUserId);
+        var currentUserIndex = project.AttendeeIds.IndexOf(currentUserId);
         if (currentUserIndex == -1)
         {
             return RegistrationStatus.NotRegistered;
@@ -159,14 +158,14 @@
         TimeOnly StartTime,
         TimeOnly? EndTime,
         int MaxAttendees,
-        List<string> Attendees
+        List<string> AttendeeIds
     )
     {
-        public List<string> Attendees { get; set; } = Attendees;
+        public List<string> AttendeeIds { get; set; } = AttendeeIds;
 
         public static Project FromDbProject(
             DbProject dbProject,
-            IReadOnlyDictionary<string, DbUser> users)
+            IReadOnlyDictionary<string, OrganizerCandidate> users)
         {
             return new(
                 dbProject.Id,
@@ -178,7 +177,7 @@
                 TimeOnly.ParseExact(dbProject.StartTime, "HH:mm", CultureInfo.InvariantCulture),
                 dbProject.EndTime == null ? null : TimeOnly.ParseExact(dbProject.EndTime, "HH:mm", CultureInfo.InvariantCulture),
                 dbProject.MaxAttendees,
-                dbProject.CalculateActualAttendees()
+                dbProject.CalculateActualAttendees().Select(v => v.UserId).ToList()
             );
         }
     }

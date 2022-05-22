@@ -20,18 +20,18 @@ namespace Prowo.Web.Data
         public int MaxAttendees { get; set; }
         public RegistrationEvent[] RegistrationEvents { get; set; }
 
-        public List<string> CalculateActualAttendees()
+        public List<ProjectAttendee> CalculateActualAttendees()
         {
-            List<string> result = new();
+            List<ProjectAttendee> result = new();
             foreach (var entry in RegistrationEvents)
             {
                 if (entry.Action == RegistrationAction.Register)
                 {
-                    result.Add(entry.UserId);
+                    result.Add(entry.ToAttendee());
                 }
                 else if (entry.Action == RegistrationAction.Deregister)
                 {
-                    result.Remove(entry.UserId);
+                    result.RemoveAll(v => v.UserId == entry.UserId);
                 }
             }
             return result;
@@ -41,7 +41,15 @@ namespace Prowo.Web.Data
         public class RegistrationEvent
         {
             public string UserId { get; set; }
+            public string FirstName { get; set; }
+            public string LastName { get; set; }
+            public string Class { get; set; }
             public RegistrationAction Action { get; set; }
+
+            public ProjectAttendee ToAttendee()
+            {
+                return new(UserId, FirstName, LastName, Class);
+            }
         }
 
         [JsonConverter(typeof(StringEnumConverter), /* camelCaseText */ true)]

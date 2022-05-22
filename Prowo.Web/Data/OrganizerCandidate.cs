@@ -1,6 +1,6 @@
 ﻿namespace Prowo.Web.Data
 {
-    public record DbUser(
+    public record OrganizerCandidate(
         string Id,
         string DisplayName
     );

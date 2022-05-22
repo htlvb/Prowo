@@ -60,11 +60,14 @@ namespace Prowo.Web.Data
             );
         }
 
-        public async Task<DbProject> AddAttendee(string projectId, string userId)
+        public async Task<DbProject> AddAttendee(string projectId, ProjectAttendee attendee)
         {
             DbProject.RegistrationEvent registrationEvent = new()
             {
-                UserId = userId,
+                UserId = attendee.UserId,
+                FirstName = attendee.FirstName,
+                LastName = attendee.LastName,
+                Class = attendee.Class,
                 Action = DbProject.RegistrationAction.Register
             };
             var response = await ProjectContainer.PatchItemAsync<DbProject>(
