@@ -4,9 +4,17 @@
      <UserSecretsId>3f4ce877-5f9a-4ce6-b1b9-bfe467dc06ca</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="dotliquid" Version="2.2.656" />
+    <PackageReference Include="itext7.pdfhtml" Version="4.0.2" />
+    <PackageReference Include="Markdig" Version="0.30.2" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.27.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="1.*" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.*" />
     <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="1.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Templates\ProjectAttendeesReport.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
