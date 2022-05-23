@@ -1,6 +1,6 @@
 $subscriptionName = "Pay-As-You-Go"
 $resourceGroupName = "prowo-rg"
-$accountName = "prowo-acdb2"
+$accountName = "prowo-acdb"
 $regionName = "eastus" # westeurope
 $dbName = "ProjectsDB"
 $containerName = "Project"
