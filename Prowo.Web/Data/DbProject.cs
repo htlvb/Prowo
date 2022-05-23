@@ -16,9 +16,9 @@ namespace Prowo.Web.Data
         public string Location { get; set; }
         public string OrganizerId { get; set; }
         public string[] CoOrganizerIds { get; set; }
-        public string Date { get; set; }
-        public string StartTime { get; set; }
-        public string? EndTime { get; set; }
+        public DateTime Date { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan? EndTime { get; set; }
         public int MaxAttendees { get; set; }
         public RegistrationEvent[] RegistrationEvents { get; set; }
 
@@ -48,9 +48,9 @@ namespace Prowo.Web.Data
                 Location,
                 OrganizerId,
                 CoOrganizerIds,
-                DateOnly.ParseExact(Date, "d", CultureInfo.InvariantCulture),
-                TimeOnly.ParseExact(StartTime, "HH:mm", CultureInfo.InvariantCulture),
-                EndTime == null ? null : TimeOnly.ParseExact(EndTime, "HH:mm", CultureInfo.InvariantCulture),
+                DateOnly.FromDateTime(Date),
+                TimeOnly.FromTimeSpan(StartTime),
+                EndTime != null ? TimeOnly.FromTimeSpan(EndTime.Value) : null,
                 MaxAttendees,
                 CalculateActualAttendees()
             );
@@ -65,9 +65,9 @@ namespace Prowo.Web.Data
                 Title = project.Title,
                 Description = project.Description,
                 OrganizerId = project.OrganizerId,
-                Date = project.Date.ToString("d", CultureInfo.InvariantCulture),
-                StartTime = project.StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EndTime = project.EndTime.HasValue ? project.EndTime.Value.ToString("HH:mm", CultureInfo.InvariantCulture) : null,
+                Date = project.Date.ToDateTime(TimeOnly.MinValue),
+                StartTime = project.StartTime.ToTimeSpan(),
+                EndTime = project.EndTime.HasValue ? project.EndTime.Value.ToTimeSpan() : null,
                 MaxAttendees = project.MaxAttendees,
                 RegistrationEvents = Array.Empty<RegistrationEvent>()
             };

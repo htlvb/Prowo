@@ -21,11 +21,12 @@ var sampleUsers = JsonDocument.Parse(File.ReadAllText("SampleUsers.json"));
 foreach (var project in sampleProjects.RootElement.EnumerateArray().Take(10))
 {
     var maxAttendees = project.GetProperty("max_attendees").GetInt32();
+    var date = DateOnly.ParseExact(project.GetProperty("date").GetString()!, "d", CultureInfo.InvariantCulture);
     var startTimeString = project.GetProperty("start_time").GetString()!;
     var startTime = TimeOnly.ParseExact(startTimeString, "H:mm", CultureInfo.InvariantCulture);
     var endTimeString = project.GetProperty("end_time").GetString();
     var endTime = endTimeString != null ? TimeOnly.ParseExact(endTimeString, "H:mm", CultureInfo.InvariantCulture) : default(TimeOnly?);
-    
+
     await container.CreateItemAsync(new
     {
         id = Guid.NewGuid().ToString(),
@@ -37,9 +38,9 @@ foreach (var project in sampleProjects.RootElement.EnumerateArray().Take(10))
             .Range(0, Random.Shared.Next(0, 10))
             .Select(_ => Guid.NewGuid().ToString())
             .ToArray(),
-        date = project.GetProperty("date").GetString(),
-        startTime = startTime.ToString("HH:mm"),
-        endTime = endTime?.ToString("HH:mm"),
+        date = date.ToDateTime(TimeOnly.MinValue),
+        startTime = startTime.ToTimeSpan(),
+        endTime = endTime?.ToTimeSpan(),
         maxAttendees = maxAttendees,
         registrationEvents = sampleUsers.RootElement.EnumerateArray()
             .OrderBy(_ => Random.Shared.NextDouble())
