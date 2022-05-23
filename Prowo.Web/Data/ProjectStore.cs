@@ -69,6 +69,7 @@ namespace Prowo.Web.Data
                 FirstName = attendee.FirstName,
                 LastName = attendee.LastName,
                 Class = attendee.Class,
+                Timestamp = DateTime.UtcNow,
                 Action = DbProject.RegistrationAction.Register
             };
             var response = await ProjectContainer.PatchItemAsync<DbProject>(
@@ -87,6 +88,7 @@ namespace Prowo.Web.Data
             DbProject.RegistrationEvent registrationEvent = new()
             {
                 UserId = userId,
+                Timestamp = DateTime.UtcNow,
                 Action = DbProject.RegistrationAction.Deregister
             };
             var response = await ProjectContainer.PatchItemAsync<DbProject>(

@@ -50,6 +50,7 @@ foreach (var project in sampleProjects.RootElement.EnumerateArray().Take(10))
                 firstName = v.GetProperty("first_name").GetString(),
                 lastName = v.GetProperty("last_name").GetString(),
                 @class = v.GetProperty("class").GetString(),
+                timestamp = DateTime.UtcNow,
                 action = "register"
             })
             .ToArray()

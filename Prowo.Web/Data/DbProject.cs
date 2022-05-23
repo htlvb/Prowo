@@ -80,6 +80,7 @@ namespace Prowo.Web.Data
             public string FirstName { get; set; }
             public string LastName { get; set; }
             public string Class { get; set; }
+            public DateTime Timestamp { get; set; }
             public RegistrationAction Action { get; set; }
 
             public ProjectAttendee ToAttendee()
