@@ -72,6 +72,9 @@
                         <AuthorizeView Policy="EditProject" Resource=@project>
                             <a class="btn btn-blue" href=@($"/projects/edit/{project.Id}")>Bearbeiten</a>
                         </AuthorizeView>
+                        <AuthorizeView Roles="Report.Create">
+                            <a class="btn btn-blue" href=@($"/projects/attendees/{project.Id}")>Anmeldungen anzeigen</a>
+                        </AuthorizeView>
                         <AuthorizeView Roles="Project.Attend">
                             @if (currentUserRegistrationStatus == RegistrationStatus.Registered || currentUserRegistrationStatus == RegistrationStatus.Waiting)
                             {

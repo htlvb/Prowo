@@ -54,6 +54,19 @@
     @apply mt-6 text-red-500;
 }
 
+tr {
+    @apply border-b border-gray-300;
+}
+tbody tr:nth-child(2n+1) {
+    @apply bg-gray-200;
+}
+th {
+    @apply text-left px-6 py-2;
+}
+td {
+    @apply px-6 py-2;
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;
