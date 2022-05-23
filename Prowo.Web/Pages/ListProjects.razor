@@ -93,7 +93,7 @@
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; }
 
-    private List<Project> projects;
+    private List<UIProject> projects;
     private string currentUserId;
 
     protected override async Task OnInitializedAsync()
@@ -106,7 +106,7 @@
             var users = await UserStore.GetOrganizerCandidates().ToList();
             var userLookup = users.ToDictionary(v => v.Id);
             projects = await ProjectStore.GetAll()
-                .Select(v => Project.FromDbProject(v, userLookup))
+                .Select(v => UIProject.FromProject(v, userLookup))
                 .ToList();
         }
         catch (LoginRequiredException)
@@ -114,7 +114,7 @@
         }
     }
 
-    private async Task RegisterCurrentUserForProject(Project project)
+    private async Task RegisterCurrentUserForProject(UIProject project)
     {
         var attendee = await UserStore.GetSelfAsProjectAttendee();
         var dbProject = await ProjectStore.AddAttendee(project.Id, attendee);
@@ -122,7 +122,7 @@
         this.StateHasChanged();
     }
 
-    private async Task DeregisterCurrentUserFromProject(Project project)
+    private async Task DeregisterCurrentUserFromProject(UIProject project)
     {
         var authState = await AuthenticationStateTask;
         var userId = authState.User.GetObjectId();
@@ -131,7 +131,7 @@
         this.StateHasChanged();
     }
 
-    private RegistrationStatus GetCurrentUserRegistrationStatus(Project project)
+    private RegistrationStatus GetCurrentUserRegistrationStatus(UIProject project)
     {
         var currentUserIndex = project.AttendeeIds.IndexOf(currentUserId);
         if (currentUserIndex == -1)
@@ -145,7 +145,7 @@
         return RegistrationStatus.Registered;
     }
 
-    public record Project(
+    public record UIProject(
         string Id,
         string Title,
         string Description,
@@ -160,21 +160,21 @@
     {
         public List<string> AttendeeIds { get; set; } = AttendeeIds;
 
-        public static Project FromDbProject(
-            DbProject dbProject,
+        public static UIProject FromProject(
+            Project project,
             IReadOnlyDictionary<string, OrganizerCandidate> users)
         {
             return new(
-                dbProject.Id,
-                dbProject.Title,
-                dbProject.Description,
-                dbProject.OrganizerId,
-                users.TryGetValue(dbProject.OrganizerId, out var organizer) ? organizer.DisplayName : "",
-                DateOnly.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture),
-                TimeOnly.ParseExact(dbProject.StartTime, "HH:mm", CultureInfo.InvariantCulture),
-                dbProject.EndTime == null ? null : TimeOnly.ParseExact(dbProject.EndTime, "HH:mm", CultureInfo.InvariantCulture),
-                dbProject.MaxAttendees,
-                dbProject.CalculateActualAttendees().Select(v => v.UserId).ToList()
+                project.Id,
+                project.Title,
+                project.Description,
+                project.OrganizerId,
+                users.TryGetValue(project.OrganizerId, out var organizer) ? organizer.DisplayName : "",
+                project.Date,
+                project.StartTime,
+                project.EndTime,
+                project.MaxAttendees,
+                project.Attendees.Select(v => v.UserId).ToList()
             );
         }
     }

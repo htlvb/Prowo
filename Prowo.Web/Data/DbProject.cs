@@ -1,7 +1,9 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Prowo.Web.Data
 {
@@ -35,6 +37,40 @@ namespace Prowo.Web.Data
                 }
             }
             return result;
+        }
+
+        public Project ToProject()
+        {
+            return new(
+                Id,
+                Title,
+                Description,
+                Location,
+                OrganizerId,
+                CoOrganizerIds,
+                DateOnly.ParseExact(Date, "d", CultureInfo.InvariantCulture),
+                TimeOnly.ParseExact(StartTime, "HH:mm", CultureInfo.InvariantCulture),
+                EndTime == null ? null : TimeOnly.ParseExact(EndTime, "HH:mm", CultureInfo.InvariantCulture),
+                MaxAttendees,
+                CalculateActualAttendees()
+            );
+        }
+
+        // TODO separate attendees from project data to ensure we never overwrite attendees
+        public static DbProject FromProject(Project project)
+        {
+            return new DbProject
+            {
+                Id = project.Id,
+                Title = project.Title,
+                Description = project.Description,
+                OrganizerId = project.OrganizerId,
+                Date = project.Date.ToString("d", CultureInfo.InvariantCulture),
+                StartTime = project.StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
+                EndTime = project.EndTime.HasValue ? project.EndTime.Value.ToString("HH:mm", CultureInfo.InvariantCulture) : null,
+                MaxAttendees = project.MaxAttendees,
+                RegistrationEvents = Array.Empty<RegistrationEvent>()
+            };
         }
 
         [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]

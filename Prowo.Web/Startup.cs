@@ -50,7 +50,7 @@ namespace Prowo.Web
                         {
                             return true;
                         }
-                        if (context.Resource is Pages.ListProjects.Project lp)
+                        if (context.Resource is Pages.ListProjects.UIProject lp)
                         {
                             return lp.OrganizerId == context.User.GetObjectId();
                         }

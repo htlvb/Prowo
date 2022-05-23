@@ -16,7 +16,7 @@ namespace Prowo.Web.Data
             this.cosmosClient = cosmosClient;
         }
 
-        public async IAsyncEnumerable<DbProject> GetAll()
+        public async IAsyncEnumerable<Project> GetAll()
         {
             var query = ProjectContainer.GetItemQueryIterator<DbProject>();
             while (query.HasMoreResults)
@@ -24,23 +24,24 @@ namespace Prowo.Web.Data
                 var response = await query.ReadNextAsync();
                 foreach (var project in response)
                 {
-                    yield return project;
+                    yield return project.ToProject();
                 }
             }
         }
 
-        public async Task<DbProject> Get(string projectId)
+        public async Task<Project> Get(string projectId)
         {
-            return await ProjectContainer
+            var dbProject = await ProjectContainer
                 .ReadItemAsync<DbProject>(projectId, new PartitionKey(projectId));
+            return dbProject.Resource.ToProject();
         }
 
-        public async Task CreateProject(DbProject project)
+        public async Task CreateProject(Project project)
         {
-            await ProjectContainer.CreateItemAsync(project);
+            await ProjectContainer.CreateItemAsync(DbProject.FromProject(project));
         }
 
-        public async Task UpdateProject(DbProject project)
+        public async Task UpdateProject(Project project)
         {
             await ProjectContainer.PatchItemAsync<DbProject>(
                 project.Id,

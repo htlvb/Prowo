@@ -140,7 +140,7 @@ else
     [Parameter]
     public string? ProjectId { get; set; }
 
-    public Project EditingProject { get; private set; } = new();
+    public UIProject EditingProject { get; private set; } = new();
     private List<OrganizerCandidate> organizerCandidates;
 
     private string errorMessage;
@@ -153,10 +153,10 @@ else
         {
             organizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
 
-            if(ProjectId != null)
+            if (ProjectId != null)
             {
-                var dbProject = await ProjectStore.Get(ProjectId);
-                EditingProject = Project.FromDbProject(dbProject);
+                var project = await ProjectStore.Get(ProjectId);
+                EditingProject = UIProject.FromProject(project);
             }
             else
             {
@@ -173,14 +173,14 @@ else
         errorMessage = null;
         try
         {
-            var dbProject = EditingProject.ToDbProject(ProjectId);
+            var project = EditingProject.ToProject(ProjectId);
             if (ProjectId == null)
             {
-                await ProjectStore.CreateProject(dbProject);
+                await ProjectStore.CreateProject(project);
             }
             else
             {
-                await ProjectStore.UpdateProject(dbProject);
+                await ProjectStore.UpdateProject(project);
             }
             NavigationManager.NavigateTo("/projects");
         }
@@ -190,7 +190,7 @@ else
         }
     }
 
-    public class Project
+    public class UIProject
     {
         [Required(ErrorMessage = "Titel darf nicht leer sein.")]
         public string Title { get; set; }
@@ -208,40 +208,39 @@ else
         [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
         public int MaxAttendees { get; set; } = 20;
 
-        public static Project FromDbProject(DbProject dbProject)
+        public static UIProject FromProject(Project project)
         {
-            var date = DateTime.ParseExact(dbProject.Date, "d", CultureInfo.InvariantCulture);
-            return new Project
+            return new UIProject
             {
-                Title = dbProject.Title,
-                Description = dbProject.Description,
-                Location = dbProject.Location,
-                OrganizerId = dbProject.OrganizerId,
-                CoOrganizerIds = dbProject.CoOrganizerIds,
-                Date = date,
-                StartTime = date.Add(TimeSpan.ParseExact(dbProject.StartTime, "hh\\:mm", CultureInfo.InvariantCulture)),
-                HasEndTime = dbProject.EndTime != null,
-                EndTime = dbProject.EndTime == null ? date : date.Add(TimeSpan.ParseExact(dbProject.EndTime, "hh\\:mm", CultureInfo.InvariantCulture)),
-                MaxAttendees = dbProject.MaxAttendees
+                Title = project.Title,
+                Description = project.Description,
+                Location = project.Location,
+                OrganizerId = project.OrganizerId,
+                CoOrganizerIds = project.CoOrganizerIds.ToArray(),
+                Date = project.Date.ToDateTime(TimeOnly.MinValue),
+                StartTime = project.Date.ToDateTime(project.StartTime),
+                HasEndTime = project.EndTime != null,
+                EndTime = project.Date.ToDateTime(project.EndTime == null ? TimeOnly.MinValue : project.EndTime.Value),
+                MaxAttendees = project.MaxAttendees
             };
         }
 
-        public DbProject ToDbProject(string? projectId)
+        public Project ToProject(string? projectId)
         {
-            return new DbProject
-            {
-                Id = projectId ?? Guid.NewGuid().ToString(),
-                Title = Title,
-                Description = Description,
-                Location = Location,
-                OrganizerId = OrganizerId,
-                CoOrganizerIds = CoOrganizerIds,
-                Date = Date.ToString("d", CultureInfo.InvariantCulture),
-                StartTime = StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
-                EndTime = (HasEndTime ? EndTime.ToString("HH:mm", CultureInfo.InvariantCulture) : null),
-                MaxAttendees = MaxAttendees,
-                RegistrationEvents = Array.Empty<DbProject.RegistrationEvent>()
-            };
+            return new Project
+            (
+                projectId ?? Guid.NewGuid().ToString(),
+                Title,
+                Description,
+                Location,
+                OrganizerId,
+                CoOrganizerIds,
+                DateOnly.FromDateTime(Date),
+                TimeOnly.FromDateTime(StartTime),
+                (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
+                MaxAttendees,
+                Array.Empty<ProjectAttendee>()
+            );
         }
     }
 }
