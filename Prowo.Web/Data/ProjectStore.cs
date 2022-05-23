@@ -43,20 +43,22 @@ namespace Prowo.Web.Data
 
         public async Task UpdateProject(Project project)
         {
+            var dbProject = DbProject.FromProject(project);
+
             await ProjectContainer.PatchItemAsync<DbProject>(
-                project.Id,
-                new PartitionKey(project.Id),
+                dbProject.Id,
+                new PartitionKey(dbProject.Id),
                 new[]
                 {
-                    PatchOperation.Replace("/title", project.Title),
-                    PatchOperation.Replace("/description", project.Description),
-                    PatchOperation.Replace("/location", project.Location),
-                    PatchOperation.Replace("/organizerId", project.OrganizerId),
-                    PatchOperation.Replace("/coOrganizerIds", project.CoOrganizerIds),
-                    PatchOperation.Replace("/date", project.Date),
-                    PatchOperation.Replace("/startTime", project.StartTime),
-                    PatchOperation.Replace("/endTime", project.EndTime),
-                    PatchOperation.Replace("/maxAttendees", project.MaxAttendees)
+                    PatchOperation.Replace("/title", dbProject.Title),
+                    PatchOperation.Replace("/description", dbProject.Description),
+                    PatchOperation.Replace("/location", dbProject.Location),
+                    PatchOperation.Replace("/organizerId", dbProject.OrganizerId),
+                    PatchOperation.Replace("/coOrganizerIds", dbProject.CoOrganizerIds),
+                    PatchOperation.Replace("/date", dbProject.Date),
+                    PatchOperation.Replace("/startTime", dbProject.StartTime),
+                    PatchOperation.Replace("/endTime", dbProject.EndTime),
+                    PatchOperation.Replace("/maxAttendees", dbProject.MaxAttendees)
                 }
             );
         }
