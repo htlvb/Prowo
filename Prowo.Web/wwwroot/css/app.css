@@ -4,30 +4,35 @@
 
 .btn {
     @apply inline-block text-center cursor-pointer bg-transparent font-semibold py-2 px-4 border rounded;
-    @apply hover:text-white hover:border-transparent;
+}
+.btn[disabled] {
+    @apply opacity-50 cursor-not-allowed;
+}
+.btn:hover:not([disabled]) {
+    @apply text-white border-transparent;
 }
 .btn-blue {
     @apply text-blue-700 border-blue-500;
 }
-.btn-blue:hover {
+.btn-blue:hover:not([disabled]) {
     @apply bg-blue-500;
 }
 .btn-red {
     @apply text-red-700 border-red-500;
 }
-.btn-red:hover {
+.btn-red:hover:not([disabled]) {
     @apply bg-red-500;
 }
 .btn-green {
     @apply text-green-700 border-green-500;
 }
-.btn-green:hover {
+.btn-green:hover:not([disabled]) {
     @apply bg-green-500;
 }
 .btn-white {
     @apply text-white;
 }
-.btn-white:hover {
+.btn-white:hover:not([disabled]) {
     @apply bg-white text-blue-700;
 }
 

@@ -41,6 +41,7 @@ foreach (var project in sampleProjects.RootElement.EnumerateArray().Take(10))
         date = date.ToDateTime(TimeOnly.MinValue),
         startTime = startTime.ToTimeSpan(),
         endTime = endTime?.ToTimeSpan(),
+        closingDate = date.AddDays(Random.Shared.Next(-30, 1)).ToDateTime(TimeOnly.MinValue).ToUniversalTime(),
         maxAttendees = maxAttendees,
         registrationEvents = sampleUsers.RootElement.EnumerateArray()
             .OrderBy(_ => Random.Shared.NextDouble())

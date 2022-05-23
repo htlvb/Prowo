@@ -36,6 +36,27 @@
                         <span class="text-sm text-gray-600">@project.OrganizerName</span>
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
                         @{
+                            var localClosingDate = @project.ClosingDate.ToLocalTime();
+                            var diff = localClosingDate - DateTime.Now;
+                            string closingDateClassNames;
+                            if (diff > TimeSpan.FromDays(1))
+                            {
+                                closingDateClassNames = "text-green-600";
+                            }
+                            else if (diff > TimeSpan.Zero)
+                            {
+                                closingDateClassNames = "text-yellow-500";
+                            }
+                            else
+                            {
+                                closingDateClassNames = "text-red-500";
+                            }
+                        }
+                        <span class="text-sm text-gray-600">
+                            Anmeldeschluss:
+                            <span class="@closingDateClassNames">@localClosingDate.ToLongDateString() @localClosingDate.ToLongTimeString()</span>
+                        </span>
+                        @{
                             double workload = (double)project.AttendeeIds.Count / project.MaxAttendees;
                             string workloadClassNames;
                             if (workload < 0.8)
@@ -76,13 +97,16 @@
                             <a class="btn btn-blue" href=@($"/projects/attendees/{project.Id}")>Anmeldungen anzeigen</a>
                         </AuthorizeView>
                         <AuthorizeView Roles="Project.Attend">
+                            @{
+                                var registrationDisabled = project.ClosingDate <= DateTime.UtcNow;
+                            }
                             @if (currentUserRegistrationStatus == RegistrationStatus.Registered || currentUserRegistrationStatus == RegistrationStatus.Waiting)
                             {
-                                <button class="btn btn-red" onclick=@(() => DeregisterCurrentUserFromProject(project))>Abmelden</button>
+                                <button class="btn btn-red" disabled=@registrationDisabled onclick=@(() => DeregisterCurrentUserFromProject(project))>Abmelden</button>
                             }
                             else if (currentUserRegistrationStatus == RegistrationStatus.NotRegistered)
                             {
-                                <button class="btn btn-green" onclick=@(() => RegisterCurrentUserForProject(project))>Anmelden</button>
+                                <button class="btn btn-green" disabled=@registrationDisabled onclick=@(() => RegisterCurrentUserForProject(project))>Anmelden</button>
                             }
                         </AuthorizeView>
                     </div>
@@ -157,6 +181,7 @@
         DateOnly Date,
         TimeOnly StartTime,
         TimeOnly? EndTime,
+        DateTime ClosingDate,
         int MaxAttendees,
         List<string> AttendeeIds
     )
@@ -176,6 +201,7 @@
                 project.Date,
                 project.StartTime,
                 project.EndTime,
+                project.ClosingDate,
                 project.MaxAttendees,
                 project.Attendees.Select(v => v.UserId).ToList()
             );

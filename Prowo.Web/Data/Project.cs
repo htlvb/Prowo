@@ -13,6 +13,7 @@ namespace Prowo.Web.Data
         DateOnly Date,
         TimeOnly StartTime,
         TimeOnly? EndTime,
+        DateTime ClosingDate,
         int MaxAttendees,
         IReadOnlyList<ProjectAttendee> Attendees
     );

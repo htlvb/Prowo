@@ -19,6 +19,7 @@ namespace Prowo.Web.Data
         public DateTime Date { get; set; }
         public TimeSpan StartTime { get; set; }
         public TimeSpan? EndTime { get; set; }
+        public DateTime ClosingDate { get; set; }
         public int MaxAttendees { get; set; }
         public RegistrationEvent[] RegistrationEvents { get; set; }
 
@@ -51,6 +52,7 @@ namespace Prowo.Web.Data
                 DateOnly.FromDateTime(Date),
                 TimeOnly.FromTimeSpan(StartTime),
                 EndTime != null ? TimeOnly.FromTimeSpan(EndTime.Value) : null,
+                ClosingDate,
                 MaxAttendees,
                 CalculateActualAttendees()
             );
@@ -68,6 +70,7 @@ namespace Prowo.Web.Data
                 Date = project.Date.ToDateTime(TimeOnly.MinValue),
                 StartTime = project.StartTime.ToTimeSpan(),
                 EndTime = project.EndTime.HasValue ? project.EndTime.Value.ToTimeSpan() : null,
+                ClosingDate = project.ClosingDate,
                 MaxAttendees = project.MaxAttendees,
                 RegistrationEvents = Array.Empty<RegistrationEvent>()
             };

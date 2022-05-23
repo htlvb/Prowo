@@ -58,6 +58,7 @@ namespace Prowo.Web.Data
                     PatchOperation.Replace("/date", dbProject.Date),
                     PatchOperation.Replace("/startTime", dbProject.StartTime),
                     PatchOperation.Replace("/endTime", dbProject.EndTime),
+                    PatchOperation.Replace("/closingDate", dbProject.ClosingDate),
                     PatchOperation.Replace("/maxAttendees", dbProject.MaxAttendees)
                 }
             );
@@ -74,15 +75,18 @@ namespace Prowo.Web.Data
                 Timestamp = DateTime.UtcNow,
                 Action = DbProject.RegistrationAction.Register
             };
-            var response = await ProjectContainer.PatchItemAsync<DbProject>(
+            return await ProjectContainer.PatchItemAsync<DbProject>(
                 projectId,
                 new PartitionKey(projectId),
                 new[]
                 {
                     PatchOperation.Add("/registrationEvents/-", registrationEvent)
+                },
+                new PatchItemRequestOptions
+                {
+                    FilterPredicate = $"FROM p WHERE p.closingDate > GetCurrentDateTime()"
                 }
             );
-            return response.Resource;
         }
 
         public async Task<DbProject> RemoveAttendee(string projectId, string userId)
@@ -93,7 +97,7 @@ namespace Prowo.Web.Data
                 Timestamp = DateTime.UtcNow,
                 Action = DbProject.RegistrationAction.Deregister
             };
-            var response = await ProjectContainer.PatchItemAsync<DbProject>(
+            return await ProjectContainer.PatchItemAsync<DbProject>(
                 projectId,
                 new PartitionKey(projectId),
                 new[]
@@ -101,7 +105,6 @@ namespace Prowo.Web.Data
                     PatchOperation.Add("/registrationEvents/-", registrationEvent)
                 }
             );
-            return response.Resource;
         }
 
         public void Dispose()

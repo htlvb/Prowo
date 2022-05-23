@@ -121,6 +121,13 @@ else
             <input type="time" @bind=EditingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!EditingProject.HasEndTime) class="input-text" />
         </div>
 
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Anmeldeschluss</span>
+                <InputDate @bind-Value=EditingProject.ClosingDate ParsingErrorMessage="Kein gültiger Anmeldeschluss." class="input-text" />
+            </label>
+        </div>
+
         <ValidationSummary />
 
         <div class="input">
@@ -205,6 +212,7 @@ else
         public DateTime StartTime { get; set; } = DateTime.Today.AddHours(9);
         public bool HasEndTime { get; set; } = true;
         public DateTime EndTime { get; set; } = DateTime.Today.AddHours(13);
+        public DateTime ClosingDate { get; set; } = DateTime.Today;
         [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
         public int MaxAttendees { get; set; } = 20;
 
@@ -221,6 +229,7 @@ else
                 StartTime = project.Date.ToDateTime(project.StartTime),
                 HasEndTime = project.EndTime != null,
                 EndTime = project.Date.ToDateTime(project.EndTime == null ? TimeOnly.MinValue : project.EndTime.Value),
+                ClosingDate = project.ClosingDate,
                 MaxAttendees = project.MaxAttendees
             };
         }
@@ -238,6 +247,7 @@ else
                 DateOnly.FromDateTime(Date),
                 TimeOnly.FromDateTime(StartTime),
                 (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
+                ClosingDate,
                 MaxAttendees,
                 Array.Empty<ProjectAttendee>()
             );
