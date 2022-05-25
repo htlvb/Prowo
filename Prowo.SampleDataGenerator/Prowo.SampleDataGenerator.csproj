@@ -14,12 +14,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="SampleProjects.json">
+    <None Update="AttendeeCandidates.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="SampleUsers.json">
+    <None Update="OrganizerCandidates.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+	<None Update="SampleProjects.json">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
   </ItemGroup>
 
 </Project>

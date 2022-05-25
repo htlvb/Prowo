@@ -16,42 +16,71 @@ var container = cosmosClient.GetContainer("ProjectsDB", "Project");
 //    .GetDatabase("ProjectsDB")
 //    .CreateContainerAsync("Project", "/id");
 
-var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"));
-var sampleUsers = JsonDocument.Parse(File.ReadAllText("SampleUsers.json"));
-foreach (var project in sampleProjects.RootElement.EnumerateArray().Take(10))
+var attendees = JsonDocument.Parse(File.ReadAllText("AttendeeCandidates.json"))
+    .RootElement
+    .EnumerateArray()
+    .Select(v => new
+    {
+        UserId = v.GetProperty("ObjectId").GetString()!,
+        FirstName = v.GetProperty("GivenName").GetString()!,
+        LastName = v.GetProperty("Surname").GetString()!,
+        Class = v.GetProperty("Department").GetString()!
+    })
+    .ToList();
+var organizers = JsonDocument.Parse(File.ReadAllText("OrganizerCandidates.json"))
+    .RootElement
+    .EnumerateArray()
+    .Select(v => v.GetString())
+    .ToList();
+var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
+    .RootElement
+    .EnumerateArray()
+    .Select(v =>
+    {
+        var date = DateTime.ParseExact(v.GetProperty("date").GetString()!, "d", CultureInfo.InvariantCulture);
+        var startTimeString = v.GetProperty("start_time").GetString()!;
+        var endTimeString = v.GetProperty("end_time").GetString()!;
+        var maxAttendees = v.GetProperty("max_attendees").GetInt32();
+        return new
+        {
+            Id = v.GetProperty("id").GetString()!,
+            Title = v.GetProperty("title").GetString()!,
+            Description = v.GetProperty("description").GetString()!,
+            Location = v.GetProperty("location").GetString()!,
+            Date = date,
+            StartTime = TimeSpan.ParseExact(startTimeString, "h\\:mm", CultureInfo.InvariantCulture),
+            EndTime = endTimeString != null ? TimeSpan.ParseExact(endTimeString, "h\\:mm", CultureInfo.InvariantCulture) : default(TimeSpan?),
+            ClosingDate = date.AddDays(Random.Shared.Next(-30, 1)).ToUniversalTime(),
+            MaxAttendees = maxAttendees
+        };
+    });
+foreach (var project in sampleProjects.Take(10))
 {
-    var maxAttendees = project.GetProperty("max_attendees").GetInt32();
-    var date = DateOnly.ParseExact(project.GetProperty("date").GetString()!, "d", CultureInfo.InvariantCulture);
-    var startTimeString = project.GetProperty("start_time").GetString()!;
-    var startTime = TimeOnly.ParseExact(startTimeString, "H:mm", CultureInfo.InvariantCulture);
-    var endTimeString = project.GetProperty("end_time").GetString();
-    var endTime = endTimeString != null ? TimeOnly.ParseExact(endTimeString, "H:mm", CultureInfo.InvariantCulture) : default(TimeOnly?);
-
     await container.CreateItemAsync(new
     {
-        id = Guid.NewGuid().ToString(),
-        title = project.GetProperty("title").GetString(),
-        description = project.GetProperty("description").GetString(),
-        location = project.GetProperty("location").GetString(),
-        organizerId = Guid.NewGuid().ToString(),
-        coOrganizerIds = Enumerable
-            .Range(0, Random.Shared.Next(0, 10))
-            .Select(_ => Guid.NewGuid().ToString())
-            .ToArray(),
-        date = date.ToDateTime(TimeOnly.MinValue),
-        startTime = startTime.ToTimeSpan(),
-        endTime = endTime?.ToTimeSpan(),
-        closingDate = date.AddDays(Random.Shared.Next(-30, 1)).ToDateTime(TimeOnly.MinValue).ToUniversalTime(),
-        maxAttendees = maxAttendees,
-        registrationEvents = sampleUsers.RootElement.EnumerateArray()
+        id = project.Id,
+        title = project.Title,
+        description = project.Description,
+        location = project.Location,
+        organizerId = organizers[Random.Shared.Next(0, organizers.Count)],
+        coOrganizerIds = organizers
             .OrderBy(_ => Random.Shared.NextDouble())
-            .Take(Random.Shared.Next(0, maxAttendees + 1))
+            .Take(Random.Shared.Next(0, 10))
+            .ToArray(),
+        date = project.Date,
+        startTime = project.StartTime,
+        endTime = project.EndTime,
+        closingDate = project.ClosingDate,
+        maxAttendees = project.MaxAttendees,
+        registrationEvents = attendees
+            .OrderBy(_ => Random.Shared.NextDouble())
+            .Take(Random.Shared.Next(0, project.MaxAttendees * 2))
             .Select(v => new
             {
-                userId = Guid.NewGuid().ToString(),
-                firstName = v.GetProperty("first_name").GetString(),
-                lastName = v.GetProperty("last_name").GetString(),
-                @class = v.GetProperty("class").GetString(),
+                userId = v.UserId,
+                firstName = v.FirstName,
+                lastName = v.LastName,
+                @class = v.Class,
                 timestamp = DateTime.UtcNow,
                 action = "register"
             })

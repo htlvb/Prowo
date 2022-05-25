@@ -4,3 +4,5 @@ obj/
 *.csproj.user
 .tools/
 /Prowo.Web/wwwroot/css/app.min.css
+/Prowo.SampleDataGenerator/AttendeeCandidates.json
+/Prowo.SampleDataGenerator/OrganizerCandidates.json
