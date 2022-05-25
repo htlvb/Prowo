@@ -36,7 +36,7 @@
                         <span class="text-sm text-gray-600">@project.OrganizerName</span>
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <span> - @project.EndTime</span> }</span>
                         @{
-                            var localClosingDate = @project.ClosingDate.ToLocalTime();
+                            var localClosingDate = @project.ClosingDate.ToUserTime();
                             var diff = localClosingDate - DateTime.Now;
                             string closingDateClassNames;
                             if (diff > TimeSpan.FromDays(1))
