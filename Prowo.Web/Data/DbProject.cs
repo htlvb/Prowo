@@ -3,7 +3,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
 
 namespace Prowo.Web.Data
 {
@@ -66,7 +66,9 @@ namespace Prowo.Web.Data
                 Id = project.Id,
                 Title = project.Title,
                 Description = project.Description,
+                Location = project.Location,
                 OrganizerId = project.OrganizerId,
+                CoOrganizerIds = project.CoOrganizerIds.ToArray(),
                 Date = project.Date.ToDateTime(TimeOnly.MinValue),
                 StartTime = project.StartTime.ToTimeSpan(),
                 EndTime = project.EndTime.HasValue ? project.EndTime.Value.ToTimeSpan() : null,
