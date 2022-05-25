@@ -158,7 +158,9 @@ else
 
         try
         {
-            organizerCandidates = await UserStore.GetOrganizerCandidates().ToList();
+            organizerCandidates = (await UserStore.GetOrganizerCandidates().ToList())
+                .OrderBy(v => v.DisplayName)
+                .ToList();
 
             if (ProjectId != null)
             {
