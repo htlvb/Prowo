@@ -49,7 +49,7 @@ else
         <div class="input">
             <label class="block">
                 <span class="input-label">Organisator</span>
-                <AuthorizeView Context="Auth" Roles="Project.Write.Alll" >
+                <AuthorizeView Context="Auth" Roles="Project.Write.All" >
                     <Authorized>
                         <InputSelect @bind-Value=EditingProject.OrganizerId class="input-select">
                         @if (organizerCandidates == null)
