@@ -82,16 +82,18 @@
                                 workloadClassNames = "bg-red-500 text-white";
                             }
                         }
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm p-2 rounded @workloadClassNames">@project.AttendeeIds.Count / @project.MaxAttendees</span>
-                            @if (currentUserRegistrationStatus == RegistrationStatus.Registered)
-                            {
-                                <span class="text-sm text-green-500">Du bist angemeldet.</span>
-                            }
-                            else if (currentUserRegistrationStatus == RegistrationStatus.Waiting)
-                            {
-                                <span class="text-sm text-yellow-500">Du bist auf der Warteliste.</span>
-                            }
+                        <div class="grow flex items-end">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm p-2 rounded @workloadClassNames">@project.AttendeeIds.Count / @project.MaxAttendees</span>
+                                @if (currentUserRegistrationStatus == RegistrationStatus.Registered)
+                                {
+                                    <span class="text-sm text-green-500">Du bist angemeldet.</span>
+                                }
+                                else if (currentUserRegistrationStatus == RegistrationStatus.Waiting)
+                                {
+                                    <span class="text-sm text-yellow-500">Du bist auf der Warteliste.</span>
+                                }
+                            </div>
                         </div>
                     </div>
                     <div class="min-w-0 p-2">
