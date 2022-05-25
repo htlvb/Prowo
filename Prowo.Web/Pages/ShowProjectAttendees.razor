@@ -18,15 +18,17 @@ else
     <table>
         <thead>
             <tr>
+                <th>Nummer</th>
                 <th>Klasse</th>
                 <th>Nachname</th>
                 <th>Vorname</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var attendee in project.Attendees)
+            @foreach (var (attendee, number) in project.Attendees.Select((v, i) => (v, i + 1)))
             {
-                <tr>
+                <tr class="@(attendee.IsWaiting ? "bg-yellow-400" : "bg-green-400")">
+                    <td>@number</td>
                     <td>@attendee.Class</td>
                     <td>@attendee.LastName</td>
                     <td>@attendee.FirstName</td>
@@ -46,11 +48,13 @@ else
     {
         var p = await ProjectStore.Get(ProjectId);
         var attendees = p.Attendees
-            .OrderBy(v => v.Class)
+            .Select((v, i) => new UIProjectAttendee(v.FirstName, v.LastName, v.Class, i >= p.MaxAttendees))
+            .OrderBy(v => v.IsWaiting)
+            .ThenBy(v => v.Class)
             .ThenBy(v => v.LastName)
             .ThenBy(v => v.FirstName)
             .ToList();
-        project = new UIProject(p.Title, p.Date, p.StartTime, p.EndTime, attendees);
+        project = new UIProject(p.Title, p.Date, p.StartTime, p.EndTime, p.MaxAttendees, attendees);
     }
 
     public record UIProject(
@@ -58,5 +62,13 @@ else
         DateOnly Date,
         TimeOnly StartTime,
         TimeOnly? EndTime,
-        IReadOnlyList<ProjectAttendee> Attendees);
+        int MaxAttendees,
+        IReadOnlyList<UIProjectAttendee> Attendees);
+
+    public record UIProjectAttendee(
+        string FirstName,
+        string LastName,
+        string Class,
+        bool IsWaiting
+    );
 }

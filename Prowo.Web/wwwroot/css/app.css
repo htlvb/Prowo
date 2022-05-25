@@ -68,7 +68,7 @@
 tr {
     @apply border-b border-gray-300;
 }
-tbody tr:nth-child(2n+1) {
+table.table-striped tbody tr:nth-child(2n+1) {
     @apply bg-gray-200;
 }
 th {
