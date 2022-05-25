@@ -42,6 +42,7 @@ namespace Prowo.Web.Data
 
         public Project ToProject()
         {
+            var attendees = CalculateActualAttendees();
             return new(
                 Id,
                 Title,
@@ -54,7 +55,8 @@ namespace Prowo.Web.Data
                 EndTime != null ? TimeOnly.FromTimeSpan(EndTime.Value) : null,
                 ClosingDate,
                 MaxAttendees,
-                CalculateActualAttendees()
+                attendees.Take(MaxAttendees).ToList(),
+                attendees.Skip(MaxAttendees).ToList()
             );
         }
 

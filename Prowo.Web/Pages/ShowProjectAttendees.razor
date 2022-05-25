@@ -47,8 +47,11 @@ else
     protected override async Task OnInitializedAsync()
     {
         var p = await ProjectStore.Get(ProjectId);
-        var attendees = p.Attendees
-            .Select((v, i) => new UIProjectAttendee(v.FirstName, v.LastName, v.Class, i >= p.MaxAttendees))
+        var attendees = Enumerable
+            .Concat(
+                p.RegisteredAttendees.Select((v, i) => new UIProjectAttendee(v.FirstName, v.LastName, v.Class, false)),
+                p.WaitingAttendees.Select((v, i) => new UIProjectAttendee(v.FirstName, v.LastName, v.Class, true))
+            )
             .OrderBy(v => v.IsWaiting)
             .ThenBy(v => v.Class)
             .ThenBy(v => v.LastName)

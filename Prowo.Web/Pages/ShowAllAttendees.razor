@@ -48,9 +48,16 @@ else
                     <tr>
                         <td>@student.LastName</td>
                         <td>@student.FirstName</td>
-                        @foreach (var date in student.ProjectsPerDate)
+                        @foreach (var projects in student.ProjectsPerDate)
                         {
-                            <td>@string.Join(", ", date.ProjectNames)</td>
+                            <td>
+                                <div class="flex flex-col gap-2 items-start">
+                                    @foreach (var project in projects.List)
+                                    {
+                                        <span class="inline-block px-4 py-2 rounded @(project.IsWaiting ? "bg-yellow-400" : "bg-green-400")">@project.Name</span>
+                                    }
+                                </div>
+                            </td>
                         }
                     </tr>
                 }
@@ -69,8 +76,11 @@ else
         var attendees = await UserStore.GetAttendeeCandidates().ToList();
         var projects = await ProjectStore.GetAll().ToList();
         var projectsByUserAndDate = projects
-            .SelectMany(p => p.Attendees.Select(v => new { UserId = v.UserId, ProjectName = p.Title, ProjectDate = p.Date }))
-            .ToLookup(v => new { v.UserId, v.ProjectDate }, v => v.ProjectName);
+            .SelectMany(p => Enumerable.Concat(
+                p.RegisteredAttendees.Select((v, i) => new { UserId = v.UserId, ProjectName = p.Title, ProjectDate = p.Date, IsWaiting = false }),
+                p.WaitingAttendees.Select((v, i) => new { UserId = v.UserId, ProjectName = p.Title, ProjectDate = p.Date, IsWaiting = true })
+            ))
+            .ToLookup(v => new { v.UserId, v.ProjectDate }, v => new Project(v.ProjectName, v.IsWaiting));
         dates = projects
             .Select(p => p.Date)
             .Distinct()
@@ -108,5 +118,7 @@ else
 
     public record Student(string FirstName, string LastName, List<Projects> ProjectsPerDate);
 
-    public record Projects(IReadOnlyList<string> ProjectNames);
+    public record Projects(IReadOnlyList<Project> List);
+
+    public record Project(string Name, bool IsWaiting);
 }

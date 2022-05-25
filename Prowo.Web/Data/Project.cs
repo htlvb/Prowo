@@ -15,6 +15,7 @@ namespace Prowo.Web.Data
         TimeOnly? EndTime,
         DateTime ClosingDate,
         int MaxAttendees,
-        IReadOnlyList<ProjectAttendee> Attendees
+        IReadOnlyList<ProjectAttendee> RegisteredAttendees,
+        IReadOnlyList<ProjectAttendee> WaitingAttendees
     );
 }

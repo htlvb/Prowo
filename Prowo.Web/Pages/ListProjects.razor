@@ -215,7 +215,7 @@
                 project.EndTime,
                 project.ClosingDate,
                 project.MaxAttendees,
-                project.Attendees.Select(v => v.UserId).ToList()
+                project.RegisteredAttendees.Concat(project.WaitingAttendees).Select(v => v.UserId).ToList()
             );
         }
     }
