@@ -131,7 +131,7 @@ else
         <ValidationSummary />
 
         <div class="input">
-            <input type="submit" value=@(ProjectId == null ? "Projekt anlegen" : "Projekt aktualisieren") class="btn btn-green"/>
+            <input type="submit" value=@(ProjectId == null ? "Projekt anlegen" : "Projekt aktualisieren") class="btn btn-green" disabled=@(!isLoaded)/>
             @if (errorMessage != null)
             {
                 <span class="inline-block ml-2 text-red-500">@errorMessage</span>
@@ -149,15 +149,14 @@ else
 
     public UIProject EditingProject { get; private set; } = new();
     private List<OrganizerCandidate> organizerCandidates;
-
+    private bool isLoaded;
     private string errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateTask;
-
         try
         {
+            var authState = await AuthenticationStateTask;
             organizerCandidates = (await UserStore.GetOrganizerCandidates().ToList())
                 .OrderBy(v => v.DisplayName)
                 .ToList();
@@ -174,6 +173,10 @@ else
         }
         catch (LoginRequiredException)
         {
+        }
+        finally
+        {
+            isLoaded = true;
         }
     }
 
