@@ -11,23 +11,20 @@ namespace Prowo.Web.Data
     public class UserStore
     {
         private readonly string organizerGroupId;
+        private readonly string attendeeGroupId;
         private readonly GraphServiceClient graphServiceClient;
         private readonly MicrosoftIdentityConsentAndConditionalAccessHandler consentHandler;
 
         public UserStore(
             string organizerGroupId,
+            string attendeeGroupId,
             GraphServiceClient graphServiceClient,
             MicrosoftIdentityConsentAndConditionalAccessHandler consentHandler)
         {
             this.organizerGroupId = organizerGroupId;
+            this.attendeeGroupId = attendeeGroupId;
             this.graphServiceClient = graphServiceClient;
             this.consentHandler = consentHandler;
-        }
-
-        public async Task<ProjectAttendee> GetSelfAsProjectAttendee()
-        {
-            var user = await graphServiceClient.Me.Request().Select("id,givenName,surname,department").GetAsync();
-            return new ProjectAttendee(user.Id, user.GivenName, user.Surname, user.Department);
         }
 
         public async IAsyncEnumerable<OrganizerCandidate> GetOrganizerCandidates()
@@ -38,8 +35,31 @@ namespace Prowo.Web.Data
                 var userPage = await HandleConsentRequiredException(userPageRequest, r => r.GetAsync());
                 var users = userPage
                     .OfType<User>()
-                    .OrderBy(v => v.UserPrincipalName)
                     .Select(v => new OrganizerCandidate(v.Id, $"{v.DisplayName} ({Regex.Replace(v.UserPrincipalName, "@.*$", "")})"));
+                foreach (var user in users)
+                {
+                    yield return user;
+                }
+
+                userPageRequest = userPage.NextPageRequest;
+            }
+        }
+
+        public async Task<ProjectAttendee> GetSelfAsProjectAttendee()
+        {
+            var user = await graphServiceClient.Me.Request().Select("id,givenName,surname,department").GetAsync();
+            return new ProjectAttendee(user.Id, user.GivenName, user.Surname, user.Department);
+        }
+
+        public async IAsyncEnumerable<ProjectAttendee> GetAttendeeCandidates()
+        {
+            var userPageRequest = graphServiceClient.Groups[attendeeGroupId].Members.Request().Select("id,givenName,surname,department");
+            while (userPageRequest != null)
+            {
+                var userPage = await HandleConsentRequiredException(userPageRequest, r => r.GetAsync());
+                var users = userPage
+                    .OfType<User>()
+                    .Select(v => new ProjectAttendee(v.Id, v.GivenName, v.Surname, v.Department));
                 foreach (var user in users)
                 {
                     yield return user;

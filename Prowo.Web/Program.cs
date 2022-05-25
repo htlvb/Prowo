@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using System.Globalization;
 
 namespace Prowo.Web
 {
@@ -7,6 +8,7 @@ namespace Prowo.Web
     {
         public static void Main(string[] args)
         {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-AT");
             CreateHostBuilder(args).Build().Run();
         }
 

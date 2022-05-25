@@ -17,6 +17,12 @@
 .btn-blue:hover:not([disabled]) {
     @apply bg-blue-500;
 }
+.btn-blue-selected {
+    @apply bg-blue-500 text-white border-transparent;
+}
+.btn-blue-selected:hover:not([disabled]) {
+    @apply text-blue-700 border-blue-500;
+}
 .btn-red {
     @apply text-red-700 border-red-500;
 }

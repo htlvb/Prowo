@@ -1,0 +1,112 @@
+﻿@page "/all-attendees"
+
+@using Prowo.Web.Data
+@using System.Text.RegularExpressions
+
+@inject ProjectStore ProjectStore
+@inject UserStore UserStore
+
+@attribute [Authorize(Roles = "Report.Create")]
+
+<h2 class="text-2xl pb-2">Projektanmeldungen</h2>
+@if (groups == null)
+{
+    <p><em>Anmeldungen werden geladen...</em></p>
+}
+else
+{
+    <div class="flex flex-col gap-2 pb-2 print:hidden">
+    @foreach (var department in groups.GroupBy(v => Regex.Replace(v.Name, @"^\d+", "")))
+    {
+        <div class="flex gap-4">
+            @foreach (var @group in department)
+            {
+                <button class="btn btn-blue@(group == selectedGroup ? "-selected" : "")" onclick=@(() => SelectGroup(@group))>@group.Name</button>
+            }
+        </div>
+    }
+    </div>
+
+    var displayGroups = selectedGroup == null ? groups : new[] { selectedGroup };
+    foreach (var group in displayGroups)
+    {
+        <h3 class="text-xl pb-2">@group.Name</h3>
+        <table class="min-w-full mb-4">
+            <thead>
+                <tr>
+                    <th>Nachname</th>
+                    <th>Vorname</th>
+                    @foreach (var date in dates)
+                    {
+                        <th>@date.ToLongDateString()</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var student in group.Students)
+                {
+                    <tr>
+                        <td>@student.LastName</td>
+                        <td>@student.FirstName</td>
+                        @foreach (var date in student.ProjectsPerDate)
+                        {
+                            <td>@string.Join(", ", date.ProjectNames)</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private IReadOnlyList<Group> groups;
+    private Group selectedGroup;
+    private IReadOnlyList<DateOnly> dates;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var attendees = await UserStore.GetAttendeeCandidates().ToList();
+        var projects = await ProjectStore.GetAll().ToList();
+        var projectsByUserAndDate = projects
+            .SelectMany(p => p.Attendees.Select(v => new { UserId = v.UserId, ProjectName = p.Title, ProjectDate = p.Date }))
+            .ToLookup(v => new { v.UserId, v.ProjectDate }, v => v.ProjectName);
+        dates = projects
+            .Select(p => p.Date)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToList();
+        groups = attendees
+            .GroupBy(v => v.Class)
+            .Select(g =>
+            {
+                var students = g
+                    .Select(a =>
+                    {
+                        var projectsPerDate = dates
+                            .Select(d => new Projects(projectsByUserAndDate[new { UserId = a.UserId, ProjectDate = d }].ToList()))
+                            .ToList();
+                        return new Student(a.FirstName, a.LastName, projectsPerDate);
+                    })
+                    .OrderBy(v => v.LastName)
+                    .ThenBy(v => v.FirstName)
+                    .ToList();
+                return new Group(g.Key, students);
+            })
+            .OrderBy(v => v.Name)
+            .ToList();
+        selectedGroup = null;
+    }
+
+    private void SelectGroup(Group group)
+    {
+        selectedGroup = selectedGroup == group ? null : group;
+        StateHasChanged();
+    }
+
+    public record Group(string Name, IReadOnlyList<Student> Students);
+
+    public record Student(string FirstName, string LastName, List<Projects> ProjectsPerDate);
+
+    public record Projects(IReadOnlyList<string> ProjectNames);
+}

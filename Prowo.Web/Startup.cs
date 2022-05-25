@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Graph;
 using Microsoft.Azure.Cosmos;
 using Prowo.Web.Data;
+using System.Globalization;
 
 namespace Prowo.Web
 {
@@ -85,6 +86,7 @@ namespace Prowo.Web
             {
                 return new UserStore(
                     Configuration.GetSection("AppSettings")["OrganizerGroupId"],
+                    Configuration.GetSection("AppSettings")["AttendeeGroupId"],
                     provider.GetRequiredService<GraphServiceClient>(),
                     provider.GetRequiredService<MicrosoftIdentityConsentAndConditionalAccessHandler>());
             });
@@ -93,7 +95,7 @@ namespace Prowo.Web
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseRequestLocalization("de-AT");
+            app.UseRequestLocalization(CultureInfo.CurrentCulture.Name);
 
             if (env.IsDevelopment())
             {
