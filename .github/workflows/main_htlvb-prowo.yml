@@ -23,12 +23,10 @@ jobs:
           include-prerelease: true
           
       - name: Initialize
-        run: ./init.ps1
-        shell: pwsh
+        run: ./init.sh
         
       - name: Build tailwind
-        run: ./build-tailwind.ps1
-        shell: pwsh
+        run: ./build-tailwind.sh
         
       - name: Build with dotnet
         run: dotnet build Prowo.Web --configuration Release
