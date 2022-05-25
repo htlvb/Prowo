@@ -8,6 +8,7 @@
 @using System.Text.RegularExpressions
 @using System.Globalization
 
+@inject IAuthorizationService AuthorizationService
 @inject NavigationManager NavigationManager
 @inject UserStore UserStore
 @inject ProjectStore ProjectStore
@@ -157,6 +158,11 @@ else
         try
         {
             var authState = await AuthenticationStateTask;
+            var authResult = await AuthorizationService.AuthorizeAsync(authState.User, this, "EditProject");
+            if (!authResult.Succeeded)
+            {
+                return;
+            }
             organizerCandidates = (await UserStore.GetOrganizerCandidates().ToList())
                 .OrderBy(v => v.DisplayName)
                 .ToList();
