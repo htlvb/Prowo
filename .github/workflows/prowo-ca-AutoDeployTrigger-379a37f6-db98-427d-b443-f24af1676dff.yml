@@ -21,6 +21,12 @@ jobs:
       - name: Checkout to the branch
         uses: actions/checkout@v2
 
+      - name: Initialize
+        run: ./init.sh
+        
+      - name: Build tailwind
+        run: ./build-tailwind.sh
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
