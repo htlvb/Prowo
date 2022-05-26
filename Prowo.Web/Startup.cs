@@ -29,11 +29,6 @@ namespace Prowo.Web
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<ForwardedHeadersOptions>(options =>
-            {
-                options.ForwardedHeaders = ForwardedHeaders.All;
-            });
-
             services.AddLocalization();
 
             var initialScopes = Configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
@@ -111,7 +106,7 @@ namespace Prowo.Web
                 await next();
             });
 
-            app.UseForwardedHeaders();
+            app.UseForwardedHeaders(new() { ForwardedHeaders = ForwardedHeaders.XForwardedProto });
 
             app.Use(async (ctx, next) =>
             {
