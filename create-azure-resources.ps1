@@ -30,7 +30,6 @@ $logAnalyticsWorkspaceClientSecret = az monitor log-analytics workspace get-shar
 az containerapp env create --name $containerAppEnvironment --logs-workspace-id $logAnalyticsWorkspaceClientId --logs-workspace-key $logAnalyticsWorkspaceClientSecret --location $regionName --resource-group $resourceGroupName
 az containerapp create `
     --name $containerAppName `
-    --image docker.io/johannesegger/prowoweb:latest `
     --target-port 80 `
     --ingress external `
     --secrets "cosmos-db-connection-string=$cosmosDbConnectionString" "aad-client-secret=$clientSecret" `
