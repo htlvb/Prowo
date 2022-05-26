@@ -56,7 +56,10 @@ az containerapp github-action add `
     --token $gitHubAccessToken `
     --resource-group $resourceGroupName
 
+az containerapp delete --name $containerAppName --resource-group $resourceGroupName --yes
+az containerapp env delete --name $containerAppEnvironment --resource-group $resourceGroupName --yes
+az monitor log-analytics workspace delete --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName --yes
 az cosmosdb sql container delete --name $containerName --account-name $accountname --resource-group $resourceGroupName --database-name $dbName --yes
 az cosmosdb sql database delete --name $dbName --account-name $accountname --resource-group $resourceGroupName --yes
 az cosmosdb delete --name $accountName --resource-group $resourceGroupName --yes
-az group delete --name $resourceGroupName
+az group delete --name $resourceGroupName --yes
