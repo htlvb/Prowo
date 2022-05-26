@@ -56,13 +56,6 @@ az containerapp github-action add `
     --token $gitHubAccessToken `
     --resource-group $resourceGroupName
 
-az webapp create --name $webAppName --runtime DOTNETCORE:6.0 --plan $appServicePlanName --resource-group $resourceGroupName
-az webapp config connection-string set --settings "CosmosDb=$cosmosDbConnectionString" --connection-string-type Custom --name $webAppName --resource-group $resourceGroupName
-az webapp config appsettings set --settings "AzureAD__ClientSecret=$clientSecret" --name $webAppName --resource-group $resourceGroupName
-az webapp deployment github-actions add --repo $deploymentRepository --branch main --token $gitHubAccessToken --name $webAppName --resource-group $resourceGroupName
-
-az webapp delete --name $webAppName --resource-group $resourceGroupName
-az appservice plan delete --name $appServicePlanName --resource-group $resourceGroupName
 az cosmosdb sql container delete --name $containerName --account-name $accountname --resource-group $resourceGroupName --database-name $dbName --yes
 az cosmosdb sql database delete --name $dbName --account-name $accountname --resource-group $resourceGroupName --yes
 az cosmosdb delete --name $accountName --resource-group $resourceGroupName --yes
