@@ -11,6 +11,8 @@ using Microsoft.Azure.Cosmos;
 using Prowo.Web.Data;
 using System.Globalization;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Linq;
+using System;
 
 namespace Prowo.Web
 {
@@ -101,7 +103,21 @@ namespace Prowo.Web
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.Use(async (ctx, next) =>
+            {
+                var headers = ctx.Request.Headers.Select(v => $"{v.Key}: {v.Value}");
+                Console.WriteLine($"============ Headers 1 ============\n{string.Join("\n", headers)}");
+                await next();
+            });
+
             app.UseForwardedHeaders();
+
+            app.Use(async (ctx, next) =>
+            {
+                var headers = ctx.Request.Headers.Select(v => $"{v.Key}: {v.Value}");
+                Console.WriteLine($"============ Headers 2 ============\n{string.Join("\n", headers)}");
+                await next();
+            });
 
             app.UseRequestLocalization(CultureInfo.CurrentCulture.Name);
 
