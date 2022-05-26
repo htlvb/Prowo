@@ -10,6 +10,7 @@ using Microsoft.Graph;
 using Microsoft.Azure.Cosmos;
 using Prowo.Web.Data;
 using System.Globalization;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace Prowo.Web
 {
@@ -26,6 +27,12 @@ namespace Prowo.Web
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            });
+
             services.AddLocalization();
 
             var initialScopes = Configuration.GetValue<string>("DownstreamApi:Scopes")?.Split(' ');
@@ -95,6 +102,8 @@ namespace Prowo.Web
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseForwardedHeaders();
+
             app.UseRequestLocalization(CultureInfo.CurrentCulture.Name);
 
             if (env.IsDevelopment())
