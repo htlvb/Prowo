@@ -11,8 +11,6 @@ $appServicePlanName = "prowo-asp"
 $webAppName = "htlvb-prowo"
 $deploymentRepository = "htlvb/prowo"
 $subscriptionId = az account subscription list --query "[?displayName == '$subscriptionName'].subscriptionId | [0]" -o tsv
-$tenantId = az account tenant list --query "[0].tenantId" -o tsv
-$clientId = az ad app list --query "[?displayName == 'Prowo'].appId | [0]" -o tsv
 # TODO set $clientSecret
 # TODO set $gitHubAccessToken
 # TODO set $dockerHubPassword
@@ -53,9 +51,9 @@ az containerapp github-action add `
     --registry-url docker.io `
     --registry-username johannesegger `
     --registry-password $dockerHubPassword `
-    --service-principal-client-id $clientId `
-    --service-principal-client-secret $clientSecret `
-    --service-principal-tenant-id $tenantId `
+    --service-principal-client-id $sp.clientId `
+    --service-principal-client-secret $sp.clientSecret `
+    --service-principal-tenant-id $sp.tenantId `
     --token $gitHubAccessToken `
     --resource-group $resourceGroupName
 
