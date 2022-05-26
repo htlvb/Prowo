@@ -56,4 +56,5 @@ jobs:
         with:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
+            az containerapp registry set -n prowo-ca -g prowo-rg --server docker.io
             az containerapp update -n prowo-ca -g prowo-rg --image docker.io/johannesegger/prowo:${{ github.sha }}
