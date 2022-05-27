@@ -1,7 +1,7 @@
 .vs/
 bin/
 obj/
-*.csproj.user
+*.user
 .tools/
 /Prowo.Web/wwwroot/css/app.min.css
 /Prowo.SampleDataGenerator/AttendeeCandidates.json
