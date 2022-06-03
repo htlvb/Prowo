@@ -130,7 +130,7 @@ namespace Prowo.WebAsm.Server.Controllers
                         project.Date,
                         project.StartTime,
                         project.EndTime,
-                        project.ClosingDate,
+                        project.ClosingDate.ToUniversalTime(),
                         project.MaxAttendees
                     ),
                     organizerCandidates,
@@ -156,7 +156,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 projectData.Date,
                 projectData.StartTime,
                 projectData.EndTime,
-                projectData.ClosingDate,
+                projectData.ClosingDate.ToUniversalTime(),
                 projectData.MaxAttendees,
                 Array.Empty<ProjectAttendee>()
             );
