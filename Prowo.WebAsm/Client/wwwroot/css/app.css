@@ -1,37 +1,87 @@
-﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+.spinner {
+    @apply animate-spin inline-block w-5 h-5 border-2 border-t-transparent rounded-full;
+}
+.spinner-green {
+    @apply border-green-500 border-b-transparent;
+}
+.spinner-red {
+    @apply border-red-500 border-b-transparent;
+}
+.btn {
+    @apply inline-block text-center cursor-pointer bg-transparent font-semibold py-2 px-4 border rounded;
+}
+.btn[disabled] {
+    @apply opacity-50 cursor-not-allowed;
+}
+.btn:hover:not([disabled]) {
+    @apply text-white border-transparent;
+}
+.btn-blue {
+    @apply text-blue-700 border-blue-500;
+}
+.btn-blue:hover:not([disabled]) {
+    @apply bg-blue-500;
+}
+.btn-blue-selected {
+    @apply bg-blue-500 text-white border-transparent;
+}
+.btn-red {
+    @apply text-red-700 border-red-500;
+}
+.btn-red:hover:not([disabled]) {
+    @apply bg-red-500;
+}
+.btn-green {
+    @apply text-green-700 border-green-500;
+}
+.btn-green:hover:not([disabled]) {
+    @apply bg-green-500;
+}
+.btn-white {
+    @apply text-white;
+}
+.btn-white:hover:not([disabled]) {
+    @apply bg-white text-blue-700;
 }
 
-h1:focus {
-    outline: none;
+.input {
+    @apply mt-6;
+}
+.input-label {
+    @apply block text-sm font-medium text-slate-700;
+}
+.input-text {
+    @apply block px-2 py-1 border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500;
+}
+.input-text:disabled {
+    @apply bg-slate-50 text-slate-500 border-slate-200 shadow-none;
+}
+.input-text:invalid {
+    @apply border-pink-500 text-pink-600;
+}
+.input-select {
+    @apply block px-2 py-1 border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500;
 }
 
-a, .btn-link {
-    color: #0071c1;
+.validation-errors {
+    @apply mt-6 text-red-500;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+tr {
+    @apply border-b border-gray-300;
 }
-
-.content {
-    padding-top: 1.1rem;
+table.table-striped tbody tr:nth-child(2n+1) {
+    @apply bg-gray-200;
 }
-
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
+th {
+    @apply text-left px-6 py-2;
 }
-
-.invalid {
-    outline: 1px solid red;
-}
-
-.validation-message {
-    color: red;
+td {
+    @apply px-6 py-2;
 }
 
 #blazor-error-ui {
@@ -45,20 +95,9 @@ a, .btn-link {
     width: 100%;
     z-index: 1000;
 }
-
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
-
-.blazor-error-boundary {
-    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
-    padding: 1rem 1rem 1rem 3.7rem;
-    color: white;
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
 }
-
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
-    }

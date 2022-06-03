@@ -3,6 +3,7 @@ bin/
 obj/
 *.user
 .tools/
+/Prowo.WebAsm/Client/wwwroot/css/app.min.css
 /Prowo.Web/wwwroot/css/app.min.css
 /Prowo.SampleDataGenerator/AttendeeCandidates.json
 /Prowo.SampleDataGenerator/OrganizerCandidates.json

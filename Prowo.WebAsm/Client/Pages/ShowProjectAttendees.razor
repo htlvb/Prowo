@@ -1,0 +1,61 @@
+﻿@page "/projects/attendees/{ProjectId}"
+
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.Text.Json
+
+@inject HttpClient Http
+
+<PageTitle>Teilnehmerliste - HTLVB Prowo</PageTitle>
+
+@if (project == null)
+{
+    <h2 class="text-2xl">Teilnehmerliste</h2>
+    <p><em>Projekt wird geladen...</em></p>
+}
+else
+{
+    <h2 class="text-2xl pb-2">Teilnehmerliste "@project.Title"</h2>
+    <span class="inline-block pb-4 text-sm text-gray-600">@project.Date.ToLongDateString(), @project.StartTime @if (project.EndTime.HasValue) { <text> - @project.EndTime</text> }</span>
+    <table>
+        <thead>
+            <tr>
+                <th>Nummer</th>
+                <th>Klasse</th>
+                <th>Nachname</th>
+                <th>Vorname</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var (attendee, number) in project.Attendees.Select((v, i) => (v, i + 1)))
+            {
+                <tr class="@(attendee.IsWaiting ? "bg-yellow-400" : "bg-green-400")">
+                    <td>@number</td>
+                    <td>@attendee.Class</td>
+                    <td>@attendee.LastName</td>
+                    <td>@attendee.FirstName</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public string? ProjectId { get; set; }
+
+    private ProjectAttendeesDto project;
+
+    private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            project = await Http.GetFromJsonAsync<ProjectAttendeesDto>($"/api/projects/{ProjectId}/attendees", serializerOptions);
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+}

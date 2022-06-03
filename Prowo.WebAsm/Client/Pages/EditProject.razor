@@ -1,0 +1,241 @@
+﻿@page "/projects/new"
+@page "/projects/edit/{ProjectId}"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<PageTitle>Projekt bearbeiten - HTLVB Prowo</PageTitle>
+
+@if (ProjectId == null)
+{
+    <h2 class="text-2xl mb-4">Projekt anlegen</h2>
+}
+else
+{
+    <h2 class="text-2xl mb-4">Projekt bearbeiten</h2>
+}
+@if (editingProject == null)
+{
+    <p><em>Formular wird geladen...</em></p>
+}
+else if (links.Save != null)
+{
+    <EditForm Context="Edit" Model=@editingProject OnValidSubmit=@ValidFormSubmitted>
+        <DataAnnotationsValidator/>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Titel</span> 
+                <InputText @bind-Value=editingProject.Title class="input-text" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Beschreibung</span> 
+                <InputTextArea @bind-Value=editingProject.Description class="input-text" rows="5" cols="70" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Ort</span> 
+                <InputText @bind-Value=editingProject.Location class="input-text" />
+            </label>
+        </div>
+    
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Organisator</span>
+                @if (organizerCandidates.Count == 1)
+                {
+                    <text>
+                        @organizerCandidates.FirstOrDefault(v => v.Id == editingProject.OrganizerId)?.DisplayName
+                    </text>
+                }
+                else
+                {
+                    <InputSelect @bind-Value=editingProject.OrganizerId class="input-select">
+                    @foreach (var person in organizerCandidates)
+                    {
+                        <option value=@person.Id>@person.DisplayName</option>
+                    }
+                    </InputSelect>
+                }
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Betreuer</span>
+                <InputSelect @bind-Value=editingProject.CoOrganizerIds class="input-select">
+                @foreach (var person in organizerCandidates)
+                {
+                    <option value=@person.Id>@person.DisplayName</option>
+                }
+                </InputSelect>
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Maximale Teilnehmerzahl</span>
+                <InputNumber @bind-Value=editingProject.MaxAttendees ParsingErrorMessage="Keine gültige Teilnehmerzahl." class="input-text" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Datum</span>
+                <InputDate @bind-Value=editingProject.Date ParsingErrorMessage="Kein gültiges Datum." class="input-text" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Von</span>
+                <input type="time" @bind=editingProject.StartTime ParsingErrorMessage="Keine gültige Startzeit." class="input-text" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">
+                    <InputCheckbox @bind-Value=editingProject.HasEndTime /> Bis
+                </span>
+            </label>
+            <input type="time" @bind=editingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!editingProject.HasEndTime) class="input-text" />
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Anmeldeschluss</span>
+                <InputDate @bind-Value=editingProject.ClosingDate ParsingErrorMessage="Kein gültiger Anmeldeschluss." class="input-text" />
+            </label>
+        </div>
+
+        <ValidationSummary />
+
+        <div class="input flex items-center gap-2">
+            <button type="submit" class="btn btn-green" disabled=@isSubmitting>
+                @(ProjectId == null ? "Projekt anlegen" : "Projekt aktualisieren")
+            </button>
+            @if (isSubmitting)
+            {
+                <span class="spinner spinner-green"></span>
+            }
+            @if (errorMessage != null)
+            {
+                <span class="inline-block ml-2 text-red-500">@errorMessage</span>
+            }
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public string? ProjectId { get; set; }
+
+    private EditingProject editingProject;
+    private EditingProjectLinksDto links;
+    private IReadOnlyList<ProjectOrganizerDto> organizerCandidates;
+    private bool isSubmitting;
+    private string? errorMessage;
+
+    private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var project = await Http.GetFromJsonAsync<EditingProjectDto>($"api/projects/edit/{(ProjectId != null ? ProjectId : "new")}", serializerOptions);
+            editingProject = EditingProject.FromProject(project.Data);
+            links = project.Links;
+            organizerCandidates = project.OrganizerCandidates;
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+
+    private async Task ValidFormSubmitted(EditContext editContext)
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        StateHasChanged();
+        try
+        {
+            var project = editingProject.ToProject();
+            var response = await Http.PostAsJsonAsync(links.Save, project, serializerOptions);
+            response.EnsureSuccessStatusCode();
+            NavigationManager.NavigateTo("/projects");
+        }
+        catch
+        {
+            errorMessage = "Projekt konnte nicht gespeichert werden.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    public class EditingProject
+    {
+        [Required(ErrorMessage = "Titel darf nicht leer sein.")]
+        public string Title { get; set; }
+        [Required(ErrorMessage = "Beschreibung darf nicht leer sein.")]
+        public string Description { get; set; }
+        [Required(ErrorMessage = "Ort darf nicht leer sein.")]
+        public string Location { get; set; }
+        [Required(ErrorMessage = "Organisator muss ausgewählt werden.")]
+        public string OrganizerId { get; set; }
+        public string[] CoOrganizerIds { get; set; }
+        public DateTime Date { get; set; }
+        public DateTime StartTime { get; set; }
+        public bool HasEndTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public DateTime ClosingDate { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
+        public int MaxAttendees { get; set; }
+
+        public static EditingProject FromProject(EditingProjectDataDto project)
+        {
+            return new EditingProject
+            {
+                Title = project.Title,
+                Description = project.Description,
+                Location = project.Location,
+                OrganizerId = project.OrganizerId,
+                CoOrganizerIds = project.CoOrganizerIds.ToArray(),
+                Date = project.Date.ToDateTime(TimeOnly.MinValue),
+                StartTime = project.Date.ToDateTime(project.StartTime),
+                HasEndTime = project.EndTime != null,
+                EndTime = project.Date.ToDateTime(project.EndTime == null ? TimeOnly.MinValue : project.EndTime.Value),
+                ClosingDate = project.ClosingDate,
+                MaxAttendees = project.MaxAttendees
+            };
+        }
+
+        public EditingProjectDataDto ToProject()
+        {
+            return new EditingProjectDataDto(
+                Title,
+                Description,
+                Location,
+                OrganizerId,
+                CoOrganizerIds,
+                DateOnly.FromDateTime(Date),
+                TimeOnly.FromDateTime(StartTime),
+                (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
+                ClosingDate,
+                MaxAttendees
+            );
+        }
+    }
+}

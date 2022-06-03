@@ -1,1 +1,1 @@
-./.tools/tailwindcss build -i ./Prowo.Web/wwwroot/css/app.css -o ./Prowo.Web/wwwroot/css/app.min.css -m
+./.tools/tailwindcss build -i ./Prowo.WebAsm/Client/wwwroot/css/app.css -o ./Prowo.WebAsm/Client/wwwroot/css/app.min.css -m

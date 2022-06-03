@@ -42,7 +42,7 @@ jobs:
         with:
           push: true
           tags: johannesegger/prowo:${{ github.sha }}
-          file: ./Prowo.Web/Dockerfile
+          file: ./Prowo.WebAsm/Server/Dockerfile
           context: ./
 
 

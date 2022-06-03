@@ -1,0 +1,93 @@
+﻿@page "/projects/all-attendees"
+
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.Text.RegularExpressions
+@using System.Text.Json
+
+@inject HttpClient Http
+
+<PageTitle>Projektanmeldungen - HTLVB Prowo</PageTitle>
+
+<h2 class="text-2xl pb-2">Projektanmeldungen</h2>
+@if (attendanceOverview == null)
+{
+    <p><em>Anmeldungen werden geladen...</em></p>
+}
+else
+{
+    <div class="flex flex-col gap-2 pb-2 print:hidden">
+    @foreach (var department in attendanceOverview.Groups.GroupBy(v => Regex.Replace(v.Name, @"\D*$", "")))
+    {
+        <div class="flex gap-4">
+            @foreach (var @group in department)
+            {
+                <button class="btn btn-blue@(group == selectedGroup ? "-selected" : "")" onclick=@(() => SelectGroup(@group))>@group.Name</button>
+            }
+        </div>
+    }
+    </div>
+
+    var displayGroups = selectedGroup == null ? attendanceOverview.Groups : new[] { selectedGroup };
+    foreach (var group in displayGroups)
+    {
+        <h3 class="text-xl pb-2">@group.Name</h3>
+        <table class="table-striped min-w-full mb-4">
+            <thead>
+                <tr>
+                    <th>Nachname</th>
+                    <th>Vorname</th>
+                    @foreach (var date in attendanceOverview.Dates)
+                    {
+                        <th>@date.ToLongDateString()</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var student in group.Students)
+                {
+                    <tr>
+                        <td>@student.LastName</td>
+                        <td>@student.FirstName</td>
+                        @foreach (var projects in student.Projects)
+                        {
+                            <td>
+                                <div class="flex flex-col gap-2 items-start">
+                                    @foreach (var project in projects.List)
+                                    {
+                                        <span class="inline-block px-4 py-2 rounded @(project.IsWaiting ? "bg-yellow-400" : "bg-green-400")">@project.Name</span>
+                                    }
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private AttendanceOverviewDto attendanceOverview;
+    private GroupDto selectedGroup;
+
+    private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            attendanceOverview = await Http.GetFromJsonAsync<AttendanceOverviewDto>("/api/projects/attendees", serializerOptions);
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+        selectedGroup = null;
+    }
+
+    private void SelectGroup(GroupDto group)
+    {
+        selectedGroup = ReferenceEquals(selectedGroup, group) ? null : group;
+        StateHasChanged();
+    }
+}
