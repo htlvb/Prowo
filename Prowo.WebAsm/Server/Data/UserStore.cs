@@ -21,7 +21,7 @@ namespace Prowo.WebAsm.Server.Data
 
         public async IAsyncEnumerable<ProjectOrganizer> GetOrganizerCandidates()
         {
-            var userPageRequest = graphServiceClient.Groups[organizerGroupId].Members.Request();
+            var userPageRequest = graphServiceClient.Groups[organizerGroupId].Members.Request().Top(999);
             while (userPageRequest != null)
             {
                 var userPage = await userPageRequest.GetAsync();
