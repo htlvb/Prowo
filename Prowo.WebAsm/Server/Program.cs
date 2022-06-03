@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
@@ -68,6 +69,8 @@ builder.Services.AddScoped(provider =>
 });
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new() { ForwardedHeaders = ForwardedHeaders.XForwardedProto });
 
 app.UseRequestLocalization(CultureInfo.CurrentCulture.Name);
 
