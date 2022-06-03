@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <TrimmerRootAssembly Include="Microsoft.Authentication.WebAssembly.Msal" /> <!-- see https://github.com/dotnet/aspnetcore/issues/35162 -->
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Shared\Prowo.WebAsm.Shared.csproj" />
   </ItemGroup>
 
