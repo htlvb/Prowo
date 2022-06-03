@@ -4,11 +4,16 @@ using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
+using System.Globalization;
 using GraphServiceClient = Microsoft.Graph.GraphServiceClient;
+
+CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-AT");
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddLocalization();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"))
     .EnableTokenAcquisitionToCallDownstreamApi()
@@ -63,6 +68,8 @@ builder.Services.AddScoped(provider =>
 });
 
 var app = builder.Build();
+
+app.UseRequestLocalization(CultureInfo.CurrentCulture.Name);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
