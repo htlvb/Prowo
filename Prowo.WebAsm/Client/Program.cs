@@ -17,7 +17,7 @@ builder.Services.AddMsalAuthentication(options =>
 {
     builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
     options.ProviderOptions.DefaultAccessTokenScopes.Add(builder.Configuration["ServerApiScope"]);
-    options.ProviderOptions.LoginMode = "popup";
+    options.ProviderOptions.LoginMode = "popup"; // see https://github.com/dotnet/aspnetcore/issues/38082#issuecomment-1021961887
 });
 
 await builder.Build().RunAsync();
