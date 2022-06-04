@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<UserSecretsId>3f4ce877-5f9a-4ce6-b1b9-bfe467dc06ca</UserSecretsId>
+    <UserSecretsId>Prowo.WebAsm.Server-7C067297-85A8-46E3-AD40-D89E546C43EB</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

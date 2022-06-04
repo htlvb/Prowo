@@ -28,13 +28,12 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpGet("")]
         public async Task<ProjectListDto> GetProjectList()
         {
-            var organizerDict = await GetOrganizerCandidatesDictionary();
             var projects = await projectStore.GetAll().ToList();
 
             var projectDtos = new List<ProjectDto>();
             foreach (var project in projects)
             {
-                var projectDto = await GetProjectDto(project, organizerDict);
+                var projectDto = await GetProjectDto(project);
                 projectDtos.Add(projectDto);
             }
             var canCreateProject = (await authService.AuthorizeAsync(HttpContext.User, "CreateProject")).Succeeded;
@@ -54,16 +53,14 @@ namespace Prowo.WebAsm.Server.Controllers
         {
             var attendee = await userStore.GetSelfAsProjectAttendee();
             var project = await projectStore.AddAttendee(projectId, attendee);
-            var organizerDict = await GetOrganizerCandidatesDictionary();
-            return await GetProjectDto(project, organizerDict);
+            return await GetProjectDto(project);
         }
 
         [HttpPost("{projectId}/deregister")]
         public async Task<ProjectDto> DeregisterFromProject(string projectId)
         {
             var project = await projectStore.RemoveAttendee(projectId, HttpContext.User.GetObjectId());
-            var organizerDict = await GetOrganizerCandidatesDictionary();
-            return await GetProjectDto(project, organizerDict);
+            return await GetProjectDto(project);
         }
 
         [HttpGet("edit/{projectId}")]
@@ -125,8 +122,8 @@ namespace Prowo.WebAsm.Server.Controllers
                         project.Title,
                         project.Description,
                         project.Location,
-                        project.OrganizerId,
-                        project.CoOrganizerIds,
+                        project.Organizer.Id,
+                        project.CoOrganizers.Select(v => v.Id).ToArray(),
                         project.Date,
                         project.StartTime,
                         project.EndTime,
@@ -146,13 +143,14 @@ namespace Prowo.WebAsm.Server.Controllers
         [Authorize(Policy = "CreateProject")]
         public async Task CreateProject([FromBody]EditingProjectDataDto projectData)
         {
+            var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var project = new Project(
                 Guid.NewGuid().ToString(),
                 projectData.Title,
                 projectData.Description,
                 projectData.Location,
-                projectData.OrganizerId,
-                projectData.CoOrganizerIds,
+                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer) ? projectOrganizer : throw new Exception("Organizer not found"),
+                projectData.CoOrganizerIds.Select(coOrganizerId => organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer) ? projectCoOrganizer : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")).ToArray(),
                 projectData.Date,
                 projectData.StartTime,
                 projectData.EndTime,
@@ -166,13 +164,14 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpPost("{projectId}")]
         public async Task<IActionResult> UpdateProject(string projectId, [FromBody] EditingProjectDataDto projectData)
         {
+            var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var project = new Project(
                 projectId,
                 projectData.Title,
                 projectData.Description,
                 projectData.Location,
-                projectData.OrganizerId,
-                projectData.CoOrganizerIds,
+                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer) ? projectOrganizer : throw new Exception("Organizer not found"),
+                projectData.CoOrganizerIds.Select(coOrganizerId => organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer) ? projectCoOrganizer : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")).ToArray(),
                 projectData.Date,
                 projectData.StartTime,
                 projectData.EndTime,
@@ -257,12 +256,12 @@ namespace Prowo.WebAsm.Server.Controllers
             return organizerCandidates.ToDictionary(v => v.Id);
         }
 
-        private async Task<ProjectDto> GetProjectDto(Project project, IReadOnlyDictionary<string, ProjectOrganizer> organizerDict)
+        private async Task<ProjectDto> GetProjectDto(Project project)
         {
-            ProjectOrganizerDto mapOrganizer(string organizerId) =>
-                organizerDict.TryGetValue(organizerId, out var organizer) ?
-                    new ProjectOrganizerDto(organizer.Id, $"{organizer.LastName} {organizer.FirstName} ({organizer.ShortName})") :
-                    new ProjectOrganizerDto(organizerId, "(unbekannt)");
+            ProjectOrganizerDto mapOrganizer(ProjectOrganizer organizer)
+            {
+                return new ProjectOrganizerDto(organizer.Id, $"{organizer.LastName} {organizer.FirstName} ({organizer.ShortName})");
+            }
 
             RegistrationStatusDto getCurrentUserRegistrationStatus(Project project)
             {
@@ -291,8 +290,8 @@ namespace Prowo.WebAsm.Server.Controllers
                 project.Title,
                 project.Description,
                 project.Location,
-                mapOrganizer(project.OrganizerId),
-                project.CoOrganizerIds.Select(mapOrganizer).ToArray(),
+                mapOrganizer(project.Organizer),
+                project.CoOrganizers.Select(mapOrganizer).ToArray(),
                 project.Date,
                 project.StartTime,
                 project.EndTime,

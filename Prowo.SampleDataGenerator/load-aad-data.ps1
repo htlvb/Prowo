@@ -9,7 +9,7 @@ Get-AzureADGroupMember -ObjectId $attendeeGroupId -All $true `
 
 $organizerGroupId = (Get-AzureADGroup -Filter "displayName eq 'GrpLehrer'").ObjectId
 Get-AzureADGroupMember -ObjectId $organizerGroupId -All $true `
-    | Select-Object -ExpandProperty ObjectId `
+    | Select-Object ObjectId,GivenName,Surname,UserPrincipalName `
     | ConvertTo-Json > .\OrganizerCandidates.json
 
 Pop-Location

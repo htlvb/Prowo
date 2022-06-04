@@ -41,7 +41,7 @@ builder.Services.AddAuthorization(options =>
             {
                 return true;
             }
-            if (ctx.Resource is Project p && p.OrganizerId == ctx.User.GetObjectId())
+            if (ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
             {
                 return true;
             }

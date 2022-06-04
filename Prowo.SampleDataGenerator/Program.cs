@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 var configuration = new ConfigurationBuilder()
     .AddUserSecrets<Program>()
@@ -30,7 +31,16 @@ var attendees = JsonDocument.Parse(File.ReadAllText("AttendeeCandidates.json"))
 var organizers = JsonDocument.Parse(File.ReadAllText("OrganizerCandidates.json"))
     .RootElement
     .EnumerateArray()
-    .Select(v => v.GetString())
+    .Select(v =>
+    {
+        return new
+        {
+            id = v.GetProperty("ObjectId").GetString()!,
+            firstName = v.GetProperty("GivenName").GetString()!,
+            lastName = v.GetProperty("Surname").GetString()!,
+            shortName = Regex.Replace(v.GetProperty("UserPrincipalName").GetString()!, "@.*$", ""),
+        };
+    })
     .ToList();
 var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
     .RootElement
@@ -62,8 +72,8 @@ foreach (var project in sampleProjects.Take(10))
         title = project.Title,
         description = project.Description,
         location = project.Location,
-        organizerId = organizers[Random.Shared.Next(0, organizers.Count)],
-        coOrganizerIds = organizers
+        organizer = organizers[Random.Shared.Next(0, organizers.Count)],
+        coOrganizers = organizers
             .OrderBy(_ => Random.Shared.NextDouble())
             .Take(Random.Shared.Next(0, 10))
             .ToArray(),
