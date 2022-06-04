@@ -28,7 +28,8 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpGet("")]
         public async Task<ProjectListDto> GetProjectList()
         {
-            var projects = await projectStore.GetAll().ToList();
+            var projects = (await projectStore.GetAll().ToList())
+                .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v); // Sort by date, but don't change order of projects with same date;
 
             var projectDtos = new List<ProjectDto>();
             foreach (var project in projects)
