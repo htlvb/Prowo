@@ -6,8 +6,10 @@
 
 <AuthorizeView>
     <Authorized>
-        Hallo, @context.User.Identity?.Name!
-        <button class="nav-link btn btn-link" @onclick="BeginLogout">Log out</button>
+        <div class="flex flex-col md:flex-row items-end md:items-center gap-2">
+            <span class="inline-block">Hallo, @context.User.Identity?.Name!</span>
+            <button class="nav-link btn btn-link" @onclick="BeginLogout">Log out</button>
+        </div>
     </Authorized>
     <NotAuthorized>
         <a href="authentication/login">Log in</a>
