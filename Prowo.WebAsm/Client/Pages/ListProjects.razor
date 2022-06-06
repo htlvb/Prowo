@@ -38,12 +38,15 @@
     }
     else
     {
-        <div class="flex flex-col md:flex-row gap-2 border-gray-400 rounded shadow p-2">
-            @foreach (var date in dates)
-            {
-                <button class="btn btn-blue@(selectedDate == date ? "-selected" : "")" onclick=@(() => SelectDate(date))>@date.ToLongDateString()</button>
-            }
-        </div>
+        if (dates.Count > 1)
+        {
+            <div class="flex flex-col md:flex-row gap-2 border-gray-400 rounded shadow p-2">
+                @foreach (var date in dates)
+                {
+                    <button class="btn btn-blue@(selectedDate == date ? "-selected" : "")" onclick=@(() => SelectDate(date))>@date.ToLongDateString()</button>
+                }
+            </div>
+        }
 
         @foreach (var project in filteredProjects)
         {
