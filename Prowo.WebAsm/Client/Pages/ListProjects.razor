@@ -48,10 +48,16 @@
         @foreach (var project in filteredProjects)
         {
             <div class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500">
-                <div class="flex flex-col divide-y md:divide-y-0 divide-x-0 md:divide-x md:flex-row">
-                    <div class="flex flex-col p-2 min-w-max">
+                <div class="flex flex-col divide-y md:divide-y-0 divide-x-0 md:divide-x md:flex-row w-full">
+                    <div class="flex flex-col p-2">
                         <span class="text-xl text-black">@project.Title</span>
-                        <span class="text-sm text-gray-600">@project.Organizer.DisplayName</span>
+                        <span class="text-sm text-gray-600">
+                            <strong>@project.Organizer.DisplayName</strong>
+                            @foreach (var coOrganizer in project.CoOrganizers)
+                            {
+                                <text>, @coOrganizer.DisplayName</text>
+                            }
+                        </span>
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <text> - @project.EndTime</text> }</span>
                         @{
                             var diff = project.ClosingDateLocalTime - DateTime.Now;
