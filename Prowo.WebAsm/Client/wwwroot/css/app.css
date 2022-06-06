@@ -18,13 +18,13 @@
     @apply opacity-50 cursor-not-allowed;
 }
 .btn:hover:not([disabled]) {
-    @apply text-white border-transparent;
+    @apply shadow;
 }
 .btn-blue {
     @apply text-blue-700 border-blue-500;
 }
 .btn-blue:hover:not([disabled]) {
-    @apply bg-blue-500;
+    @apply shadow-blue-500;
 }
 .btn-blue-selected {
     @apply bg-blue-500 text-white border-transparent;
@@ -33,19 +33,19 @@
     @apply text-red-700 border-red-500;
 }
 .btn-red:hover:not([disabled]) {
-    @apply bg-red-500;
+    @apply shadow-red-500;
 }
 .btn-green {
     @apply text-green-700 border-green-500;
 }
 .btn-green:hover:not([disabled]) {
-    @apply bg-green-500;
+    @apply shadow-green-500;
 }
 .btn-white {
     @apply text-white;
 }
 .btn-white:hover:not([disabled]) {
-    @apply bg-white text-blue-700;
+    @apply shadow-white;
 }
 
 .input {
