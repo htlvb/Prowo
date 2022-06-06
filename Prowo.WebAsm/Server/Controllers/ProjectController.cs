@@ -42,7 +42,7 @@ namespace Prowo.WebAsm.Server.Controllers
             return new ProjectListDto(
                 projectDtos,
                 new ProjectListLinksDto(
-                    canCreateReport ? "projects/all-attendees" : default,
+                    canCreateReport && projectDtos.Count > 0 ? "projects/all-attendees" : default,
                     canCreateProject ? "projects/new" : default
                 )
             );
