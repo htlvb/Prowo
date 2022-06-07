@@ -174,7 +174,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await JS.InvokeVoidAsync("console.log", "List projects: OnInitializedAsync 2");
+        await JS.InvokeVoidAsync("console.log", "List projects: OnInitializedAsync 3");
         try
         {
             projectList = await Http.GetFromJsonAsync<ProjectListDto>("api/projects", serializerOptions);
