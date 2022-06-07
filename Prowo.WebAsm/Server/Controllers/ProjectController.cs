@@ -101,7 +101,7 @@ namespace Prowo.WebAsm.Server.Controllers
                         DateOnly.FromDateTime(DateTime.Today.AddDays(7)),
                         TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)),
                         TimeOnly.FromTimeSpan(TimeSpan.FromHours(13)),
-                        DateTime.UtcNow.Date.AddDays(14),
+                        DateTime.UtcNow.Date.AddDays(14).ToUserTime(),
                         20
                     ),
                     organizerCandidates,
@@ -128,7 +128,7 @@ namespace Prowo.WebAsm.Server.Controllers
                         project.Date,
                         project.StartTime,
                         project.EndTime,
-                        project.ClosingDate.ToUniversalTime(),
+                        project.ClosingDate.ToUserTime(),
                         project.MaxAttendees
                     ),
                     organizerCandidates,
@@ -155,7 +155,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 projectData.Date,
                 projectData.StartTime,
                 projectData.EndTime,
-                projectData.ClosingDate.ToUniversalTime(),
+                projectData.ClosingDate.FromUserTime(),
                 projectData.MaxAttendees,
                 Array.Empty<ProjectAttendee>()
             );
@@ -176,7 +176,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 projectData.Date,
                 projectData.StartTime,
                 projectData.EndTime,
-                projectData.ClosingDate,
+                projectData.ClosingDate.FromUserTime(),
                 projectData.MaxAttendees,
                 Array.Empty<ProjectAttendee>()
             );

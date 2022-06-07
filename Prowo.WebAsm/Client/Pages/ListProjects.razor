@@ -64,7 +64,7 @@
                         </span>
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <text> - @project.EndTime</text> }</span>
                         @{
-                            var diff = project.ClosingDateLocalTime - DateTime.Now;
+                            var diff = project.ClosingDateLocalUserTime - DateTime.Now;
                             string closingDateClassNames;
                             if (diff > TimeSpan.FromDays(1))
                             {
@@ -81,7 +81,7 @@
                         }
                         <span class="text-sm text-gray-600">
                             Anmeldeschluss:
-                            <span class="@closingDateClassNames">@project.ClosingDateLocalTime.ToLongDateString() @project.ClosingDateLocalTime.ToLongTimeString()</span>
+                            <span class="@closingDateClassNames">@project.ClosingDateLocalUserTime.ToLongDateString() @project.ClosingDateLocalUserTime.ToLongTimeString()</span>
                         </span>
                         @{
                             double workload = (double)project.Attendees / project.MaxAttendees;

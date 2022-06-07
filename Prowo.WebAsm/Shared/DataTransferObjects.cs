@@ -71,7 +71,7 @@
         TimeOnly StartTime,
         TimeOnly? EndTime,
         DateTime ClosingDate,
-        DateTime ClosingDateLocalTime,
+        DateTime ClosingDateLocalUserTime,
         int Attendees,
         int MaxAttendees,
         RegistrationStatusDto CurrentUserRegistrationStatus,
