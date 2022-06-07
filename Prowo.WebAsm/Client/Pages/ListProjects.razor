@@ -7,7 +7,6 @@
 @attribute [Authorize]
 
 @inject HttpClient Http
-@inject IJSRuntime JS
 
 <PageTitle>Projekte - HTLVB Prowo</PageTitle>
 
@@ -174,7 +173,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await JS.InvokeVoidAsync("console.log", "List projects: OnInitializedAsync 3");
         try
         {
             projectList = await Http.GetFromJsonAsync<ProjectListDto>("api/projects", serializerOptions);
