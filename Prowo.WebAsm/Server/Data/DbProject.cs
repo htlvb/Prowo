@@ -25,7 +25,7 @@ namespace Prowo.WebAsm.Server.Data
             List<ProjectAttendee> result = new();
             foreach (var entry in RegistrationEvents)
             {
-                if (entry.Action == RegistrationAction.Register)
+                if (entry.Action == RegistrationAction.Register && !result.Any(v => v.Id == entry.UserId))
                 {
                     result.Add(entry.ToAttendee());
                 }
