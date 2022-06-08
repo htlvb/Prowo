@@ -49,6 +49,8 @@
             </div>
         }
 
+        var filteredProjects = selectedDate == null ? projectList.Projects : projectList.Projects.Where(v => v.Date == selectedDate);
+
         @foreach (var project in filteredProjects)
         {
             <div class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500">
@@ -165,7 +167,6 @@
 
 @code {
     private ProjectListDto? projectList;
-    private IReadOnlyList<ProjectDto> filteredProjects;
     private IReadOnlyList<DateOnly> dates;
     private DateOnly? selectedDate;
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
@@ -176,7 +177,6 @@
         try
         {
             projectList = await Http.GetFromJsonAsync<ProjectListDto>("api/projects", serializerOptions);
-            filteredProjects = projectList.Projects;
             dates = projectList.Projects.Select(v => v.Date).Distinct().OrderBy(v => v).ToArray();
         }
         catch (AccessTokenNotAvailableException exception)
@@ -188,7 +188,6 @@
     private void SelectDate(DateOnly date)
     {
         selectedDate = selectedDate == date ? null : date;
-        filteredProjects = selectedDate == null ? projectList.Projects : projectList.Projects.Where(v => v.Date == date).ToArray();
         StateHasChanged();
     }
 
