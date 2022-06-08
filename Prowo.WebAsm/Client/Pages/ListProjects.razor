@@ -65,6 +65,7 @@
                             }
                         </span>
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <text> - @project.EndTime</text> }</span>
+                        <span class="text-sm text-gray-600">@project.Location</span>
                         @{
                             var diff = project.ClosingDateLocalUserTime - DateTime.Now;
                             string closingDateClassNames;
