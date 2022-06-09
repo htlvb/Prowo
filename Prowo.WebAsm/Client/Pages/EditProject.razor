@@ -22,45 +22,45 @@ else
 {
     <p><em>Formular wird geladen...</em></p>
 }
-else if (links.Save != null)
+else if (editingProject.Links.Save != null)
 {
-    <EditForm Context="Edit" Model=@editingProject OnValidSubmit=@ValidFormSubmitted>
+    <EditForm Context="Edit" Model=@editingProject.Data OnValidSubmit=@ValidFormSubmitted>
         <DataAnnotationsValidator/>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">Titel</span> 
-                <InputText @bind-Value=editingProject.Title class="input-text" />
+                <InputText @bind-Value=editingProject.Data.Title class="input-text" />
             </label>
         </div>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">Beschreibung</span> 
-                <InputTextArea @bind-Value=editingProject.Description class="input-text" rows="5" cols="70" />
+                <InputTextArea @bind-Value=editingProject.Data.Description class="input-text" rows="5" cols="70" />
             </label>
         </div>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">Ort</span> 
-                <InputText @bind-Value=editingProject.Location class="input-text" />
+                <InputText @bind-Value=editingProject.Data.Location class="input-text" />
             </label>
         </div>
     
         <div class="input">
             <label class="block">
                 <span class="input-label">Organisator</span>
-                @if (organizerCandidates.Count == 1)
+                @if (editingProject.OrganizerCandidates.Count == 1)
                 {
                     <text>
-                        @organizerCandidates.FirstOrDefault(v => v.Id == editingProject.OrganizerId)?.DisplayName
+                        @editingProject.OrganizerCandidates.FirstOrDefault(v => v.Id == editingProject.Data.OrganizerId)?.DisplayName
                     </text>
                 }
                 else
                 {
-                    <InputSelect @bind-Value=editingProject.OrganizerId class="input-select">
-                    @foreach (var person in organizerCandidates)
+                    <InputSelect @bind-Value=editingProject.Data.OrganizerId class="input-select">
+                    @foreach (var person in editingProject.OrganizerCandidates)
                     {
                         <option value=@person.Id>@person.DisplayName</option>
                     }
@@ -72,8 +72,8 @@ else if (links.Save != null)
         <div class="input">
             <label class="block">
                 <span class="input-label">Betreuer</span>
-                <InputSelect @bind-Value=editingProject.CoOrganizerIds class="input-select">
-                @foreach (var person in organizerCandidates)
+                <InputSelect @bind-Value=editingProject.Data.CoOrganizerIds class="input-select">
+                @foreach (var person in editingProject.CoOrganizerCandidates)
                 {
                     <option value=@person.Id>@person.DisplayName</option>
                 }
@@ -84,37 +84,37 @@ else if (links.Save != null)
         <div class="input">
             <label class="block">
                 <span class="input-label">Maximale Teilnehmerzahl</span>
-                <InputNumber @bind-Value=editingProject.MaxAttendees ParsingErrorMessage="Keine gültige Teilnehmerzahl." class="input-text" />
+                <InputNumber @bind-Value=editingProject.Data.MaxAttendees ParsingErrorMessage="Keine gültige Teilnehmerzahl." class="input-text" />
             </label>
         </div>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">Datum</span>
-                <InputDate @bind-Value=editingProject.Date ParsingErrorMessage="Kein gültiges Datum." class="input-text" />
+                <InputDate @bind-Value=editingProject.Data.Date ParsingErrorMessage="Kein gültiges Datum." class="input-text" />
             </label>
         </div>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">Von</span>
-                <input type="time" @bind=editingProject.StartTime ParsingErrorMessage="Keine gültige Startzeit." class="input-text" />
+                <input type="time" @bind=editingProject.Data.StartTime ParsingErrorMessage="Keine gültige Startzeit." class="input-text" />
             </label>
         </div>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">
-                    <InputCheckbox @bind-Value=editingProject.HasEndTime /> Bis
+                    <InputCheckbox @bind-Value=editingProject.Data.HasEndTime /> Bis
                 </span>
             </label>
-            <input type="time" @bind=editingProject.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!editingProject.HasEndTime) class="input-text" />
+            <input type="time" @bind=editingProject.Data.EndTime ParsingErrorMessage="Keine gültige Endzeit" disabled=@(!editingProject.Data.HasEndTime) class="input-text" />
         </div>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">Anmeldeschluss</span>
-                <InputDate @bind-Value=editingProject.ClosingDate ParsingErrorMessage="Kein gültiger Anmeldeschluss." class="input-text" />
+                <InputDate @bind-Value=editingProject.Data.ClosingDate ParsingErrorMessage="Kein gültiger Anmeldeschluss." class="input-text" />
             </label>
         </div>
 
@@ -141,8 +141,6 @@ else if (links.Save != null)
     public string? ProjectId { get; set; }
 
     private EditingProject editingProject;
-    private EditingProjectLinksDto links;
-    private IReadOnlyList<ProjectOrganizerDto> organizerCandidates;
     private bool isSubmitting;
     private string? errorMessage;
 
@@ -153,9 +151,7 @@ else if (links.Save != null)
         try
         {
             var project = await Http.GetFromJsonAsync<EditingProjectDto>($"api/projects/edit/{(ProjectId != null ? ProjectId : "new")}", serializerOptions);
-            editingProject = EditingProject.FromProject(project.Data);
-            links = project.Links;
-            organizerCandidates = project.OrganizerCandidates;
+            editingProject = EditingProject.FromProject(project);
         }
         catch (AccessTokenNotAvailableException exception)
         {
@@ -170,8 +166,8 @@ else if (links.Save != null)
         StateHasChanged();
         try
         {
-            var project = editingProject.ToProject();
-            var response = await Http.PostAsJsonAsync(links.Save, project, serializerOptions);
+            var project = editingProject.Data.ToProjectData();
+            var response = await Http.PostAsJsonAsync(editingProject.Links.Save, project, serializerOptions);
             response.EnsureSuccessStatusCode();
             NavigationManager.NavigateTo("/projects");
         }
@@ -185,7 +181,25 @@ else if (links.Save != null)
         }
     }
 
-    public class EditingProject
+    public record EditingProject(
+        EditingProjectData Data,
+        IReadOnlyCollection<ProjectOrganizerDto> OrganizerCandidates,
+        IReadOnlyCollection<ProjectOrganizerDto> CoOrganizerCandidates,
+        EditingProjectLinksDto Links
+    )
+    {
+        public static EditingProject FromProject(EditingProjectDto project)
+        {
+            return new EditingProject(
+                EditingProjectData.FromProjectData(project.Data),
+                project.OrganizerCandidates,
+                project.CoOrganizerCandidates,
+                project.Links
+            );
+        }
+    }
+
+    public class EditingProjectData
     {
         [Required(ErrorMessage = "Titel darf nicht leer sein.")]
         public string Title { get; set; }
@@ -204,25 +218,25 @@ else if (links.Save != null)
         [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
         public int MaxAttendees { get; set; }
 
-        public static EditingProject FromProject(EditingProjectDataDto project)
+        public static EditingProjectData FromProjectData(EditingProjectDataDto projectData)
         {
-            return new EditingProject
+            return new EditingProjectData
             {
-                Title = project.Title,
-                Description = project.Description,
-                Location = project.Location,
-                OrganizerId = project.OrganizerId,
-                CoOrganizerIds = project.CoOrganizerIds.ToArray(),
-                Date = project.Date.ToDateTime(TimeOnly.MinValue),
-                StartTime = project.Date.ToDateTime(project.StartTime),
-                HasEndTime = project.EndTime != null,
-                EndTime = project.Date.ToDateTime(project.EndTime == null ? TimeOnly.MinValue : project.EndTime.Value),
-                ClosingDate = project.ClosingDate,
-                MaxAttendees = project.MaxAttendees
+                Title = projectData.Title,
+                Description = projectData.Description,
+                Location = projectData.Location,
+                OrganizerId = projectData.OrganizerId,
+                CoOrganizerIds = projectData.CoOrganizerIds.ToArray(),
+                Date = projectData.Date.ToDateTime(TimeOnly.MinValue),
+                StartTime = projectData.Date.ToDateTime(projectData.StartTime),
+                HasEndTime = projectData.EndTime != null,
+                EndTime = projectData.Date.ToDateTime(projectData.EndTime == null ? TimeOnly.MinValue : projectData.EndTime.Value),
+                ClosingDate = projectData.ClosingDate,
+                MaxAttendees = projectData.MaxAttendees
             };
         }
 
-        public EditingProjectDataDto ToProject()
+        public EditingProjectDataDto ToProjectData()
         {
             return new EditingProjectDataDto(
                 Title,

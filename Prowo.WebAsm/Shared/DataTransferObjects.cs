@@ -31,6 +31,7 @@
     public record EditingProjectDto(
         EditingProjectDataDto Data,
         IReadOnlyList<ProjectOrganizerDto> OrganizerCandidates,
+        IReadOnlyList<ProjectOrganizerDto> CoOrganizerCandidates,
         EditingProjectLinksDto Links
     );
 

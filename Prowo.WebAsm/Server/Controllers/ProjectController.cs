@@ -67,20 +67,20 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpGet("edit/{projectId}")]
         public async Task<IActionResult> GetProject(string projectId)
         {
+            IReadOnlyList<ProjectOrganizerDto> coOrganizerCandidates = (await userStore.GetOrganizerCandidates().ToList())
+                .OrderBy(v => v.LastName)
+                .ThenBy(v => v.FirstName)
+                .Select(v => new ProjectOrganizerDto(v.Id, $"{v.LastName} {v.FirstName} ({v.ShortName})"))
+                .ToList();
             IReadOnlyList<ProjectOrganizerDto> organizerCandidates;
             if ((await authService.AuthorizeAsync(HttpContext.User, "ChangeProjectOrganizer")).Succeeded)
             {
-                organizerCandidates = (await userStore.GetOrganizerCandidates().ToList())
-                    .OrderBy(v => v.LastName)
-                    .ThenBy(v => v.FirstName)
-                    .Select(v => new ProjectOrganizerDto(v.Id, $"{v.LastName} {v.FirstName} ({v.ShortName})"))
-                    .ToList();
+                organizerCandidates = coOrganizerCandidates;
             }
             else
             {
-                organizerCandidates = (await userStore.GetOrganizerCandidates().ToList())
+                organizerCandidates = coOrganizerCandidates
                     .Where(v => v.Id == HttpContext.User.GetObjectId())
-                    .Select(v => new ProjectOrganizerDto(v.Id, $"{v.LastName} {v.FirstName} ({v.ShortName})"))
                     .ToList();
             }
 
@@ -105,6 +105,7 @@ namespace Prowo.WebAsm.Server.Controllers
                         20
                     ),
                     organizerCandidates,
+                    coOrganizerCandidates,
                     new EditingProjectLinksDto(
                         Url.Action(nameof(CreateProject))
                     )
@@ -132,6 +133,7 @@ namespace Prowo.WebAsm.Server.Controllers
                         project.MaxAttendees
                     ),
                     organizerCandidates,
+                    coOrganizerCandidates,
                     new EditingProjectLinksDto(
                         Url.Action(nameof(UpdateProject), new { projectId = project.Id })
                     )
