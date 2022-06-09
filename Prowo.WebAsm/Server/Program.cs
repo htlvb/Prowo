@@ -32,7 +32,28 @@ builder.Services.AddAuthorization(options =>
     // By default, all incoming requests will be authorized according to the default policy
     //options.FallbackPolicy = options.DefaultPolicy;
 
-    options.AddPolicy("CreateProject", policy => policy.RequireRole("Project.Write"));
+    options.AddPolicy("CreateProject", policy =>
+    {
+        policy.RequireAssertion(ctx =>
+        {
+            if (ctx.User.IsInRole("Project.Write.All"))
+            {
+                return true;
+            }
+            if (ctx.User.IsInRole("Project.Write"))
+            {
+                if (ctx.Resource == null)
+                {
+                    return true;
+                }
+                if (ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
+                {
+                    return true;
+                }
+            }
+            return false;
+        });
+    });
     options.AddPolicy("UpdateProject", policy =>
     {
         policy.RequireAssertion(ctx =>
@@ -41,7 +62,7 @@ builder.Services.AddAuthorization(options =>
             {
                 return true;
             }
-            if (ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
+            if (ctx.User.IsInRole("Project.Write") && ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
             {
                 return true;
             }

@@ -143,8 +143,7 @@ namespace Prowo.WebAsm.Server.Controllers
         }
 
         [HttpPost("")]
-        [Authorize(Policy = "CreateProject")]
-        public async Task CreateProject([FromBody]EditingProjectDataDto projectData)
+        public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var project = new Project(
@@ -161,7 +160,12 @@ namespace Prowo.WebAsm.Server.Controllers
                 projectData.MaxAttendees,
                 Array.Empty<ProjectAttendee>()
             );
+            if (!(await authService.AuthorizeAsync(HttpContext.User, project, "CreateProject")).Succeeded)
+            {
+                return Forbid();
+            }
             await projectStore.CreateProject(project);
+            return Ok();
         }
 
         [HttpPost("{projectId}")]
@@ -185,7 +189,7 @@ namespace Prowo.WebAsm.Server.Controllers
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
             {
                 return Forbid();
-            } 
+            }
             await projectStore.UpdateProject(project);
             return Ok();
         }
