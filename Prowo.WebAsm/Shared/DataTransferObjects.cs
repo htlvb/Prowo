@@ -1,4 +1,6 @@
-﻿namespace Prowo.WebAsm.Shared
+﻿using System.Text.Json.Serialization;
+
+namespace Prowo.WebAsm.Shared
 {
     public record AttendanceOverviewDto(
         IReadOnlyList<DateOnly> Dates,
@@ -75,11 +77,17 @@
         DateTime ClosingDateLocalUserTime,
         int Attendees,
         int MaxAttendees,
-        RegistrationStatusDto CurrentUserRegistrationStatus,
+        UserRoleForProjectDto CurrentUserStatus,
         ProjectLinksDto Links
     )
     {
         public bool RegistrationDisabled => ClosingDate <= DateTime.UtcNow;
+
+        public bool IsUserProject =>
+            CurrentUserStatus == UserRoleForProjectDto.Registered
+            || CurrentUserStatus == UserRoleForProjectDto.Waiting
+            || CurrentUserStatus == UserRoleForProjectDto.Organizer
+            || CurrentUserStatus == UserRoleForProjectDto.CoOrganizer;
     }
 
     public record ProjectOrganizerDto(
@@ -87,16 +95,20 @@
         string DisplayName
     );
 
-    public enum RegistrationStatusDto
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum UserRoleForProjectDto
     {
-        NotRegistered,
+        NotRelated,
         Registered,
-        Waiting
+        Waiting,
+        Organizer,
+        CoOrganizer
     }
 
     public record ProjectLinksDto(
         string? Register,
         string? Deregister,
         string? Edit,
-        string? ShowAttendees);
+        string? ShowAttendees
+    );
 }

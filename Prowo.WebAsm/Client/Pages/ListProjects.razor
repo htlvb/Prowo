@@ -38,18 +38,27 @@
     }
     else
     {
-        if (dates.Count > 1)
-        {
-            <div class="flex flex-col md:flex-row gap-2 border-gray-400 rounded shadow p-2">
-                <span class="md:self-center">Projekte nur von folgendem Tag anzeigen:</span>
-                @foreach (var date in dates)
-                {
-                    <button class="btn btn-blue@(selectedDate == date ? "-selected" : "")" onclick=@(() => SelectDate(date))>@date.ToLongDateString()</button>
-                }
-            </div>
-        }
+        <div class="flex flex-col gap-2 border-gray-400 rounded shadow p-2">
+            @if (dates.Count > 1)
+            {
+                <div class="flex flex-col md:flex-row gap-2">
+                    <span class="md:self-center">Projekte nur von folgendem Tag anzeigen:</span>
+                    @foreach (var date in dates)
+                    {
+                        <button class="btn btn-blue@(selectedDate == date ? "-selected" : "")" onclick=@(() => SelectDate(date))>@date.ToLongDateString()</button>
+                    }
+                </div>
+            }
+            <label class="flex items-center relative gap-2">
+                <input type="checkbox" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" onchange=@((ChangeEventArgs e) => FilterUserProjects((bool)e.Value!)) />
+                <span class="w-12 h-6 flex items-center flex-shrink-0 p-1 bg-gray-300 rounded-full duration-300 ease-in-out peer-checked:bg-green-400 after:w-5 after:h-5 after:bg-white after:rounded-full after:shadow-md after:duration-300 peer-checked:after:translate-x-5"></span>
+                Nur meine Projekte anzeigen
+            </label>
+        </div>
 
-        var filteredProjects = selectedDate == null ? projectList.Projects : projectList.Projects.Where(v => v.Date == selectedDate);
+        IEnumerable<ProjectDto> filteredProjects = projectList.Projects;
+        filteredProjects = selectedDate == null ? filteredProjects : filteredProjects.Where(v => v.Date == selectedDate);
+        filteredProjects = showOnlyUserProjects ? filteredProjects.Where(v => v.IsUserProject) : filteredProjects;
 
         @foreach (var project in filteredProjects)
         {
@@ -105,11 +114,11 @@
                         <div class="grow flex items-end">
                             <div class="flex items-center gap-2">
                                 <span class="text-sm p-2 rounded @workloadClassNames">@project.Attendees / @project.MaxAttendees</span>
-                                @if (project.CurrentUserRegistrationStatus == RegistrationStatusDto.Registered)
+                                @if (project.CurrentUserStatus == UserRoleForProjectDto.Registered)
                                 {
                                     <span class="text-sm text-green-500">Du bist angemeldet.</span>
                                 }
-                                else if (project.CurrentUserRegistrationStatus == RegistrationStatusDto.Waiting)
+                                else if (project.CurrentUserStatus == UserRoleForProjectDto.Waiting)
                                 {
                                     <span class="text-sm text-yellow-500">Du bist auf der Warteliste.</span>
                                 }
@@ -172,6 +181,7 @@
     private DateOnly? selectedDate;
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
     private HashSet<ProjectDto> loadingRegistrationProjects = new(ReferenceEqualityComparer.Instance);
+    private bool showOnlyUserProjects = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -189,6 +199,12 @@
     private void SelectDate(DateOnly date)
     {
         selectedDate = selectedDate == date ? null : date;
+        StateHasChanged();
+    }
+
+    private void FilterUserProjects(bool showOnlyUserProjects)
+    {
+        this.showOnlyUserProjects = showOnlyUserProjects;
         StateHasChanged();
     }
 

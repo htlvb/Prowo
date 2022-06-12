@@ -270,27 +270,35 @@ namespace Prowo.WebAsm.Server.Controllers
                 return new ProjectOrganizerDto(organizer.Id, $"{organizer.LastName} {organizer.FirstName} ({organizer.ShortName})");
             }
 
-            RegistrationStatusDto getCurrentUserRegistrationStatus(Project project)
+            UserRoleForProjectDto getCurrentUserRole(Project project)
             {
                 var currentUserId = HttpContext.User.GetObjectId();
+                if (project.Organizer.Id == currentUserId)
+                {
+                    return UserRoleForProjectDto.Organizer;
+                }
+                if (project.CoOrganizers.Any(v => v.Id == currentUserId))
+                {
+                    return UserRoleForProjectDto.CoOrganizer;
+                }
                 if (project.RegisteredAttendees.Any(v => v.Id == currentUserId))
                 {
-                    return RegistrationStatusDto.Registered;
+                    return UserRoleForProjectDto.Registered;
                 }
                 if (project.WaitingAttendees.Any(v => v.Id == currentUserId))
                 {
-                    return RegistrationStatusDto.Waiting;
+                    return UserRoleForProjectDto.Waiting;
                 }
-                return RegistrationStatusDto.NotRegistered;
+                return UserRoleForProjectDto.NotRelated;
             }
 
-            var registrationStatus = getCurrentUserRegistrationStatus(project);
+            var userRole = getCurrentUserRole(project);
             var canRegister =
-                registrationStatus == RegistrationStatusDto.NotRegistered &&
+                userRole == UserRoleForProjectDto.NotRelated &&
                 (await authService.AuthorizeAsync(HttpContext.User, project, "AttendProject")).Succeeded;
             var canDeregister =
-                registrationStatus == RegistrationStatusDto.Registered ||
-                registrationStatus == RegistrationStatusDto.Waiting;
+                userRole == UserRoleForProjectDto.Registered ||
+                userRole == UserRoleForProjectDto.Waiting;
             var canUpdate = (await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded;
             var canShowAttendees = (await authService.AuthorizeAsync(HttpContext.User, project, "CreateReport")).Succeeded;
             return new ProjectDto(
@@ -306,7 +314,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 project.ClosingDate.ToUserTime(),
                 project.AllAttendees.Count,
                 project.MaxAttendees,
-                getCurrentUserRegistrationStatus(project),
+                getCurrentUserRole(project),
                 new ProjectLinksDto(
                     canRegister ? Url.Action(nameof(RegisterForProject), new { projectId = project.Id }) : default,
                     canDeregister ? Url.Action(nameof(DeregisterFromProject), new { projectId = project.Id }) : default,
