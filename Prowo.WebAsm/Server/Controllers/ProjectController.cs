@@ -294,7 +294,8 @@ namespace Prowo.WebAsm.Server.Controllers
 
             var userRole = getCurrentUserRole(project);
             var canRegister =
-                userRole == UserRoleForProjectDto.NotRelated &&
+                userRole != UserRoleForProjectDto.Registered &&
+                userRole != UserRoleForProjectDto.Waiting &&
                 (await authService.AuthorizeAsync(HttpContext.User, project, "AttendProject")).Succeeded;
             var canDeregister =
                 userRole == UserRoleForProjectDto.Registered ||
