@@ -91,18 +91,16 @@ async Task UpdateClosingDate()
         var response = await query.ReadNextAsync();
         foreach (var dbProject in response)
         {
-            if (dbProject.closingDate.TimeOfDay == TimeSpan.Zero)
-            {
-                Console.WriteLine($"{dbProject.id} - {dbProject.closingDate} ({dbProject.closingDate.Kind})");
-                await container.PatchItemAsync<DbProject>(
-                    dbProject.id,
-                    new PartitionKey(dbProject.id),
-                    new[]
-                    {
-                        PatchOperation.Replace("/closingDate", dbProject.closingDate.AddHours(-2)),
-                    }
-                );
-            }
+            var closingDate = dbProject.closingDate.Add(TimeOnly.MaxValue.ToTimeSpan());
+            Console.WriteLine($"{dbProject.id} - {dbProject.closingDate} -> {closingDate}");
+            await container.PatchItemAsync<DbProject>(
+                dbProject.id,
+                new PartitionKey(dbProject.id),
+                new[]
+                {
+                    PatchOperation.Replace("/closingDate", closingDate),
+                }
+            );
         }
     }
 }

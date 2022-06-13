@@ -114,7 +114,10 @@ else if (editingProject.Links.Save != null)
         <div class="input">
             <label class="block">
                 <span class="input-label">Anmeldeschluss</span>
-                <InputDate @bind-Value=editingProject.Data.ClosingDate ParsingErrorMessage="Kein gültiger Anmeldeschluss." class="input-text" />
+                <div class="flex items-center gap-2">
+                    <InputDate @bind-Value=editingProject.Data.ClosingDate ParsingErrorMessage="Kein gültiger Anmeldeschluss." class="input-text" />
+                    <span class="text-sm">@TimeOnly.MaxValue.ToShortTimeString()</span>
+                </div>
             </label>
         </div>
 
