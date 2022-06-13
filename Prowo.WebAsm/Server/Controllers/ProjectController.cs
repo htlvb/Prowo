@@ -34,7 +34,7 @@ namespace Prowo.WebAsm.Server.Controllers
             var projectDtos = new List<ProjectDto>();
             foreach (var project in projects)
             {
-                var projectDto = await GetProjectDto(project);
+                var projectDto = await GetProjectDtoFromProject(project);
                 projectDtos.Add(projectDto);
             }
             var canCreateProject = (await authService.AuthorizeAsync(HttpContext.User, "CreateProject")).Succeeded;
@@ -54,14 +54,14 @@ namespace Prowo.WebAsm.Server.Controllers
         {
             var attendee = await userStore.GetSelfAsProjectAttendee();
             var project = await projectStore.AddAttendee(projectId, attendee);
-            return await GetProjectDto(project);
+            return await GetProjectDtoFromProject(project);
         }
 
         [HttpPost("{projectId}/deregister")]
         public async Task<ProjectDto> DeregisterFromProject(string projectId)
         {
             var project = await projectStore.RemoveAttendee(projectId, HttpContext.User.GetObjectId());
-            return await GetProjectDto(project);
+            return await GetProjectDtoFromProject(project);
         }
 
         [HttpGet("edit/{projectId}")]
@@ -146,20 +146,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = new Project(
-                Guid.NewGuid().ToString(),
-                projectData.Title,
-                projectData.Description,
-                projectData.Location,
-                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer) ? projectOrganizer : throw new Exception("Organizer not found"),
-                projectData.CoOrganizerIds.Select(coOrganizerId => organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer) ? projectCoOrganizer : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")).ToArray(),
-                projectData.Date,
-                projectData.StartTime,
-                projectData.EndTime,
-                projectData.ClosingDate.FromUserTime(),
-                projectData.MaxAttendees,
-                Array.Empty<ProjectAttendee>()
-            );
+            var project = GetProjectFromProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates);
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "CreateProject")).Succeeded)
             {
                 return Forbid();
@@ -172,20 +159,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> UpdateProject(string projectId, [FromBody] EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = new Project(
-                projectId,
-                projectData.Title,
-                projectData.Description,
-                projectData.Location,
-                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer) ? projectOrganizer : throw new Exception("Organizer not found"),
-                projectData.CoOrganizerIds.Select(coOrganizerId => organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer) ? projectCoOrganizer : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")).ToArray(),
-                projectData.Date,
-                projectData.StartTime,
-                projectData.EndTime,
-                projectData.ClosingDate.FromUserTime(),
-                projectData.MaxAttendees,
-                Array.Empty<ProjectAttendee>()
-            );
+            var project = GetProjectFromProjectDataDto(projectData, projectId, organizerCandidates);
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
             {
                 return Forbid();
@@ -263,7 +237,7 @@ namespace Prowo.WebAsm.Server.Controllers
             return organizerCandidates.ToDictionary(v => v.Id);
         }
 
-        private async Task<ProjectDto> GetProjectDto(Project project)
+        private async Task<ProjectDto> GetProjectDtoFromProject(Project project)
         {
             ProjectOrganizerDto mapOrganizer(ProjectOrganizer organizer)
             {
@@ -322,6 +296,36 @@ namespace Prowo.WebAsm.Server.Controllers
                     canUpdate ? $"projects/edit/{project.Id}" : default,
                     canShowAttendees ? $"projects/attendees/{project.Id}" : default
                 )
+            );
+        }
+
+        private static Project GetProjectFromProjectDataDto(
+            EditingProjectDataDto projectData,
+            string projectId,
+            IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates
+        )
+        {
+            var coOrganizers = projectData.CoOrganizerIds
+                .Except(new[] { projectData.OrganizerId })
+                .Select(coOrganizerId =>
+                    organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer)
+                        ? projectCoOrganizer
+                        : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")
+                )
+                .ToArray();
+            return new Project(
+                projectId,
+                projectData.Title,
+                projectData.Description,
+                projectData.Location,
+                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer) ? projectOrganizer : throw new Exception("Organizer not found"),
+                coOrganizers,
+                projectData.Date,
+                projectData.StartTime,
+                projectData.EndTime,
+                projectData.ClosingDate.FromUserTime(),
+                projectData.MaxAttendees,
+                Array.Empty<ProjectAttendee>()
             );
         }
     }
