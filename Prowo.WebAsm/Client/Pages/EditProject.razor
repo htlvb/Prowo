@@ -250,7 +250,7 @@ else if (editingProject.Links.Save != null)
                 DateOnly.FromDateTime(Date),
                 TimeOnly.FromDateTime(StartTime),
                 (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
-                ClosingDate,
+                ClosingDate.Add(TimeOnly.MaxValue.ToTimeSpan()),
                 MaxAttendees
             );
         }

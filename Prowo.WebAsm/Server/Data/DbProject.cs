@@ -66,7 +66,7 @@ namespace Prowo.WebAsm.Server.Data
                 Location = project.Location,
                 Organizer = DbProjectOrganizer.FromProjectOrganizer(project.Organizer),
                 CoOrganizers = project.CoOrganizers.Select(DbProjectOrganizer.FromProjectOrganizer).ToArray(),
-                Date = project.Date.ToDateTime(TimeOnly.MaxValue),
+                Date = project.Date.ToDateTime(TimeOnly.MinValue),
                 StartTime = project.StartTime.ToTimeSpan(),
                 EndTime = project.EndTime.HasValue ? project.EndTime.Value.ToTimeSpan() : null,
                 ClosingDate = project.ClosingDate,
