@@ -13,9 +13,11 @@ namespace Prowo.WebAsm.Server.Data
             this.cosmosClient = cosmosClient;
         }
 
-        public async IAsyncEnumerable<Project> GetAll()
+        public async IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
         {
-            var query = ProjectContainer.GetItemQueryIterator<DbProject>();
+            var query = ProjectContainer.GetItemQueryIterator<DbProject>(
+                new QueryDefinition("SELECT * FROM Project p WHERE p.Date >= @date").WithParameter("@date", timestamp)
+            );
             while (query.HasMoreResults)
             {
                 var response = await query.ReadNextAsync();

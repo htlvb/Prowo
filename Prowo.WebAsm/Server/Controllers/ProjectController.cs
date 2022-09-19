@@ -15,6 +15,8 @@ namespace Prowo.WebAsm.Server.Controllers
         private readonly UserStore userStore;
         private readonly IAuthorizationService authService;
 
+        private DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today.AddDays(-7));
+
         public ProjectController(
             ProjectStore projectStore,
             UserStore userStore,
@@ -28,7 +30,7 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpGet("")]
         public async Task<ProjectListDto> GetProjectList()
         {
-            var projects = (await projectStore.GetAll().ToList())
+            var projects = (await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
                 .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v); // Sort by date, but don't change order of projects with same date;
 
             var projectDtos = new List<ProjectDto>();
@@ -50,11 +52,11 @@ namespace Prowo.WebAsm.Server.Controllers
 
         [HttpPost("{projectId}/register")]
         [Authorize(Policy = "AttendProject")]
-        public async Task<ProjectDto> RegisterForProject(string projectId)
+        public async Task<IActionResult> RegisterForProject(string projectId)
         {
             var attendee = await userStore.GetSelfAsProjectAttendee();
             var project = await projectStore.AddAttendee(projectId, attendee);
-            return await GetProjectDtoFromProject(project);
+            return Ok(await GetProjectDtoFromProject(project));
         }
 
         [HttpPost("{projectId}/deregister")]
@@ -119,6 +121,10 @@ namespace Prowo.WebAsm.Server.Controllers
                 {
                     return Forbid();
                 }
+                if (project.Date < MinDate)
+                {
+                    return NotFound("Project too old.");
+                }
                 var result = new EditingProjectDto(
                     new EditingProjectDataDto(
                         project.Title,
@@ -151,6 +157,10 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return Forbid();
             }
+            if (project.Date < MinDate)
+            {
+                return BadRequest("Project too old.");
+            }
             await projectStore.CreateProject(project);
             return Ok();
         }
@@ -158,11 +168,21 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpPost("{projectId}")]
         public async Task<IActionResult> UpdateProject(string projectId, [FromBody] EditingProjectDataDto projectData)
         {
+            var existingProject = await projectStore.Get(projectId);
+            if (existingProject.Date < MinDate)
+            {
+                return NotFound("Project too old.");
+            }
+
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var project = GetProjectFromProjectDataDto(projectData, projectId, organizerCandidates);
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
             {
                 return Forbid();
+            }
+            if (project.Date < MinDate)
+            {
+                return BadRequest("Project too old.");
             }
             await projectStore.UpdateProject(project);
             return Ok();
@@ -170,9 +190,14 @@ namespace Prowo.WebAsm.Server.Controllers
 
         [HttpGet("{projectId}/attendees")]
         [Authorize(Policy = "CreateReport")]
-        public async Task<ProjectAttendeesDto> GetProjectAttendees(string projectId)
+        public async Task<IActionResult> GetProjectAttendees(string projectId)
         {
             var project = await projectStore.Get(projectId);
+            if (project.Date < MinDate)
+            {
+                return NotFound("Project too old.");
+            }
+
             var attendees = Enumerable
                 .Concat(
                     project.RegisteredAttendees.Select((v, i) => new ProjectAttendeeDto(v.FirstName, v.LastName, v.Class, IsWaiting: false)),
@@ -183,13 +208,13 @@ namespace Prowo.WebAsm.Server.Controllers
                 .ThenBy(v => v.LastName)
                 .ThenBy(v => v.FirstName)
                 .ToList();
-            return new ProjectAttendeesDto(
+            return Ok(new ProjectAttendeesDto(
                 project.Title,
                 project.Date,
                 project.StartTime,
                 project.EndTime,
                 attendees
-            );
+            ));
         }
 
         [HttpGet("attendees")]
@@ -197,7 +222,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<AttendanceOverviewDto> GetAllAttendees()
         {
             var attendeeCandidates = await userStore.GetAttendeeCandidates().ToList();
-            var projects = await projectStore.GetAll().ToList();
+            var projects = await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList();
             var projectsByUserAndDate = projects
                 .SelectMany(p => Enumerable.Concat(
                     p.RegisteredAttendees.Select((v, i) => new { UserId = v.Id, ProjectName = p.Title, ProjectDate = p.Date, IsWaiting = false }),
