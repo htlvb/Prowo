@@ -1,8 +1,15 @@
 ﻿@inherits LayoutComponentBase
 
+@inject IConfiguration config
+
+@{
+    var title = config.GetValue<string>("PageTitle");
+    var fullTitle = string.IsNullOrEmpty(title) ? "HTLVB Prowo" : $"HTLVB Prowo - {title}";
+}
+
 <div class="main">
     <div class="flex justify-between items-center bg-blue-500 p-8 text-white">
-        <span class="text-4xl">HTLVB Prowo</span>
+        <span class="text-4xl">@fullTitle</span>
         <div class="print:hidden"><LoginDisplay /></div>
     </div>
 
