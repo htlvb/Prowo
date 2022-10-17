@@ -16,7 +16,7 @@ namespace Prowo.WebAsm.Server.Data
         public async IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
         {
             var query = ProjectContainer.GetItemQueryIterator<DbProject>(
-                new QueryDefinition("SELECT * FROM Project p WHERE p.Date >= @date").WithParameter("@date", timestamp)
+                new QueryDefinition("SELECT * FROM Project p WHERE p.date >= @date").WithParameter("@date", timestamp)
             );
             while (query.HasMoreResults)
             {
