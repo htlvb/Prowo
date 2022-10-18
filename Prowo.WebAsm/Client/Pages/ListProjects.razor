@@ -66,13 +66,13 @@
                 <div class="flex flex-col divide-y md:divide-y-0 divide-x-0 md:divide-x md:flex-row w-full">
                     <div class="flex flex-col p-2">
                         <span class="text-xl text-black">@project.Title</span>
-                        <span class="text-sm text-gray-600">
+                        @*<span class="text-sm text-gray-600">
                             <strong>@project.Organizer.DisplayName</strong>
                             @foreach (var coOrganizer in project.CoOrganizers)
                             {
                                 <text>, @coOrganizer.DisplayName</text>
                             }
-                        </span>
+                        </span>*@
                         <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <text> - @project.EndTime</text> }</span>
                         <span class="text-sm text-gray-600">@project.Location</span>
                         @{
