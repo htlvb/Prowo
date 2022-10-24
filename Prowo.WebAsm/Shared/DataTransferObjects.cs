@@ -13,7 +13,7 @@ namespace Prowo.WebAsm.Shared
 
     public record StudentProjectsAtDateDto(IReadOnlyList<StudentProjectDto> List);
 
-    public record StudentProjectDto(string DisplayName, bool IsWaiting);
+    public record StudentProjectDto(string Title, bool IsWaiting);
 
     public record ProjectAttendeesDto(
         string Title,
