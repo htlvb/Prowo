@@ -224,11 +224,16 @@ namespace Prowo.WebAsm.Server.Controllers
             var attendeeCandidates = await userStore.GetAttendeeCandidates().ToList();
             var projects = await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList();
             var projectsByUserAndDate = projects
-                .SelectMany(p => Enumerable.Concat(
-                    p.RegisteredAttendees.Select((v, i) => new { UserId = v.Id, ProjectName = p.Title, ProjectDate = p.Date, IsWaiting = false }),
-                    p.WaitingAttendees.Select((v, i) => new { UserId = v.Id, ProjectName = p.Title, ProjectDate = p.Date, IsWaiting = true })
-                ))
-                .ToLookup(v => new { v.UserId, v.ProjectDate }, v => new StudentProjectDto(v.ProjectName, v.IsWaiting));
+                .SelectMany(p =>
+                {
+                    var time = p.EndTime.HasValue ? $"{p.StartTime} - {p.EndTime}" : $"{p.StartTime}";
+                    var projectDisplayName = $"{time}: {p.Title} ({p.Location})";
+                    return Enumerable.Concat(
+                        p.RegisteredAttendees.Select((v, i) => new { UserId = v.Id, ProjectDisplayName = projectDisplayName, ProjectDate = p.Date, IsWaiting = false }),
+                        p.WaitingAttendees.Select((v, i) => new { UserId = v.Id, ProjectDisplayName = projectDisplayName, ProjectDate = p.Date, IsWaiting = true })
+                    );
+                })
+                .ToLookup(v => new { v.UserId, v.ProjectDate }, v => new StudentProjectDto(v.ProjectDisplayName, v.IsWaiting));
             var dates = projects
                 .Select(p => p.Date)
                 .Distinct()
