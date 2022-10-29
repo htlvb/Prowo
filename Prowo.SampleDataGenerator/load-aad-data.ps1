@@ -1,6 +1,6 @@
 Push-Location $PSScriptRoot
 
-# Connect-AzureAD
+Connect-AzureAD
 
 $attendeeGroupId = (Get-AzureADGroup -Filter "displayName eq 'GrpSchueler'").ObjectId
 Get-AzureADGroupMember -ObjectId $attendeeGroupId -All $true `
