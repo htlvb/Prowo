@@ -1,9 +1,7 @@
 ﻿using ClosedXML.Excel;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
-using System.Globalization;
-using System.Text.Json;
-using System.Text.RegularExpressions;
+using Npgsql;
+using NpgsqlTypes;
 
 var descriptions = File.ReadAllText("Gesundheitstag_Beschreibungen.txt")
     .Split(new[] { "\r\n\r\n" }, StringSplitOptions.None)
@@ -95,42 +93,47 @@ IXLCell GetRoomCell(IXLCell cell)
     return cell.CellAbove(cell.Address.RowNumber - 1);
 }
 
+NpgsqlConnection.GlobalTypeMapper.UseJsonNet();
+
 var configuration = new ConfigurationBuilder()
     .AddUserSecrets<Program>()
     .Build();
 
-string connectionString = configuration.GetConnectionString("CosmosDb");
-using CosmosClient cosmosClient = new(connectionString);
-
-var container = cosmosClient.GetContainer("ProjectsDB", "Project");
-await container.DeleteContainerAsync();
-container = await cosmosClient
-   .GetDatabase("ProjectsDB")
-   .CreateContainerAsync("Project", "/id");
+string connectionString = configuration.GetConnectionString("PostgresqlDb");
+await using var dbConnection = new NpgsqlConnection(connectionString);
+await dbConnection.OpenAsync();
 
 Console.WriteLine($"Inserting {projects.Count} projects.");
+await using (var cmd = new NpgsqlCommand("DELETE FROM project", dbConnection))
+{
+    await cmd.ExecuteNonQueryAsync();
+}
+
 foreach (var project in projects)
 {
-    await container.CreateItemAsync(new
+    await using (var cmd = new NpgsqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection))
     {
-        id = project.Id,
-        title = project.Title,
-        description = project.Description,
-        location = project.Location,
-        organizer = new {
+        var organizer = new {
             id = "1d325d95-864e-4be3-ba79-60c2c92dcb61",
             firstName = "Richard",
             lastName = "Lechner",
             shortName = "LECR"
-        },
-        coOrganizers = Array.Empty<object>(),
-        date = project.Date.ToDateTime(TimeOnly.MinValue),
-        startTime = project.StartTime.ToTimeSpan(),
-        endTime = project.EndTime.ToTimeSpan(),
-        closingDate = project.ClosingDate,
-        maxAttendees = project.MaxAttendees,
-        registrationEvents = Array.Empty<object>()
-    });
+        };
+
+        cmd.Parameters.AddWithValue("id", Guid.Parse(project.Id));
+        cmd.Parameters.AddWithValue("title", project.Title);
+        cmd.Parameters.AddWithValue("description", project.Description);
+        cmd.Parameters.AddWithValue("location", project.Location);
+        cmd.Parameters.AddWithValue("organizer", NpgsqlDbType.Json, organizer);
+        cmd.Parameters.AddWithValue("co_organizers", NpgsqlDbType.Json, Array.Empty<object>());
+        cmd.Parameters.AddWithValue("date", project.Date);
+        cmd.Parameters.AddWithValue("start_time", project.StartTime);
+        cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("closing_date", project.ClosingDate);
+        cmd.Parameters.AddWithValue("maxAttendees", project.MaxAttendees);
+
+        await cmd.ExecuteScalarAsync();
+    }
 }
 
 public record Project(
