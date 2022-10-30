@@ -3,12 +3,15 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
+using Npgsql;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
 using System.Globalization;
 using GraphServiceClient = Microsoft.Graph.GraphServiceClient;
 
 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-AT");
+
+NpgsqlConnection.GlobalTypeMapper.UseJsonNet();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +76,12 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("ChangeProjectOrganizer", policy => policy.RequireRole("Project.Write.All"));
     options.AddPolicy("AttendProject", policy => policy.RequireRole("Project.Attend"));
     options.AddPolicy("CreateReport", policy => policy.RequireRole("Report.Create"));
+});
+
+builder.Services.AddSingleton(provider =>
+{
+    string connectionString = builder.Configuration.GetConnectionString("PostgresqlDb");
+    return new PostgresqlProjectStore(connectionString);
 });
 
 builder.Services.AddSingleton(provider =>

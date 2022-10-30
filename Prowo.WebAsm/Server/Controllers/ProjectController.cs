@@ -12,6 +12,7 @@ namespace Prowo.WebAsm.Server.Controllers
     public class ProjectController : ControllerBase
     {
         private readonly ProjectStore projectStore;
+        private readonly PostgresqlProjectStore postgresqlProjectStore;
         private readonly UserStore userStore;
         private readonly IAuthorizationService authService;
 
@@ -19,10 +20,12 @@ namespace Prowo.WebAsm.Server.Controllers
 
         public ProjectController(
             ProjectStore projectStore,
+            PostgresqlProjectStore postgresqlProjectStore,
             UserStore userStore,
             IAuthorizationService authService)
         {
             this.projectStore = projectStore;
+            this.postgresqlProjectStore = postgresqlProjectStore;
             this.userStore = userStore;
             this.authService = authService;
         }
@@ -30,7 +33,7 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpGet("")]
         public async Task<ProjectListDto> GetProjectList()
         {
-            var projects = (await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
+            var projects = (await postgresqlProjectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
                 .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v); // Sort by date, but don't change order of projects with same date;
 
             var projectDtos = new List<ProjectDto>();

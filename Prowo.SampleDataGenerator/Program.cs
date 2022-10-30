@@ -35,9 +35,9 @@ var organizers = JsonDocument.Parse(File.ReadAllText("OrganizerCandidates.json")
         return new
         {
             id = v.GetProperty("ObjectId").GetString()!,
-            firstName = v.GetProperty("GivenName").GetString()!,
-            lastName = v.GetProperty("Surname").GetString()!,
-            shortName = Regex.Replace(v.GetProperty("UserPrincipalName").GetString()!, "@.*$", ""),
+            first_name = v.GetProperty("GivenName").GetString()!,
+            last_name = v.GetProperty("Surname").GetString()!,
+            short_name = Regex.Replace(v.GetProperty("UserPrincipalName").GetString()!, "@.*$", ""),
         };
     })
     .ToList();
@@ -46,7 +46,7 @@ var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
     .EnumerateArray()
     .Select(v =>
     {
-        var date = DateTime.ParseExact(v.GetProperty("date").GetString()!, "d", CultureInfo.InvariantCulture);
+        var date = DateTime.Today.AddDays(Random.Shared.Next(5, 7)); //DateTime.ParseExact(v.GetProperty("date").GetString()!, "d", CultureInfo.InvariantCulture);
         var startTimeString = v.GetProperty("start_time").GetString()!;
         var endTimeString = v.GetProperty("end_time").GetString()!;
         var maxAttendees = v.GetProperty("max_attendees").GetInt32();
@@ -109,7 +109,7 @@ foreach (var project in sampleProjects.Take(10))
     await using (var cmd = new NpgsqlCommand("INSERT INTO registration_event (project_id, \"user\", action, timestamp) SELECT UNNEST(@project_id), UNNEST(@user), UNNEST(@action), UNNEST(@timestamp)", dbConnection))
     {
         cmd.Parameters.AddWithValue("project_id", Enumerable.Repeat(Guid.Parse(project.Id), project.RegistrationEvents.Length).ToArray());
-        cmd.Parameters.AddWithValue("user", NpgsqlDbType.Array | NpgsqlDbType.Json, project.RegistrationEvents.Select(v => new { user_id = v.userId, first_name = v.firstName, last_name = v.lastName }).ToArray());
+        cmd.Parameters.AddWithValue("user", NpgsqlDbType.Array | NpgsqlDbType.Json, project.RegistrationEvents.Select(v => new { id = v.userId, first_name = v.firstName, last_name = v.lastName, @class = v.@class}).ToArray());
         cmd.Parameters.AddWithValue("action", project.RegistrationEvents.Select(v => v.action).ToArray());
         cmd.Parameters.AddWithValue("timestamp", project.RegistrationEvents.Select(v => v.timestamp).ToArray());
 
