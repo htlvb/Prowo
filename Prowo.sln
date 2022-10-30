@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Client", "Prow
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Shared", "Prowo.WebAsm\Shared\Prowo.WebAsm.Shared.csproj", "{BA3DA2A0-B040-4BF5-B241-51331DB3F42D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prowo.SetupProjects", "Prowo.SetupProjects\Prowo.SetupProjects.csproj", "{83D33046-698E-44D1-9C81-3315F5EB8933}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prowo.ImportProjects", "Prowo.ImportProjects\Prowo.ImportProjects.csproj", "{83D33046-698E-44D1-9C81-3315F5EB8933}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
