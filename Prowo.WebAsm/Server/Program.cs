@@ -3,15 +3,12 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
-using Npgsql;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
 using System.Globalization;
 using GraphServiceClient = Microsoft.Graph.GraphServiceClient;
 
 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-AT");
-
-NpgsqlConnection.GlobalTypeMapper.UseJsonNet();
 
 var builder = WebApplication.CreateBuilder(args);
 
