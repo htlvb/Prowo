@@ -119,14 +119,14 @@ namespace Prowo.WebAsm.Server.Controllers
             }
             else
             {
-                var project = await projectStore.Get(projectId);
+                var project = await postgresqlProjectStore.Get(projectId);
+                if (project == null || project.Date < MinDate)
+                {
+                    return NotFound("Project doesn't exist or is too old.");
+                }
                 if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
                 {
                     return Forbid();
-                }
-                if (project.Date < MinDate)
-                {
-                    return NotFound("Project too old.");
                 }
                 var result = new EditingProjectDto(
                     new EditingProjectDataDto(
@@ -171,10 +171,10 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpPost("{projectId}")]
         public async Task<IActionResult> UpdateProject(string projectId, [FromBody] EditingProjectDataDto projectData)
         {
-            var existingProject = await projectStore.Get(projectId);
-            if (existingProject.Date < MinDate)
+            var existingProject = await postgresqlProjectStore.Get(projectId);
+            if (existingProject == null || existingProject.Date < MinDate)
             {
-                return NotFound("Project too old.");
+                return NotFound("Project doesn't exist or is too old.");
             }
 
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
@@ -195,10 +195,10 @@ namespace Prowo.WebAsm.Server.Controllers
         [Authorize(Policy = "CreateReport")]
         public async Task<IActionResult> GetProjectAttendees(string projectId)
         {
-            var project = await projectStore.Get(projectId);
-            if (project.Date < MinDate)
+            var project = await postgresqlProjectStore.Get(projectId);
+            if (project == null || project.Date < MinDate)
             {
-                return NotFound("Project too old.");
+                return NotFound("Project doesn't exist or is too old.");
             }
 
             var attendees = Enumerable
