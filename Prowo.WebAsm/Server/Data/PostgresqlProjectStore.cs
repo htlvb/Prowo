@@ -1,6 +1,8 @@
 ﻿using System.Data;
+using System.Linq;
 using System.Text.Json.Serialization;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Prowo.WebAsm.Server.Data
 {
@@ -56,7 +58,10 @@ namespace Prowo.WebAsm.Server.Data
 
         public async Task CreateProject(Project project)
         {
-            throw new NotImplementedException();
+            var dbProject = DbProject.FromDomain(project);
+            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
+            await dbConnection.OpenAsync();
+            await CreateProject(dbConnection, dbProject);
         }
 
         public async Task UpdateProject(Project project)
@@ -101,6 +106,23 @@ namespace Prowo.WebAsm.Server.Data
                 return null;
             }
             return DbProject.FromReader(reader);
+        }
+
+        private static async Task CreateProject(NpgsqlConnection dbConnection, DbProject project)
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection);
+            cmd.Parameters.AddWithValue("id", project.Id);
+            cmd.Parameters.AddWithValue("title", project.Title);
+            cmd.Parameters.AddWithValue("description", project.Description);
+            cmd.Parameters.AddWithValue("location", project.Location);
+            cmd.Parameters.AddWithValue("organizer", NpgsqlDbType.Json, project.Organizer);
+            cmd.Parameters.AddWithValue("co_organizers", NpgsqlDbType.Json, project.CoOrganizers);
+            cmd.Parameters.AddWithValue("date", project.Date);
+            cmd.Parameters.AddWithValue("start_time", project.StartTime);
+            cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("closing_date", project.ClosingDate);
+            cmd.Parameters.AddWithValue("maxAttendees", project.MaxAttendees);
+            await cmd.ExecuteNonQueryAsync();
         }
 
         private static async IAsyncEnumerable<DbProjectRegistrationEvent> ReadRegistrations(
@@ -174,7 +196,7 @@ namespace Prowo.WebAsm.Server.Data
             [property: JsonPropertyName("short_name")] string ShortName
         )
         {
-            public ProjectOrganizer ToProjectOrganizer()
+            public ProjectOrganizer ToDomain()
             {
                 return new ProjectOrganizer
                 (
@@ -182,6 +204,17 @@ namespace Prowo.WebAsm.Server.Data
                     FirstName,
                     LastName,
                     ShortName
+                );
+            }
+
+            public static DbProjectOrganizer FromDomain(ProjectOrganizer organizer)
+            {
+                return new DbProjectOrganizer
+                (
+                    Guid.Parse(organizer.Id),
+                    organizer.FirstName,
+                    organizer.LastName,
+                    organizer.ShortName
                 );
             }
         }
@@ -217,6 +250,23 @@ namespace Prowo.WebAsm.Server.Data
                 );
             }
 
+            public static DbProject FromDomain(Project project)
+            {
+                return new DbProject(
+                    Guid.Parse(project.Id),
+                    project.Title,
+                    project.Description,
+                    project.Location,
+                    DbProjectOrganizer.FromDomain(project.Organizer),
+                    project.CoOrganizers.Select(DbProjectOrganizer.FromDomain).ToList(),
+                    project.Date.ToDateTime(TimeOnly.MinValue),
+                    project.StartTime.ToTimeSpan(),
+                    project.EndTime?.ToTimeSpan(),
+                    project.ClosingDate,
+                    project.MaxAttendees
+                );
+            }
+
             public Project ToDomain(IReadOnlyList<ProjectAttendee> attendees)
             {
                 return new Project(
@@ -224,8 +274,8 @@ namespace Prowo.WebAsm.Server.Data
                     Title,
                     Description,
                     Location,
-                    Organizer.ToProjectOrganizer(),
-                    CoOrganizers.Select(v => v.ToProjectOrganizer()).ToList(),
+                    Organizer.ToDomain(),
+                    CoOrganizers.Select(v => v.ToDomain()).ToList(),
                     DateOnly.FromDateTime(Date),
                     TimeOnly.FromTimeSpan(StartTime),
                     EndTime != null ? TimeOnly.FromTimeSpan(EndTime.Value) : null,

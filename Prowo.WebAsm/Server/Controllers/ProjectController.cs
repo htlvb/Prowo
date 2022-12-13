@@ -164,7 +164,7 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return BadRequest("Project too old.");
             }
-            await projectStore.CreateProject(project);
+            await postgresqlProjectStore.CreateProject(project);
             return Ok();
         }
 
