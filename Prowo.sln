@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Client", "Prow
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Shared", "Prowo.WebAsm\Shared\Prowo.WebAsm.Shared.csproj", "{BA3DA2A0-B040-4BF5-B241-51331DB3F42D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prowo.WebAsm.Server.IntegrationTests", "Prowo.WebAsm.Server.IntegrationTests\Prowo.WebAsm.Server.IntegrationTests.csproj", "{0E72C2F2-781D-4D27-BA82-63F64062FCD4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{BA3DA2A0-B040-4BF5-B241-51331DB3F42D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA3DA2A0-B040-4BF5-B241-51331DB3F42D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA3DA2A0-B040-4BF5-B241-51331DB3F42D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E72C2F2-781D-4D27-BA82-63F64062FCD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E72C2F2-781D-4D27-BA82-63F64062FCD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E72C2F2-781D-4D27-BA82-63F64062FCD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E72C2F2-781D-4D27-BA82-63F64062FCD4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

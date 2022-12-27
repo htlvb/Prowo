@@ -2,7 +2,7 @@
 
 namespace Prowo.WebAsm.Server.Data
 {
-    public class ProjectStore : IDisposable
+    public class ProjectStore : IDisposable, IProjectStore
     {
         private readonly CosmosClient cosmosClient;
 
