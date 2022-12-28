@@ -33,7 +33,7 @@ public class CreateProjectTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
-        Assert.Equal(1, actualNewProjects.Count);
+        Assert.Single(actualNewProjects);
         var isProjectValid = Project.TryCreateFromEditingProjectDataDto(project, actualNewProjects[0].Id, ProjectOrganizers.ToDictionary(v => v.Id), out var expectedNewProject, out _);
         Assert.True(isProjectValid, "Expected project to be valid");
         Assert.Equal(expectedNewProject, actualNewProjects[0], new ProjectEqualityComparer());
@@ -57,7 +57,6 @@ public class CreateProjectTests
     {
         get
         {
-            yield return new object[] { "Title is null", EditingProjectDataDtoFaker.Generate() with { Title = null } };
             yield return new object[] { "Title is empty", EditingProjectDataDtoFaker.Generate() with { Title = "" } };
             yield return new object[] { "Title is white-space", EditingProjectDataDtoFaker.Generate() with { Title = " " } };
             yield return new object[] { "Unknown organizer", EditingProjectDataDtoFaker.Generate() with { OrganizerId = "unknown-organizer" } };
