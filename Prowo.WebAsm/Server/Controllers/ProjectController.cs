@@ -157,7 +157,7 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return Forbid();
             }
-            if (project.Date < MinDate)
+            if (project.Date < DateOnly.FromDateTime(DateTime.Today))
             {
                 return BadRequest("Project too old.");
             }

@@ -1,7 +1,9 @@
-﻿using Microsoft.Identity.Web;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.Identity.Web;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
 using System.Reflection;
+using System.Text.Json;
 
 public static class ServerConfigurationExtensions
 {
@@ -63,8 +65,14 @@ public static class ServerConfigurationExtensions
             .AddApplicationPart(Assembly.GetExecutingAssembly()) // for tests
             .AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
-                options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
+                options.JsonSerializerOptions.AddConverters();
             });
+    }
+
+    public static JsonSerializerOptions AddConverters(this JsonSerializerOptions serializerOptions)
+    {
+        serializerOptions.Converters.Add(new DateOnlyJsonConverter());
+        serializerOptions.Converters.Add(new TimeOnlyJsonConverter());
+        return serializerOptions;
     }
 }

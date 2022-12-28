@@ -1,15 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 
 namespace Prowo.WebAsm.Server.IntegrationTests;
 
 public class TestAuthHandler : AuthenticationHandler<TestAuthHandlerOptions>
 {
-    public const string UserId = "UserId";
-
-    public const string AuthenticationScheme = "Test";
+    public const string SchemeName = "Test";
 
     public TestAuthHandler(
         IOptionsMonitor<TestAuthHandlerOptions> options,
@@ -21,9 +21,37 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthHandlerOptions>
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var result = AuthenticateResult.NoResult();
+        var claims = new List<Claim>();
 
-        return Task.FromResult(result);
+        foreach (var auth in Context.Request.Headers.Authorization)
+        {
+            if (!AuthenticationHeaderValue.TryParse(auth, out var authHeader)) { continue; }
+            if (authHeader.Scheme != TestAuthHandler.SchemeName || authHeader.Parameter == null) continue;
+            
+            claims.Add(new Claim(ClaimTypes.Name, authHeader.Parameter));
+            if (authHeader.Parameter.StartsWith("project-attendee-"))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Project.Attend"));
+                claims.Add(new Claim("oid", authHeader.Parameter.Substring("project-attendee-".Length)));
+            }
+            if (authHeader.Parameter.StartsWith("project-writer-"))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Project.Write"));
+                claims.Add(new Claim("oid", authHeader.Parameter.Substring("project-writer-".Length)));
+            }
+        }
+
+        if (claims.Count == 0)
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+        else
+        {
+            var identity = new ClaimsIdentity(claims, TestAuthHandler.SchemeName);
+            var principal = new ClaimsPrincipal(identity);
+            var ticket = new AuthenticationTicket(principal, TestAuthHandler.SchemeName);
+            return Task.FromResult(AuthenticateResult.Success(ticket));
+        }
     }
 }
 
