@@ -152,7 +152,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = GetProjectFromProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates);
+            var project = Project.FromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates);
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "CreateProject")).Succeeded)
             {
                 return Forbid();
@@ -175,7 +175,7 @@ namespace Prowo.WebAsm.Server.Controllers
             }
 
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = GetProjectFromProjectDataDto(projectData, projectId, organizerCandidates);
+            var project = Project.FromEditingProjectDataDto(projectData, projectId, organizerCandidates);
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
             {
                 return Forbid();
@@ -326,36 +326,6 @@ namespace Prowo.WebAsm.Server.Controllers
                     canUpdate ? $"projects/edit/{project.Id}" : default,
                     canShowAttendees ? $"projects/attendees/{project.Id}" : default
                 )
-            );
-        }
-
-        private static Project GetProjectFromProjectDataDto(
-            EditingProjectDataDto projectData,
-            string projectId,
-            IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates
-        )
-        {
-            var coOrganizers = projectData.CoOrganizerIds
-                .Except(new[] { projectData.OrganizerId })
-                .Select(coOrganizerId =>
-                    organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer)
-                        ? projectCoOrganizer
-                        : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")
-                )
-                .ToArray();
-            return new Project(
-                projectId,
-                projectData.Title,
-                projectData.Description,
-                projectData.Location,
-                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer) ? projectOrganizer : throw new Exception("Organizer not found"),
-                coOrganizers,
-                projectData.Date,
-                projectData.StartTime,
-                projectData.EndTime,
-                projectData.ClosingDate.FromUserTime(),
-                projectData.MaxAttendees,
-                Array.Empty<ProjectAttendee>()
             );
         }
     }

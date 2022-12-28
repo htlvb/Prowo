@@ -1,12 +1,18 @@
-﻿using Prowo.WebAsm.Server.Data;
+﻿using Prowo.WebAsm.Client.Pages;
+using Prowo.WebAsm.Server.Data;
 
 namespace Prowo.WebAsm.Server.IntegrationTests;
 
 public class InMemoryProjectStore : IProjectStore
 {
-    public IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
+    private readonly List<Project> projects = new();
+
+    public async IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
     {
-        throw new NotImplementedException();
+        foreach (var project in projects.Where(v => v.Date.ToDateTime(TimeOnly.MinValue) > timestamp))
+        {
+            yield return project;
+        }
     }
 
     public Task<Project> Get(string projectId)
@@ -14,9 +20,9 @@ public class InMemoryProjectStore : IProjectStore
         throw new NotImplementedException();
     }
 
-    public Task CreateProject(Project project)
+    public async Task CreateProject(Project project)
     {
-        throw new NotImplementedException();
+        projects.Add(project);
     }
 
     public Task UpdateProject(Project project)

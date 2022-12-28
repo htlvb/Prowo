@@ -8,6 +8,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -18,7 +20,26 @@ namespace Prowo.WebAsm.Server.IntegrationTests;
 public class CreateProjectTests
 {
     [Fact]
-    public async Task CantCreateProjectWhenNotAuthorized()
+    public async Task CanCreateProjectAsOrganizerWhenAuthorized()
+    {
+        var host = await StartHost();
+        var client = host.GetTestClient();
+        var project = EditingProjectDataDtoFaker.Generate();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{project.OrganizerId}");
+        var projectStore = host.Services.GetService<IProjectStore>();
+        var existingProjects = await projectStore.GetAllSince(DateTime.MinValue).ToList();
+
+        var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
+        Assert.Equal(1, actualNewProjects.Count);
+        var expectedNewProject = Project.FromEditingProjectDataDto(project, actualNewProjects[0].Id, ProjectOrganizers.ToDictionary(v => v.Id));
+        Assert.Equal(expectedNewProject, actualNewProjects[0], new ProjectEqualityComparer());
+    }
+
+    [Fact]
+    public async Task CantCreateProjectWithOtherOrganizerWhenNotAuthorized()
     {
         var host = await StartHost();
         var client = host.GetTestClient();
@@ -91,8 +112,8 @@ public class CreateProjectTests
                 organizerIds.First(),
                 organizerIds.Skip(1).ToList(),
                 date,
-                v.Date.BetweenTimeOnly(new TimeOnly(7, 0), new TimeOnly(9, 0)),
-                v.Random.Bool() ? v.Date.BetweenTimeOnly(new TimeOnly(12, 0), new TimeOnly(15, 0)) : null,
+                new TimeOnly(7, 0).AddMinutes(v.Random.Number(0, 8) * 15),
+                v.Random.Bool() ? new TimeOnly(12, 0).AddMinutes(v.Random.Number(0, 12) * 15) : null,
                 new DateTime(v.Date.Between(v.Date.Recent(-5), date.ToDateTime(TimeOnly.MinValue)).Ticks, DateTimeKind.Unspecified),
                 v.Random.Number(1, 500)
             );
@@ -107,4 +128,28 @@ public class CreateProjectTests
                 v.Random.String2(4).ToUpper()
             ))
         .Generate(10);
+}
+
+public class ProjectEqualityComparer : IEqualityComparer<Project>
+{
+    public bool Equals(Project? x, Project? y)
+    {
+        return Equals(x.Id, y.Id) &&
+            Equals(x.Title, y.Title) &&
+            Equals(x.Description, y.Description) &&
+            Equals(x.Location, y.Location) &&
+            Equals(x.Organizer, y.Organizer) &&
+            x.CoOrganizers.SequenceEqual(y.CoOrganizers) &&
+            Equals(x.Date, y.Date) &&
+            Equals(x.StartTime, y.StartTime) &&
+            Equals(x.EndTime, y.EndTime) &&
+            Equals(x.ClosingDate, y.ClosingDate) &&
+            Equals(x.MaxAttendees, y.MaxAttendees) &&
+            x.AllAttendees.SequenceEqual(y.AllAttendees);
+    }
+
+    public int GetHashCode([DisallowNull] Project obj)
+    {
+        throw new NotImplementedException();
+    }
 }
