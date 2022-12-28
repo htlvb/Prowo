@@ -152,14 +152,13 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = Project.FromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates);
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, out var project, out var errorMessage))
+            {
+                return BadRequest(errorMessage);
+            }
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "CreateProject")).Succeeded)
             {
                 return Forbid();
-            }
-            if (project.Date < DateOnly.FromDateTime(DateTime.Today))
-            {
-                return BadRequest("Project too old.");
             }
             await projectStore.CreateProject(project);
             return Ok();
@@ -175,14 +174,13 @@ namespace Prowo.WebAsm.Server.Controllers
             }
 
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = Project.FromEditingProjectDataDto(projectData, projectId, organizerCandidates);
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, out var project, out var errorMessage))
+            {
+                return BadRequest(errorMessage);
+            }
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
             {
                 return Forbid();
-            }
-            if (project.Date < MinDate)
-            {
-                return BadRequest("Project too old.");
             }
             await projectStore.UpdateProject(project);
             return Ok();

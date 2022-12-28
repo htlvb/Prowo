@@ -1,4 +1,5 @@
 ﻿using Prowo.WebAsm.Shared;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Prowo.WebAsm.Server.Data
 {
@@ -20,25 +21,64 @@ namespace Prowo.WebAsm.Server.Data
         public IEnumerable<ProjectAttendee> RegisteredAttendees => AllAttendees.Take(MaxAttendees);
         public IEnumerable<ProjectAttendee> WaitingAttendees => AllAttendees.Skip(MaxAttendees);
 
-        public static Project FromEditingProjectDataDto(
+        public static bool TryCreateFromEditingProjectDataDto(
             EditingProjectDataDto projectData,
             string projectId,
-            IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates
+            IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates,
+            [NotNullWhen(true)]out Project? project,
+            [NotNullWhen(false)]out string? errorMessage
         )
         {
-            var organizer =
-                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer)
-                    ? projectOrganizer
-                    : throw new Exception($"Organizer with ID \"{projectData.OrganizerId}\" not found");
-            var coOrganizers = projectData.CoOrganizerIds
-                .Except(new[] { projectData.OrganizerId })
-                .Select(coOrganizerId =>
-                    organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer)
-                        ? projectCoOrganizer
-                        : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")
-                )
-                .ToArray();
-            return new Project(
+            if (string.IsNullOrWhiteSpace(projectData.Title))
+            {
+                project = null;
+                errorMessage = "Project title must not be empty.";
+                return false;
+            }
+            if (!organizerCandidates.TryGetValue(projectData.OrganizerId, out var organizer))
+            {
+                project = null;
+                errorMessage = $"Organizer with ID \"{projectData.OrganizerId}\" not found";
+                return false;
+            }
+            var coOrganizerIds = projectData.CoOrganizerIds.Except(new[] { projectData.OrganizerId });
+            var coOrganizerErrors = coOrganizerIds
+                .Where(coOrganizerId => !organizerCandidates.ContainsKey(coOrganizerId))
+                .ToList();
+            if (coOrganizerErrors.Count > 0)
+            {
+                project = null;
+                errorMessage = $"Co-Organizers with ID(s) {string.Join(", ", coOrganizerErrors.Select(v => $"\"{v}\""))} not found";
+                return false;
+            }
+            var coOrganizers = coOrganizerIds
+                .Select(v => organizerCandidates[v])
+                .ToList();
+            if (projectData.Date < DateOnly.FromDateTime(DateTime.Today))
+            {
+                project = null;
+                errorMessage = "Project date must be in the future.";
+                return false;
+            }
+            if (projectData.EndTime != null && projectData.StartTime > projectData.EndTime.Value)
+            {
+                project = null;
+                errorMessage = "Project start and end times are invalid.";
+                return false;
+            }
+            if (projectData.ClosingDate.FromUserTime() < DateTime.UtcNow)
+            {
+                project = null;
+                errorMessage = "Project closing date must be in the future.";
+                return false;
+            }
+            if (projectData.MaxAttendees < 1)
+            {
+                project = null;
+                errorMessage = "Max attendees must be greater than 0.";
+                return false;
+            }
+            project = new Project(
                 projectId,
                 projectData.Title,
                 projectData.Description,
@@ -52,6 +92,8 @@ namespace Prowo.WebAsm.Server.Data
                 projectData.MaxAttendees,
                 Array.Empty<ProjectAttendee>()
             );
+            errorMessage = null;
+            return true;
         }
     }
 

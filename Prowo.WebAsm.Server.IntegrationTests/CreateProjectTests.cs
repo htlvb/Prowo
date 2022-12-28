@@ -34,7 +34,8 @@ public class CreateProjectTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
         Assert.Equal(1, actualNewProjects.Count);
-        var expectedNewProject = Project.FromEditingProjectDataDto(project, actualNewProjects[0].Id, ProjectOrganizers.ToDictionary(v => v.Id));
+        var isProjectValid = Project.TryCreateFromEditingProjectDataDto(project, actualNewProjects[0].Id, ProjectOrganizers.ToDictionary(v => v.Id), out var expectedNewProject, out _);
+        Assert.True(isProjectValid, "Expected project to be valid");
         Assert.Equal(expectedNewProject, actualNewProjects[0], new ProjectEqualityComparer());
     }
 
@@ -52,18 +53,33 @@ public class CreateProjectTests
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
-    [Fact]
-    public async Task CantCreateProjectWhenDateIsInThePast()
+    public static IEnumerable<object[]> InvalidProjectData
+    {
+        get
+        {
+            yield return new object[] { "Title is null", EditingProjectDataDtoFaker.Generate() with { Title = null } };
+            yield return new object[] { "Title is empty", EditingProjectDataDtoFaker.Generate() with { Title = "" } };
+            yield return new object[] { "Title is white-space", EditingProjectDataDtoFaker.Generate() with { Title = " " } };
+            yield return new object[] { "Unknown organizer", EditingProjectDataDtoFaker.Generate() with { OrganizerId = "unknown-organizer" } };
+            yield return new object[] { "Unknown co-organizer", EditingProjectDataDtoFaker.Generate() with { CoOrganizerIds = new[] { "unknown-co-organizer" } } };
+            yield return new object[] { "Date is in the past", EditingProjectDataDtoFaker.Generate() with { Date = DateOnly.FromDateTime(DateTime.Today).AddDays(-1) } };
+            yield return new object[] { "Start time and end time are invalid", EditingProjectDataDtoFaker.Generate() with { StartTime = new TimeOnly(10, 0), EndTime = new TimeOnly(9, 59) } };
+            yield return new object[] { "Closing date is in the past", EditingProjectDataDtoFaker.Generate() with { ClosingDate = new DateTime(DateTime.Now.AddMinutes(-1).Ticks, DateTimeKind.Unspecified) } };
+            yield return new object[] { "Max attendees is zero", EditingProjectDataDtoFaker.Generate() with { MaxAttendees = 0 } };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidProjectData))]
+    public async Task CantCreateInvalidProject(string description, EditingProjectDataDto project)
     {
         var host = await StartHost();
         var client = host.GetTestClient();
-        var project = EditingProjectDataDtoFaker.Generate() with { Date = DateOnly.FromDateTime(DateTime.Today).AddDays(-1) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{project.OrganizerId}");
 
         var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("Project too old.", await response.Content.ReadAsStringAsync());
     }
 
     private static async Task<IHost> StartHost()
@@ -114,7 +130,7 @@ public class CreateProjectTests
                 date,
                 new TimeOnly(7, 0).AddMinutes(v.Random.Number(0, 8) * 15),
                 v.Random.Bool() ? new TimeOnly(12, 0).AddMinutes(v.Random.Number(0, 12) * 15) : null,
-                new DateTime(v.Date.Between(v.Date.Recent(-5), date.ToDateTime(TimeOnly.MinValue)).Ticks, DateTimeKind.Unspecified),
+                new DateTime(v.Date.Between(v.Date.Soon(5), date.ToDateTime(TimeOnly.MinValue)).Ticks, DateTimeKind.Unspecified),
                 v.Random.Number(1, 500)
             );
         });
