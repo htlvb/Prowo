@@ -45,7 +45,7 @@ public class CreateProjectTests
         var host = await StartHost();
         var client = host.GetTestClient();
         var project = EditingProjectDataDtoFaker.Generate();
-        var writerId = ProjectOrganizers.Select(v => v.Id).First(v => v != project.OrganizerId);
+        var writerId = ProjectOrganizers.First(v => v.Id != project.OrganizerId).Id;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{writerId}");
 
         var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
