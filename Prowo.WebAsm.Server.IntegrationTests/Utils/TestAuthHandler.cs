@@ -58,3 +58,18 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthHandlerOptions>
 public class TestAuthHandlerOptions : AuthenticationSchemeOptions
 {
 }
+
+public static class HttpClientExtensions
+{
+    public static HttpClient AuthenticateAsProjectWriter(this HttpClient httpClient, string userId)
+    {
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{userId}");
+        return httpClient;
+    }
+
+    public static HttpClient AuthenticateAsProjectAttendee(this HttpClient httpClient, string userId)
+    {
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-attendee-{userId}");
+        return httpClient;
+    }
+}

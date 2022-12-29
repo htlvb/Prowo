@@ -1,3 +1,4 @@
+using Bogus;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,14 +18,13 @@ public class CreateProjectTests
     [Fact]
     public async Task CanCreateProjectAsOrganizerWhenAuthorized()
     {
-        var host = await InMemoryServer.Start();
-        var client = host.GetTestClient();
+        using var host = await InMemoryServer.Start();
         var project = FakeData.EditingProjectDataDtoFaker.Generate();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{project.OrganizerId}");
+        using var client = host.GetTestClient().AuthenticateAsProjectWriter(project.OrganizerId);
         var projectStore = host.Services.GetService<IProjectStore>();
         var existingProjects = await projectStore.GetAllSince(DateTime.MinValue).ToList();
 
-        var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
+        using var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
@@ -37,13 +37,14 @@ public class CreateProjectTests
     [Fact]
     public async Task CantCreateProjectWithOtherOrganizerWhenNotAuthorized()
     {
-        var host = await InMemoryServer.Start();
-        var client = host.GetTestClient();
+        using var host = await InMemoryServer.Start();
         var project = FakeData.EditingProjectDataDtoFaker.Generate();
-        var writerId = FakeData.ProjectOrganizers.First(v => v.Id != project.OrganizerId).Id;
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{writerId}");
+        var writerId = FakeData.ProjectOrganizers
+            .First(v => v.Id != project.OrganizerId).Id;
+        using var client = host.GetTestClient()
+            .AuthenticateAsProjectWriter(writerId);
 
-        var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
+        using var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -67,11 +68,11 @@ public class CreateProjectTests
     [MemberData(nameof(InvalidProjectData))]
     public async Task CantCreateInvalidProject(string description, EditingProjectDataDto project)
     {
-        var host = await InMemoryServer.Start();
-        var client = host.GetTestClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{project.OrganizerId}");
+        using var host = await InMemoryServer.Start();
+        using var client = host.GetTestClient()
+            .AuthenticateAsProjectWriter(project.OrganizerId);
 
-        var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
+        using var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
