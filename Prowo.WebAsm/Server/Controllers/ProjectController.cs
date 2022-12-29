@@ -58,7 +58,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> RegisterForProject(string projectId)
         {
             var attendee = await userStore.GetSelfAsProjectAttendee();
-            var project = await projectStore.AddAttendee(projectId, attendee);
+            var project = await postgresqlProjectStore.AddAttendee(projectId, attendee);
             return Ok(await GetProjectDtoFromProject(project));
         }
 

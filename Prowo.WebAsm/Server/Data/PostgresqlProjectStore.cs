@@ -74,7 +74,16 @@ namespace Prowo.WebAsm.Server.Data
 
         public async Task<Project> AddAttendee(string projectId, ProjectAttendee attendee)
         {
-            throw new NotImplementedException();
+            var dbRegistrationEvent = new DbProjectRegistrationEvent(
+                Guid.Parse(projectId),
+                DbProjectRegistrationUser.FromAttendee(attendee),
+                DateTime.UtcNow,
+                DbProjectRegistrationAction.Register
+            );
+            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
+            await dbConnection.OpenAsync();
+            await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
+            return await Get(projectId);
         }
 
         public async Task<Project> RemoveAttendee(string projectId, string userId)
@@ -158,6 +167,18 @@ namespace Prowo.WebAsm.Server.Data
             }
         }
 
+        private static async Task AddRegistrationEvent(
+            NpgsqlConnection dbConnection,
+            DbProjectRegistrationEvent registrationEvent)
+        {
+            using var cmd = new NpgsqlCommand("INSERT INTO registration_event (project_id, \"user\", timestamp, action) VALUES (@project_id, @user, @timestamp, @action)", dbConnection);
+            cmd.Parameters.AddWithValue("project_id", registrationEvent.ProjectId);
+            cmd.Parameters.AddWithValue("user", NpgsqlDbType.Json, registrationEvent.User);
+            cmd.Parameters.AddWithValue("timestamp", registrationEvent.Timestamp);
+            cmd.Parameters.AddWithValue("action", registrationEvent.Action);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
         private static List<ProjectAttendee> CalculateActualAttendees(
             IEnumerable<DbProjectRegistrationEvent> registrationEvents)
         {
@@ -186,6 +207,11 @@ namespace Prowo.WebAsm.Server.Data
             public ProjectAttendee ToAttendee()
             {
                 return new(Id.ToString(), FirstName, LastName, Class);
+            }
+
+            public static DbProjectRegistrationUser FromAttendee(ProjectAttendee attendee)
+            {
+                return new(Guid.Parse(attendee.Id), attendee.FirstName, attendee.LastName, attendee.Class);
             }
         }
 
