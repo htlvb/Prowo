@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
 using Prowo.WebAsm.Server.Data;
-using Prowo.WebAsm.Shared;
 using System.Globalization;
 using GraphServiceClient = Microsoft.Graph.GraphServiceClient;
 
@@ -19,68 +18,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .EnableTokenAcquisitionToCallDownstreamApi()
     .AddMicrosoftGraph(builder.Configuration.GetSection("GraphBeta"))
     .AddInMemoryTokenCaches();
-builder.Services.AddControllersWithViews().AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
-    options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
-});
+builder.Services.AddProwoControllers();
 builder.Services.AddRazorPages();
 
-builder.Services.AddAuthorization(options =>
-{
-    // By default, all incoming requests will be authorized according to the default policy
-    //options.FallbackPolicy = options.DefaultPolicy;
+builder.Services.AddProwoAuthorizationRules();
 
-    options.AddPolicy("CreateProject", policy =>
-    {
-        policy.RequireAssertion(ctx =>
-        {
-            if (ctx.User.IsInRole("Project.Write.All"))
-            {
-                return true;
-            }
-            if (ctx.User.IsInRole("Project.Write"))
-            {
-                if (ctx.Resource == null)
-                {
-                    return true;
-                }
-                if (ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
-                {
-                    return true;
-                }
-            }
-            return false;
-        });
-    });
-    options.AddPolicy("UpdateProject", policy =>
-    {
-        policy.RequireAssertion(ctx =>
-        {
-            if (ctx.User.IsInRole("Project.Write.All"))
-            {
-                return true;
-            }
-            if (ctx.User.IsInRole("Project.Write") && ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
-            {
-                return true;
-            }
-            return false;
-        });
-    });
-
-    options.AddPolicy("ChangeProjectOrganizer", policy => policy.RequireRole("Project.Write.All"));
-    options.AddPolicy("AttendProject", policy => policy.RequireRole("Project.Attend"));
-    options.AddPolicy("CreateReport", policy => policy.RequireRole("Report.Create"));
-});
-
-builder.Services.AddSingleton(provider =>
+builder.Services.AddSingleton<IProjectStore>(provider =>
 {
     string connectionString = builder.Configuration.GetConnectionString("PostgresqlDb");
     return new PostgresqlProjectStore(connectionString);
 });
 
-builder.Services.AddScoped(provider =>
+builder.Services.AddScoped<IUserStore>(provider =>
 {
     return new UserStore(
         builder.Configuration.GetSection("AppSettings")["OrganizerGroupId"],

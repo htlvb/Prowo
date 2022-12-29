@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Prowo.WebAsm.Server.Data
 {
-    public class UserStore
+    public class UserStore : IUserStore
     {
         private readonly string organizerGroupId;
         private readonly string attendeeGroupId;

@@ -6,7 +6,7 @@ using NpgsqlTypes;
 
 namespace Prowo.WebAsm.Server.Data
 {
-    public class PostgresqlProjectStore : IDisposable
+    public class PostgresqlProjectStore : IProjectStore, IDisposable
     {
         private readonly string dbConnectionString;
 

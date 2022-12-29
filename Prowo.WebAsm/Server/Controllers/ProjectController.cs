@@ -11,15 +11,15 @@ namespace Prowo.WebAsm.Server.Controllers
     [Route("api/projects")]
     public class ProjectController : ControllerBase
     {
-        private readonly PostgresqlProjectStore projectStore;
-        private readonly UserStore userStore;
+        private readonly IProjectStore projectStore;
+        private readonly IUserStore userStore;
         private readonly IAuthorizationService authService;
 
         private DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today.AddDays(-7));
 
         public ProjectController(
-            PostgresqlProjectStore projectStore,
-            UserStore userStore,
+            IProjectStore projectStore,
+            IUserStore userStore,
             IAuthorizationService authService)
         {
             this.projectStore = projectStore;
@@ -152,14 +152,13 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = GetProjectFromProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates);
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, out var project, out var errorMessage))
+            {
+                return BadRequest(errorMessage);
+            }
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "CreateProject")).Succeeded)
             {
                 return Forbid();
-            }
-            if (project.Date < MinDate)
-            {
-                return BadRequest("Project too old.");
             }
             await projectStore.CreateProject(project);
             return Ok();
@@ -175,14 +174,13 @@ namespace Prowo.WebAsm.Server.Controllers
             }
 
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            var project = GetProjectFromProjectDataDto(projectData, projectId, organizerCandidates);
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, out var project, out var errorMessage))
+            {
+                return BadRequest(errorMessage);
+            }
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
             {
                 return Forbid();
-            }
-            if (project.Date < MinDate)
-            {
-                return BadRequest("Project too old.");
             }
             await projectStore.UpdateProject(project);
             return Ok();
@@ -326,36 +324,6 @@ namespace Prowo.WebAsm.Server.Controllers
                     canUpdate ? $"projects/edit/{project.Id}" : default,
                     canShowAttendees ? $"projects/attendees/{project.Id}" : default
                 )
-            );
-        }
-
-        private static Project GetProjectFromProjectDataDto(
-            EditingProjectDataDto projectData,
-            string projectId,
-            IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates
-        )
-        {
-            var coOrganizers = projectData.CoOrganizerIds
-                .Except(new[] { projectData.OrganizerId })
-                .Select(coOrganizerId =>
-                    organizerCandidates.TryGetValue(coOrganizerId, out ProjectOrganizer? projectCoOrganizer)
-                        ? projectCoOrganizer
-                        : throw new Exception($"Co-Organizer with ID \"{coOrganizerId}\" not found")
-                )
-                .ToArray();
-            return new Project(
-                projectId,
-                projectData.Title,
-                projectData.Description,
-                projectData.Location,
-                organizerCandidates.TryGetValue(projectData.OrganizerId, out ProjectOrganizer? projectOrganizer) ? projectOrganizer : throw new Exception("Organizer not found"),
-                coOrganizers,
-                projectData.Date,
-                projectData.StartTime,
-                projectData.EndTime,
-                projectData.ClosingDate.FromUserTime(),
-                projectData.MaxAttendees,
-                Array.Empty<ProjectAttendee>()
             );
         }
     }
