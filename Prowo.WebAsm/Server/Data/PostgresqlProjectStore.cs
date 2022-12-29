@@ -88,7 +88,16 @@ namespace Prowo.WebAsm.Server.Data
 
         public async Task<Project> RemoveAttendee(string projectId, string userId)
         {
-            throw new NotImplementedException();
+            var dbRegistrationEvent = new DbProjectRegistrationEvent(
+                Guid.Parse(projectId),
+                new DbProjectRegistrationUser(Guid.Parse(userId), null, null, null),
+                DateTime.UtcNow,
+                DbProjectRegistrationAction.Deregister
+            );
+            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
+            await dbConnection.OpenAsync();
+            await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
+            return await Get(projectId);
         }
 
         public void Dispose()

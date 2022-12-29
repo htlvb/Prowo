@@ -65,7 +65,7 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpPost("{projectId}/deregister")]
         public async Task<ProjectDto> DeregisterFromProject(string projectId)
         {
-            var project = await projectStore.RemoveAttendee(projectId, HttpContext.User.GetObjectId());
+            var project = await postgresqlProjectStore.RemoveAttendee(projectId, HttpContext.User.GetObjectId());
             return await GetProjectDtoFromProject(project);
         }
 
