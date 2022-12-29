@@ -1,7 +1,7 @@
 ﻿using Prowo.WebAsm.Server.Data;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Prowo.WebAsm.Server.IntegrationTests;
+namespace Prowo.WebAsm.Server.IntegrationTests.Utils;
 
 public class ProjectEqualityComparer : IEqualityComparer<Project>
 {

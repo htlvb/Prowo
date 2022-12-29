@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Prowo.WebAsm.Server.Data;
+using Prowo.WebAsm.Server.IntegrationTests.Utils;
 using Prowo.WebAsm.Shared;
 using System.Linq;
 using System.Net;
@@ -16,7 +17,7 @@ public class CreateProjectTests
     [Fact]
     public async Task CanCreateProjectAsOrganizerWhenAuthorized()
     {
-        var host = await TestServer.Start();
+        var host = await InMemoryServer.Start();
         var client = host.GetTestClient();
         var project = FakeData.EditingProjectDataDtoFaker.Generate();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{project.OrganizerId}");
@@ -36,7 +37,7 @@ public class CreateProjectTests
     [Fact]
     public async Task CantCreateProjectWithOtherOrganizerWhenNotAuthorized()
     {
-        var host = await TestServer.Start();
+        var host = await InMemoryServer.Start();
         var client = host.GetTestClient();
         var project = FakeData.EditingProjectDataDtoFaker.Generate();
         var writerId = FakeData.ProjectOrganizers.First(v => v.Id != project.OrganizerId).Id;
@@ -66,7 +67,7 @@ public class CreateProjectTests
     [MemberData(nameof(InvalidProjectData))]
     public async Task CantCreateInvalidProject(string description, EditingProjectDataDto project)
     {
-        var host = await TestServer.Start();
+        var host = await InMemoryServer.Start();
         var client = host.GetTestClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName, $"project-writer-{project.OrganizerId}");
 

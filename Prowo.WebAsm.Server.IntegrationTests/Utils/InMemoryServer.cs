@@ -6,9 +6,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Prowo.WebAsm.Server.Data;
 
-namespace Prowo.WebAsm.Server.IntegrationTests;
+namespace Prowo.WebAsm.Server.IntegrationTests.Utils;
 
-public static class TestServer
+public static class InMemoryServer
 {
     public static async Task<IHost> Start()
     {

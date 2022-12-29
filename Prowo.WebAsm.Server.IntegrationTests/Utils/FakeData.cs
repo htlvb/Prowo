@@ -1,8 +1,9 @@
 ﻿using Bogus;
+using Prowo.WebAsm.Server;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
 
-namespace Prowo.WebAsm.Server.IntegrationTests;
+namespace Prowo.WebAsm.Server.IntegrationTests.Utils;
 
 public static class FakeData
 {
