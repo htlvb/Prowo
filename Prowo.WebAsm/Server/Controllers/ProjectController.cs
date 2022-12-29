@@ -225,7 +225,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<AttendanceOverviewDto> GetAllAttendees()
         {
             var attendeeCandidates = await userStore.GetAttendeeCandidates().ToList();
-            var projects = await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList();
+            var projects = await postgresqlProjectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList();
             var projectsByUserAndDate = projects
                 .SelectMany(p =>
                 {
