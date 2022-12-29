@@ -66,7 +66,10 @@ namespace Prowo.WebAsm.Server.Data
 
         public async Task UpdateProject(Project project)
         {
-            throw new NotImplementedException();
+            var dbProject = DbProject.FromDomain(project);
+            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
+            await dbConnection.OpenAsync();
+            await UpdateProject(dbConnection, dbProject);
         }
 
         public async Task<Project> AddAttendee(string projectId, ProjectAttendee attendee)
@@ -111,6 +114,23 @@ namespace Prowo.WebAsm.Server.Data
         private static async Task CreateProject(NpgsqlConnection dbConnection, DbProject project)
         {
             using var cmd = new NpgsqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection);
+            cmd.Parameters.AddWithValue("id", project.Id);
+            cmd.Parameters.AddWithValue("title", project.Title);
+            cmd.Parameters.AddWithValue("description", project.Description);
+            cmd.Parameters.AddWithValue("location", project.Location);
+            cmd.Parameters.AddWithValue("organizer", NpgsqlDbType.Json, project.Organizer);
+            cmd.Parameters.AddWithValue("co_organizers", NpgsqlDbType.Json, project.CoOrganizers);
+            cmd.Parameters.AddWithValue("date", project.Date);
+            cmd.Parameters.AddWithValue("start_time", project.StartTime);
+            cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("closing_date", project.ClosingDate);
+            cmd.Parameters.AddWithValue("maxAttendees", project.MaxAttendees);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        private static async Task UpdateProject(NpgsqlConnection dbConnection, DbProject project)
+        {
+            using var cmd = new NpgsqlCommand("UPDATE project SET title=@title, description=@description, location=@location, organizer=@organizer, co_organizers=@co_organizers, date=@date, start_time=@start_time, end_time=@end_time, closing_date=@closing_date, maxAttendees=@maxAttendees WHERE id=@id", dbConnection);
             cmd.Parameters.AddWithValue("id", project.Id);
             cmd.Parameters.AddWithValue("title", project.Title);
             cmd.Parameters.AddWithValue("description", project.Description);
