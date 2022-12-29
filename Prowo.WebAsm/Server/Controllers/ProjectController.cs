@@ -11,18 +11,18 @@ namespace Prowo.WebAsm.Server.Controllers
     [Route("api/projects")]
     public class ProjectController : ControllerBase
     {
-        private readonly PostgresqlProjectStore postgresqlProjectStore;
+        private readonly PostgresqlProjectStore projectStore;
         private readonly UserStore userStore;
         private readonly IAuthorizationService authService;
 
         private DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today.AddDays(-7));
 
         public ProjectController(
-            PostgresqlProjectStore postgresqlProjectStore,
+            PostgresqlProjectStore projectStore,
             UserStore userStore,
             IAuthorizationService authService)
         {
-            this.postgresqlProjectStore = postgresqlProjectStore;
+            this.projectStore = projectStore;
             this.userStore = userStore;
             this.authService = authService;
         }
@@ -30,7 +30,7 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpGet("")]
         public async Task<ProjectListDto> GetProjectList()
         {
-            var projects = (await postgresqlProjectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
+            var projects = (await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
                 .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v); // Sort by date, but don't change order of projects with same date;
 
             var projectDtos = new List<ProjectDto>();
@@ -55,14 +55,14 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> RegisterForProject(string projectId)
         {
             var attendee = await userStore.GetSelfAsProjectAttendee();
-            var project = await postgresqlProjectStore.AddAttendee(projectId, attendee);
+            var project = await projectStore.AddAttendee(projectId, attendee);
             return Ok(await GetProjectDtoFromProject(project));
         }
 
         [HttpPost("{projectId}/deregister")]
         public async Task<ProjectDto> DeregisterFromProject(string projectId)
         {
-            var project = await postgresqlProjectStore.RemoveAttendee(projectId, HttpContext.User.GetObjectId());
+            var project = await projectStore.RemoveAttendee(projectId, HttpContext.User.GetObjectId());
             return await GetProjectDtoFromProject(project);
         }
 
@@ -116,7 +116,7 @@ namespace Prowo.WebAsm.Server.Controllers
             }
             else
             {
-                var project = await postgresqlProjectStore.Get(projectId);
+                var project = await projectStore.Get(projectId);
                 if (project == null || project.Date < MinDate)
                 {
                     return NotFound("Project doesn't exist or is too old.");
@@ -161,14 +161,14 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return BadRequest("Project too old.");
             }
-            await postgresqlProjectStore.CreateProject(project);
+            await projectStore.CreateProject(project);
             return Ok();
         }
 
         [HttpPost("{projectId}")]
         public async Task<IActionResult> UpdateProject(string projectId, [FromBody] EditingProjectDataDto projectData)
         {
-            var existingProject = await postgresqlProjectStore.Get(projectId);
+            var existingProject = await projectStore.Get(projectId);
             if (existingProject == null || existingProject.Date < MinDate)
             {
                 return NotFound("Project doesn't exist or is too old.");
@@ -184,7 +184,7 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return BadRequest("Project too old.");
             }
-            await postgresqlProjectStore.UpdateProject(project);
+            await projectStore.UpdateProject(project);
             return Ok();
         }
 
@@ -192,7 +192,7 @@ namespace Prowo.WebAsm.Server.Controllers
         [Authorize(Policy = "CreateReport")]
         public async Task<IActionResult> GetProjectAttendees(string projectId)
         {
-            var project = await postgresqlProjectStore.Get(projectId);
+            var project = await projectStore.Get(projectId);
             if (project == null || project.Date < MinDate)
             {
                 return NotFound("Project doesn't exist or is too old.");
@@ -222,7 +222,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<AttendanceOverviewDto> GetAllAttendees()
         {
             var attendeeCandidates = await userStore.GetAttendeeCandidates().ToList();
-            var projects = await postgresqlProjectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList();
+            var projects = await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList();
             var projectsByUserAndDate = projects
                 .SelectMany(p =>
                 {
