@@ -11,7 +11,6 @@ namespace Prowo.WebAsm.Server.Controllers
     [Route("api/projects")]
     public class ProjectController : ControllerBase
     {
-        private readonly ProjectStore projectStore;
         private readonly PostgresqlProjectStore postgresqlProjectStore;
         private readonly UserStore userStore;
         private readonly IAuthorizationService authService;
@@ -19,12 +18,10 @@ namespace Prowo.WebAsm.Server.Controllers
         private DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today.AddDays(-7));
 
         public ProjectController(
-            ProjectStore projectStore,
             PostgresqlProjectStore postgresqlProjectStore,
             UserStore userStore,
             IAuthorizationService authService)
         {
-            this.projectStore = projectStore;
             this.postgresqlProjectStore = postgresqlProjectStore;
             this.userStore = userStore;
             this.authService = authService;

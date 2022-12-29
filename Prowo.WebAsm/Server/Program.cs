@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
 using Prowo.WebAsm.Server.Data;
@@ -79,12 +78,6 @@ builder.Services.AddSingleton(provider =>
 {
     string connectionString = builder.Configuration.GetConnectionString("PostgresqlDb");
     return new PostgresqlProjectStore(connectionString);
-});
-
-builder.Services.AddSingleton(provider =>
-{
-    string connectionString = builder.Configuration.GetConnectionString("CosmosDb");
-    return new ProjectStore(new CosmosClient(connectionString));
 });
 
 builder.Services.AddScoped(provider =>
