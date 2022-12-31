@@ -24,7 +24,7 @@ public class CreateProjectTests
         var projectStore = host.Services.GetService<IProjectStore>();
         var existingProjects = await projectStore.GetAllSince(DateTime.MinValue).ToList();
 
-        using var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
+        using var response = await client.PostAsJsonAsync("/api/projects", project, host.GetJsonSerializerOptions());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
@@ -44,7 +44,7 @@ public class CreateProjectTests
         using var client = host.GetTestClient()
             .AuthenticateAsProjectWriter(writerId);
 
-        using var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
+        using var response = await client.PostAsJsonAsync("/api/projects", project, host.GetJsonSerializerOptions());
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -72,7 +72,7 @@ public class CreateProjectTests
         using var client = host.GetTestClient()
             .AuthenticateAsProjectWriter(project.OrganizerId);
 
-        using var response = await client.PostAsJsonAsync("/api/projects", project, new JsonSerializerOptions().AddConverters());
+        using var response = await client.PostAsJsonAsync("/api/projects", project, host.GetJsonSerializerOptions());
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

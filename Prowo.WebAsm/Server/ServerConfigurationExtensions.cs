@@ -65,14 +65,8 @@ public static class ServerConfigurationExtensions
             .AddApplicationPart(Assembly.GetExecutingAssembly()) // for tests
             .AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.AddConverters();
+                options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+                options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
             });
-    }
-
-    public static JsonSerializerOptions AddConverters(this JsonSerializerOptions serializerOptions)
-    {
-        serializerOptions.Converters.Add(new DateOnlyJsonConverter());
-        serializerOptions.Converters.Add(new TimeOnlyJsonConverter());
-        return serializerOptions;
     }
 }
