@@ -9,7 +9,7 @@ public class InMemoryProjectStore : IProjectStore
 
     public async IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
     {
-        foreach (var project in projects.Where(v => v.Date.ToDateTime(TimeOnly.MinValue) > timestamp))
+        foreach (var project in projects.Where(v => v.Date.ToDateTime(TimeOnly.MinValue) >= timestamp))
         {
             yield return project;
         }

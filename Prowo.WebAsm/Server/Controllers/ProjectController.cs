@@ -15,7 +15,7 @@ namespace Prowo.WebAsm.Server.Controllers
         private readonly IUserStore userStore;
         private readonly IAuthorizationService authService;
 
-        private DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today.AddDays(-7));
+        private static DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today);
 
         public ProjectController(
             IProjectStore projectStore,
