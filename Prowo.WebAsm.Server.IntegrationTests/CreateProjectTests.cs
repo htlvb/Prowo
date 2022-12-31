@@ -21,7 +21,7 @@ public class CreateProjectTests
         using var host = await InMemoryServer.Start();
         var project = FakeData.EditingProjectDataDtoFaker.Generate();
         using var client = host.GetTestClient().AuthenticateAsProjectWriter(project.OrganizerId);
-        var projectStore = host.Services.GetService<IProjectStore>();
+        var projectStore = host.Services.GetRequiredService<IProjectStore>();
         var existingProjects = await projectStore.GetAllSince(DateTime.MinValue).ToList();
 
         using var response = await client.PostAsJsonAsync("/api/projects", project, host.GetJsonSerializerOptions());
