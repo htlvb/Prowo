@@ -52,4 +52,44 @@ public class GetProjectListTests
 
         Assert.Equal(futureProjects.Count, actualProjects.Projects.Count);
     }
+
+    [Fact]
+    public async Task ShowAllAttendeesLinkIsNotEmptyIfAuthorizedAndAtLeastOneActiveProjectExists()
+    {
+        using var host = await InMemoryServer.Start();
+        var projectStore = host.Services.GetRequiredService<IProjectStore>();
+        await projectStore.CreateProject(FakeData.ProjectFaker.Generate());
+        using var client = host.GetTestClient()
+            .AuthenticateAsReportCreator("1234"); // TODO use real id from IUserStore?
+
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+
+        Assert.NotNull(projectList.Links.ShowAllAttendees);
+    }
+
+    [Fact]
+    public async Task ShowAllAttendeesLinkIsEmptyIfNotAuthorized()
+    {
+        using var host = await InMemoryServer.Start();
+        var projectStore = host.Services.GetRequiredService<IProjectStore>();
+        await projectStore.CreateProject(FakeData.ProjectFaker.Generate());
+        using var client = host.GetTestClient()
+            .AuthenticateAsProjectWriter("1234"); // TODO use real id from IUserStore?
+
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+
+        Assert.Null(projectList.Links.ShowAllAttendees);
+    }
+
+    [Fact]
+    public async Task ShowAllAttendeesLinkIsEmptyIfNoActiveProjectExists()
+    {
+        using var host = await InMemoryServer.Start();
+        using var client = host.GetTestClient()
+            .AuthenticateAsReportCreator("1234"); // TODO use real id from IUserStore?
+
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+
+        Assert.Null(projectList.Links.ShowAllAttendees);
+    }
 }
