@@ -92,4 +92,28 @@ public class GetProjectListTests
 
         Assert.Null(projectList.Links.ShowAllAttendees);
     }
+
+    [Fact]
+    public async Task CreateNewProjectLinkIsNotEmptyIfAuthorized()
+    {
+        using var host = await InMemoryServer.Start();
+        using var client = host.GetTestClient()
+            .AuthenticateAsProjectWriter("1234"); // TODO use real id from IUserStore?
+
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+
+        Assert.NotNull(projectList.Links.CreateProject);
+    }
+
+    [Fact]
+    public async Task CreateNewProjectLinkIsEmptyIfNotAuthorized()
+    {
+        using var host = await InMemoryServer.Start();
+        using var client = host.GetTestClient()
+            .AuthenticateAsReportCreator("1234"); // TODO use real id from IUserStore?
+
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+
+        Assert.Null(projectList.Links.CreateProject);
+    }
 }
