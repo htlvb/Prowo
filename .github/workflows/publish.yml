@@ -1,4 +1,4 @@
-name: Trigger auto deployment for prowo-ca
+name: Publish
 
 # When this action will be executed
 on:
@@ -8,7 +8,7 @@ on:
       [ main ]
     paths:
     - '**'
-    - '.github/workflows/deploy.yml'
+    - '.github/workflows/publish.yml'
 
   # Allow mannually trigger 
   workflow_dispatch:      
