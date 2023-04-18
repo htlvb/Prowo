@@ -155,6 +155,8 @@ az ad app update --id $clientApp.appId --set spa=@$clientAppSpaRedirectUris
 
 Remove-Item $clientAppRequiredResourceAccesses, $clientAppSpaRedirectUris
 
+Write-Warning "TODO: Update ServerApiScope in appsettings.json to 'api://$($serverApp.appId)/Api.Access'"
+
 "=== Giving admin consent to server and client app permissions"
 "!!! Login with admin account !!!"
 az login --use-device-code --allow-no-subscriptions -o none
