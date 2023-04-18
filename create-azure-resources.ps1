@@ -147,7 +147,8 @@ $clientAppSpaRedirectUris = New-TemporaryFile
 {
     "redirectUris": [
         "https://localhost/authentication/login-callback",
-        "https://prowo.htlvb.at/authentication/login-callback"
+        "https://prowo.htlvb.at/authentication/login-callback",
+        "https://prowo-ca.delightfulbeach-9d9e17e5.westeurope.azurecontainerapps.io/authentication/login-callback"
     ]
 }
 "@ | Set-Content $clientAppSpaRedirectUris
