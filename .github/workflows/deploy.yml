@@ -8,7 +8,7 @@ on:
       [ main ]
     paths:
     - '**'
-    - '.github/workflows/prowo-ca-AutoDeployTrigger-379a37f6-db98-427d-b443-f24af1676dff.yml'
+    - '.github/workflows/deploy.yml'
 
   # Allow mannually trigger 
   workflow_dispatch:      
