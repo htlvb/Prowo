@@ -1,23 +1,29 @@
 $subscriptionName = "Pay-As-You-Go"
-$resourceGroupName = "prowo-rg"
-$accountName = "prowo-acdb"
-$regionName = "eastus" # westeurope
-$dbName = "ProjectsDB"
-$containerName = "Project"
+$resourceGroupName = "rg-prowo"
+$regionName = "westeurope"
+$dbServerName = "prowo-db"
+$dbDatabaseName = "prowo"
+$dbAdminName = "postgres"
 $logAnalyticsWorkspace = "prowo-law"
 $containerAppEnvironment = "prowo-cae"
 $containerAppName = "prowo-ca"
 $serverAppName = "Prowo-Server"
 $clientAppName = "Prowo-Client"
-$subscriptionId = az account subscription list --query "[?displayName == '$subscriptionName'].subscriptionId | [0]" -o tsv
+
 # TODO set $gitHubAccessToken
 # TODO set $dockerHubPassword
+# TODO set $dbAdminUserPassword
 
-az login
+az extension add --upgrade -n account
+az extension add --upgrade -n rdbms-connect --version 1.0.3 # error with newer versions, s. https://github.com/Azure/azure-cli/issues/25067
+az extension add --upgrade -n containerapp
+
+"=== Logging in and creating resource group"
 az account set --name $subscriptionName
-az group create --name $resourceGroupName --location $regionName
+$subscriptionId = az account show --query id -o tsv
+az group create --name $resourceGroupName --location $regionName -o none
 
-### Create server app registration
+"=== Creating server app registration"
 $serverAppAppRoles = New-TemporaryFile
 @"
 [
@@ -51,7 +57,7 @@ $serverAppAppRoles = New-TemporaryFile
   }
 ]
 "@ | Set-Content $serverAppAppRoles
-$msGraphId = az ad sp list --query "[?appDisplayName=='Microsoft Graph'].appId | [0]" -o tsv
+$msGraphId = az ad sp list --filter "displayname eq 'Microsoft Graph'" --query "[].appId" -o tsv
 $serverAppRequiredResourceAccesses = New-TemporaryFile
 @"
 [{
@@ -86,12 +92,15 @@ $serverApp = az ad app create --display-name $serverAppName `
     --required-resource-accesses @$serverAppRequiredResourceAccesses `
     | ConvertFrom-Json
 az ad app update --id $serverApp.appId --identifier-uris "api://$($serverApp.appId)"
-# az ad app update --id $serverApp.appId --set oauth2Permissions=@$serverAppApiScopes # TODO do manually since Microsoft Graph doesn't support setting
+
+Write-Warning "TODO do manually since Microsoft Graph doesn't support this setting (Expose an API -> Add a scope)"
+# az ad app update --id $serverApp.appId --set oauth2Permissions=@$serverAppApiScopes
 
 Remove-Item $serverAppAppRoles, $serverAppRequiredResourceAccesses, $serverAppApiScopes
 
 $serverAppCredentials = az ad app credential reset --id $serverApp.appId --display-name Initial --years 2 --append | ConvertFrom-Json
 
+az ad sp create --id $serverApp.appId -o none
 $serverAppResourceId = az ad sp show --id $serverApp.appId --query "id" -o tsv
 $appRoleAssigments = @(
     [PSCustomObject]@{PrincipalId = az ad group list --query "[?displayName=='GrpLehrer'].id | [0]" -o tsv; AppRoleName = "Report.Create"}
@@ -116,7 +125,7 @@ foreach ($item in $appRoleAssigments) {
     Remove-Item $appRoleAssignment
 }
 
-### Create client app registration
+"=== Creating client app registration"
 $clientAppRequiredResourceAccesses = New-TemporaryFile
 @"
 [{
@@ -137,46 +146,59 @@ $clientAppSpaRedirectUris = New-TemporaryFile
 @"
 {
     "redirectUris": [
-        "https://localhost/authentication/login-callback"
+        "https://localhost/authentication/login-callback",
+        "https://prowo.htlvb.at/authentication/login-callback"
     ]
 }
 "@ | Set-Content $clientAppSpaRedirectUris
-az ad app update --id $clientApp.appId --set spa=@$clientAppSpaRedirectUris # TODO manually set correct redirect uris
+az ad app update --id $clientApp.appId --set spa=@$clientAppSpaRedirectUris
 
 Remove-Item $clientAppRequiredResourceAccesses, $clientAppSpaRedirectUris
 
-### Give admin consent to server and client app permissions
-Write-Host "!!! Login with admin account !!!"
-az login --allow-no-subscriptions
+"=== Giving admin consent to server and client app permissions"
+"!!! Login with admin account !!!"
+az login --use-device-code --allow-no-subscriptions -o none
 az ad app permission admin-consent --id $serverApp.appId
 az ad app permission admin-consent --id $clientApp.appId
 az logout
 az account set --name $subscriptionName
 
-### Create CosmosDb
-az cosmosdb create --name $accountName --enable-free-tier true --resource-group $resourceGroupName --subscription $subscriptionName --locations regionName=$regionName
-az cosmosdb sql database create --name $dbName --account-name $accountName --resource-group $resourceGroupName
-az cosmosdb sql container create --name $containerName --partition-key-path /id --max-throughput 1000 --account-name $accountname --resource-group $resourceGroupName --database-name $dbName
-$cosmosDbConnectionString = az cosmosdb keys list --name $accountName --resource-group $resourceGroupName --type connection-strings --query connectionStrings[0].connectionString --output tsv
+"=== Creating PostgreSQLDb"
+az postgres flexible-server create `
+    --admin-user $dbAdminName `
+    --admin-password $dbAdminUserPassword `
+    --database-name $dbDatabaseName `
+    --location $regionName `
+    --name $dbServerName `
+    --public-access 0.0.0.0 `
+    --resource-group $resourceGroupName `
+    --sku-name Standard_B1ms `
+    --storage-size 32 `
+    --tier Burstable
+$postgreSqlDbConnectionString = "Server=$dbServerName.postgres.database.azure.com;Database=$dbDatabaseName;Port=5432;User Id=$dbAdminName;Password=$dbAdminUserPassword;Ssl Mode=VerifyFull;"
 
-### Create Container App
+$dbTemporaryFirewallRuleName = az postgres flexible-server firewall-rule create --resource-group $resourceGroupName --name $dbServerName --rule-name TempAllowAll --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255 --query name -o tsv
+az postgres flexible-server execute --admin-user $dbAdminName --admin-password $dbAdminUserPassword --name $dbServerName --database-name $dbDatabaseName --file-path .\db-schema.sql
+az postgres flexible-server firewall-rule delete --resource-group $resourceGroupName --name $dbServerName --rule-name $dbTemporaryFirewallRuleName --yes
+
+"=== Creating Container App"
 az monitor log-analytics workspace create --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName
 $logAnalyticsWorkspaceClientId = az monitor log-analytics workspace show --query customerId -o tsv --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName
 $logAnalyticsWorkspaceClientSecret = az monitor log-analytics workspace get-shared-keys --query primarySharedKey -o tsv --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName
-az containerapp env create --name $containerAppEnvironment --logs-workspace-id $logAnalyticsWorkspaceClientId --logs-workspace-key $logAnalyticsWorkspaceClientSecret --location $regionName --resource-group $resourceGroupName
+az containerapp env create --name $containerAppEnvironment --logs-workspace-id $logAnalyticsWorkspaceClientId --logs-workspace-key $logAnalyticsWorkspaceClientSecret --location $regionName --resource-group $resourceGroupName -o none
 az containerapp create `
     --name $containerAppName `
     --target-port 80 `
     --ingress external `
-    --secrets "cosmos-db-connection-string=$cosmosDbConnectionString" "aad-client-secret=$($serverAppCredentials.password)" `
-    --env-vars "ConnectionStrings__CosmosDb=secretref:cosmos-db-connection-string" "AzureAd__ClientSecret=secretref:aad-client-secret" `
+    --secrets "postgresql-db-connection-string=$postgreSqlDbConnectionString" "aad-client-secret=$($serverAppCredentials.password)" `
+    --env-vars "ConnectionStrings__PostgresqlDb=secretref:postgresql-db-connection-string" "AzureAd__ClientSecret=secretref:aad-client-secret" `
     --environment $containerAppEnvironment `
-    --resource-group $resourceGroupName
+    --resource-group $resourceGroupName `
+    -o none
 $sp = az ad sp create-for-rbac `
     --name github-actions-sp `
     --role contributor `
     --scopes /subscriptions/$subscriptionId/resourceGroups/$resourceGroupName `
-    --sdk-auth `
     | ConvertFrom-Json
 az containerapp github-action add `
     --name $containerAppName `
@@ -192,11 +214,13 @@ az containerapp github-action add `
     --token $gitHubAccessToken `
     --resource-group $resourceGroupName
 
-### Delete resources
+<#
+"=== Deleting resources"
+az ad app delete --id (az ad app list --filter "displayName eq '$serverAppName'" --query "[].id" -o tsv)
+az ad app delete --id (az ad app list --filter "displayName eq '$clientAppName'" --query "[].id" -o tsv)
 az containerapp delete --name $containerAppName --resource-group $resourceGroupName --yes
 az containerapp env delete --name $containerAppEnvironment --resource-group $resourceGroupName --yes
 az monitor log-analytics workspace delete --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName --yes
-az cosmosdb sql container delete --name $containerName --account-name $accountname --resource-group $resourceGroupName --database-name $dbName --yes
-az cosmosdb sql database delete --name $dbName --account-name $accountname --resource-group $resourceGroupName --yes
-az cosmosdb delete --name $accountName --resource-group $resourceGroupName --yes
+az postgres flexible-server delete --name $dbServerName --resource-group $resourceGroupName --yes
 az group delete --name $resourceGroupName --yes
+#>
