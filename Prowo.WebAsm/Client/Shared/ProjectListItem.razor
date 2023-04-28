@@ -82,16 +82,20 @@
                 }
                 @if (Project.Links.Delete != null)
                 {
-                    <button class="btn btn-red" disabled=@(isDeletingProject) onclick=@(() => DeleteProject(Project))>
-                        @if (isDeletingProject)
-                        {
-                            <span class="spinner spinner-red"></span>
-                        }
-                        else
-                        {
-                            <text>Löschen</text>
-                        }
-                    </button>
+                    if (deletionState == DeletionState.None)
+                    {
+                        <button class="btn btn-red" onclick=@MarkForDeletion>Löschen</button>
+                    }
+                    else if (deletionState == DeletionState.IsMarkedForDeletion)
+                    {
+                        <button class="btn btn-red-filled" onclick=@Delete>Wirklich löschen</button>
+                    }
+                    else if (deletionState == DeletionState.IsDeleting)
+                    {
+                        <button class="btn btn-red-filled" disabled="true">
+                            <span class="spinner spinner-white"></span>
+                        </button>
+                    }
                 }
                 @if (Project.Links.ShowAttendees != null)
                 {
@@ -140,21 +144,35 @@
     public Action? OnDelete { get; set; }
 
     private bool isLoadingRegistration;
-    private bool isDeletingProject;
 
-    private async Task DeleteProject(ProjectDto project)
+    enum DeletionState
     {
-        isDeletingProject = true;
+        None,
+        IsMarkedForDeletion,
+        IsDeleting
+    }
+
+    private DeletionState deletionState;
+
+    private void MarkForDeletion()
+    {
+        deletionState = DeletionState.IsMarkedForDeletion;
+        StateHasChanged();
+    }
+
+    private async Task Delete()
+    {
+        deletionState = DeletionState.IsDeleting;
         StateHasChanged();
         try
         {
-            var response = await Http.DeleteAsync(project.Links.Delete);
+            var response = await Http.DeleteAsync(Project.Links.Delete);
             response.EnsureSuccessStatusCode();
             OnDelete?.Invoke();
         }
         finally
         {
-            isDeletingProject = false;
+            deletionState = DeletionState.None;
             StateHasChanged();
         }
     }

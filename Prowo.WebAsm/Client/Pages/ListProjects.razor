@@ -102,10 +102,12 @@
     private void UpdateProject(ProjectDto oldProject, ProjectDto newProject)
     {
         projectList = projectList with { Projects = projectList.Projects.Select(p => ReferenceEquals(p, oldProject) ? newProject : p).ToList() };
+        StateHasChanged();
     }
 
     private void RemoveProject(ProjectDto project)
     {
         projectList = projectList with { Projects = projectList.Projects.Except(new[] { project }).ToList() };
+        StateHasChanged();
     }
 }

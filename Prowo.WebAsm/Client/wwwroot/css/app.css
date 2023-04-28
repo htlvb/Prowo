@@ -11,6 +11,9 @@
 .spinner-red {
     @apply border-red-500 border-b-transparent;
 }
+.spinner-white {
+    @apply border-white border-b-transparent;
+}
 .btn {
     @apply inline-block text-center cursor-pointer bg-transparent font-semibold py-2 px-4 border rounded;
 }
@@ -31,6 +34,9 @@
 }
 .btn-red {
     @apply text-red-700 border-red-500;
+}
+.btn-red-filled {
+    @apply text-white bg-red-500 border-red-500;
 }
 .btn-red:hover:not([disabled]) {
     @apply shadow-red-500;
