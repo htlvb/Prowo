@@ -11,6 +11,7 @@ public class InMemoryProjectStore : IProjectStore
     {
         foreach (var project in projects.Where(v => v.Date.ToDateTime(TimeOnly.MinValue) >= timestamp))
         {
+            await Task.Yield();
             yield return project;
         }
     }
@@ -22,6 +23,7 @@ public class InMemoryProjectStore : IProjectStore
 
     public async Task CreateProject(Project project)
     {
+        await Task.Yield();
         projects.Add(project);
     }
 

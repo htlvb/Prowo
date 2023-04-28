@@ -3,10 +3,13 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Prowo.WebAsm.Server.IntegrationTests.Utils;
 
-public class ProjectEqualityComparer : IEqualityComparer<Project>
+public class ProjectEqualityComparer : IEqualityComparer<Project?>
 {
     public bool Equals(Project? x, Project? y)
     {
+        if (x == null && y == null) { return true; }
+        if (x == null) { return false; }
+        if (y == null) { return false; }
         return Equals(x.Id, y.Id) &&
             Equals(x.Title, y.Title) &&
             Equals(x.Description, y.Description) &&

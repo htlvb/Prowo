@@ -11,7 +11,7 @@ public static class FakeData
         .CustomInstantiator(v =>
         {
             var date = v.Date.SoonDateOnly(20);
-            var organizers = ProjectOrganizers
+            var organizers = ProjectOrganizers!
                 .OrderBy(_ => v.Random.Double())
                 .Take(v.Random.Number(1, 5))
                 .ToList();
@@ -22,7 +22,7 @@ public static class FakeData
                 2 => maxAttendees,
                 _ => v.Random.Number(1, maxAttendees - 1)
             };
-            var attendees = ProjectAttendees
+            var attendees = ProjectAttendees!
                 .OrderBy(_ => v.Random.Double())
                 .Take(attendeeCount)
                 .ToList();
@@ -54,7 +54,7 @@ public static class FakeData
         .CustomInstantiator(v =>
         {
             var date = v.Date.SoonDateOnly(20);
-            var organizerIds = ProjectOrganizers
+            var organizerIds = ProjectOrganizers!
                 .OrderBy(_ => v.Random.Double())
                 .Take(v.Random.Number(1, 5))
                 .Select(v => v.Id)

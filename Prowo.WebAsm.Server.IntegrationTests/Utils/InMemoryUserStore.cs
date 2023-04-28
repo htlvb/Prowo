@@ -20,6 +20,7 @@ public class InMemoryUserStore : IUserStore
     {
         foreach (var item in organizerCandidates)
         {
+            await Task.Yield();
             yield return item;
         }
     }

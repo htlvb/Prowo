@@ -50,6 +50,7 @@ public class GetProjectListTests
 
         var actualProjects = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
+        Assert.NotNull(actualProjects);
         Assert.Equal(futureProjects.Count, actualProjects.Projects.Count);
     }
 
@@ -64,6 +65,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
+        Assert.NotNull(projectList);
         Assert.NotNull(projectList.Links.ShowAllAttendees);
     }
 
@@ -78,6 +80,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
+        Assert.NotNull(projectList);
         Assert.Null(projectList.Links.ShowAllAttendees);
     }
 
@@ -90,6 +93,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
+        Assert.NotNull(projectList);
         Assert.Null(projectList.Links.ShowAllAttendees);
     }
 
@@ -102,6 +106,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
+        Assert.NotNull(projectList);
         Assert.NotNull(projectList.Links.CreateProject);
     }
 
@@ -114,6 +119,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
+        Assert.NotNull(projectList);
         Assert.Null(projectList.Links.CreateProject);
     }
 }

@@ -66,7 +66,10 @@ public class CreateProjectTests
 
     [Theory]
     [MemberData(nameof(InvalidProjectData))]
-    public async Task CantCreateInvalidProject(string description, EditingProjectDataDto project)
+    public async Task CantCreateInvalidProject(
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026: Unused parameter", Justification = "Improves readability.")]string description,
+        EditingProjectDataDto project
+    )
     {
         using var host = await InMemoryServer.Start();
         using var client = host.GetTestClient()
