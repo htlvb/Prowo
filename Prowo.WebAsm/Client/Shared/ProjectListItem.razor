@@ -103,7 +103,7 @@
                 }
                 @if (Project.Links.Register != null)
                 {
-                    <button class="btn btn-green" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => RegisterCurrentUserForProject(Project))>
+                    <button class="btn btn-green" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@RegisterCurrentUserForProject>
                         @if (isLoadingRegistration)
                         {
                             <span class="spinner spinner-green"></span>
@@ -116,7 +116,7 @@
                 }
                 else if (Project.Links.Deregister != null)
                 {
-                    <button class="btn btn-red" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => DeregisterCurrentUserFromProject(Project))>
+                    <button class="btn btn-red" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@DeregisterCurrentUserFromProject>
                         @if (isLoadingRegistration)
                         {
                             <span class="spinner spinner-red"></span>
@@ -177,16 +177,16 @@
         }
     }
 
-    private async Task RegisterCurrentUserForProject(ProjectDto project)
+    private async Task RegisterCurrentUserForProject()
     {
         isLoadingRegistration = true;
         StateHasChanged();
         try
         {
-            var response = await Http.PostAsync(project.Links.Register, content: null);
+            var response = await Http.PostAsync(Project.Links.Register, content: null);
             response.EnsureSuccessStatusCode();
             var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
-            OnUpdate?.Invoke(project, updatedProject);
+            OnUpdate?.Invoke(Project, updatedProject);
         }
         finally
         {
@@ -195,16 +195,16 @@
         }
     }
 
-    private async Task DeregisterCurrentUserFromProject(ProjectDto project)
+    private async Task DeregisterCurrentUserFromProject()
     {
         isLoadingRegistration = true;
         StateHasChanged();
         try
         {
-            var response = await Http.PostAsync(project.Links.Deregister, content: null);
+            var response = await Http.PostAsync(Project.Links.Deregister, content: null);
             response.EnsureSuccessStatusCode();
             var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
-            OnUpdate?.Invoke(project, updatedProject);
+            OnUpdate?.Invoke(Project, updatedProject);
         }
         finally
         {
