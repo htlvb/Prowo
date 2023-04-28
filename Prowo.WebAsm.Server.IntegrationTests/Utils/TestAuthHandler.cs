@@ -39,6 +39,11 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthHandlerOptions>
                 claims.Add(new Claim(ClaimTypes.Role, "Project.Write"));
                 claims.Add(new Claim("oid", authHeader.Parameter.Substring("project-writer-".Length)));
             }
+            else if (authHeader.Parameter.StartsWith("all-project-writer-"))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Project.Write.All"));
+                claims.Add(new Claim("oid", authHeader.Parameter.Substring("all-project-writer-".Length)));
+            }
             else if (authHeader.Parameter.StartsWith("report-creator-"))
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Report.Create"));
@@ -69,6 +74,11 @@ public static class HttpClientExtensions
     public static HttpClient AuthenticateAsProjectWriter(this HttpClient httpClient, string userId)
     {
         return httpClient.SetUser($"project-writer-{userId}");
+    }
+
+    public static HttpClient AuthenticateAsAllProjectWriter(this HttpClient httpClient, string userId)
+    {
+        return httpClient.SetUser($"all-project-writer-{userId}");
     }
 
     public static HttpClient AuthenticateAsProjectAttendee(this HttpClient httpClient, string userId)

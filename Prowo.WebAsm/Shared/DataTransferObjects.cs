@@ -109,6 +109,7 @@ namespace Prowo.WebAsm.Shared
         string? Register,
         string? Deregister,
         string? Edit,
+        string? Delete,
         string? ShowAttendees
     );
 }

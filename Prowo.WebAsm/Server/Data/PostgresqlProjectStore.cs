@@ -56,6 +56,19 @@ namespace Prowo.WebAsm.Server.Data
             return dbProject.ToDomain(attendees);
         }
 
+        public async Task Delete(string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var projectGuid))
+            {
+                return;
+            }
+            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
+            await dbConnection.OpenAsync();
+            using var cmd = new NpgsqlCommand("DELETE FROM project WHERE id = @id", dbConnection);
+            cmd.Parameters.AddWithValue("id", projectGuid);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
         public async Task CreateProject(Project project)
         {
             var dbProject = DbProject.FromDomain(project);

@@ -16,9 +16,16 @@ public class InMemoryProjectStore : IProjectStore
         }
     }
 
-    public Task<Project> Get(string projectId)
+    public async Task<Project> Get(string projectId)
     {
-        throw new NotImplementedException();
+        await Task.Yield();
+        return projects.Find(v => v.Id == projectId);
+    }
+
+    public async Task Delete(string projectId)
+    {
+        await Task.Yield();
+        projects.RemoveAll(v => v.Id == projectId);
     }
 
     public async Task CreateProject(Project project)

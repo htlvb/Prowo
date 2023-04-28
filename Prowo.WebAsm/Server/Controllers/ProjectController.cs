@@ -186,6 +186,23 @@ namespace Prowo.WebAsm.Server.Controllers
             return Ok();
         }
 
+        [HttpDelete("{projectId}")]
+        public async Task<IActionResult> DeleteProject(string projectId)
+        {
+            var existingProject = await projectStore.Get(projectId);
+            if (existingProject == null || existingProject.Date < MinDate)
+            {
+                return NotFound("Project doesn't exist or is too old.");
+            }
+
+            if (!(await authService.AuthorizeAsync(HttpContext.User, existingProject, "DeleteProject")).Succeeded)
+            {
+                return Forbid();
+            }
+            await projectStore.Delete(projectId);
+            return Ok();
+        }
+
         [HttpGet("{projectId}/attendees")]
         [Authorize(Policy = "CreateReport")]
         public async Task<IActionResult> GetProjectAttendees(string projectId)
@@ -303,6 +320,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 userRole == UserRoleForProjectDto.Registered ||
                 userRole == UserRoleForProjectDto.Waiting;
             var canUpdate = (await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded;
+            var canDelete = (await authService.AuthorizeAsync(HttpContext.User, project, "DeleteProject")).Succeeded;
             var canShowAttendees = (await authService.AuthorizeAsync(HttpContext.User, project, "CreateReport")).Succeeded;
             return new ProjectDto(
                 project.Title,
@@ -322,6 +340,7 @@ namespace Prowo.WebAsm.Server.Controllers
                     canRegister ? Url.Action(nameof(RegisterForProject), new { projectId = project.Id }) : default,
                     canDeregister ? Url.Action(nameof(DeregisterFromProject), new { projectId = project.Id }) : default,
                     canUpdate ? $"projects/edit/{project.Id}" : default,
+                    canDelete ? Url.Action(nameof(DeleteProject), new { projectId = project.Id }) : default,
                     canShowAttendees ? $"projects/attendees/{project.Id}" : default
                 )
             );

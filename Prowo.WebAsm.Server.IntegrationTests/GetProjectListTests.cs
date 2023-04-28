@@ -28,9 +28,9 @@ public class GetProjectListTests
         using var client = host.GetTestClient()
             .AuthenticateAsProjectAttendee("1234"); // TODO use real id from IUserStore?
 
-        using var response = await client.GetAsync("/api/projects");
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(projectList);
     }
 
     [Fact]
@@ -48,10 +48,9 @@ public class GetProjectListTests
         using var client = host.GetTestClient()
             .AuthenticateAsProjectAttendee("1234"); // TODO use real id from IUserStore?
 
-        var actualProjects = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
-        Assert.NotNull(actualProjects);
-        Assert.Equal(futureProjects.Count, actualProjects.Projects.Count);
+        Assert.Equal(futureProjects.Count, projectList!.Projects.Count);
     }
 
     [Fact]
@@ -65,8 +64,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
-        Assert.NotNull(projectList);
-        Assert.NotNull(projectList.Links.ShowAllAttendees);
+        Assert.NotNull(projectList!.Links.ShowAllAttendees);
     }
 
     [Fact]
@@ -80,8 +78,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
-        Assert.NotNull(projectList);
-        Assert.Null(projectList.Links.ShowAllAttendees);
+        Assert.Null(projectList!.Links.ShowAllAttendees);
     }
 
     [Fact]
@@ -93,8 +90,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
-        Assert.NotNull(projectList);
-        Assert.Null(projectList.Links.ShowAllAttendees);
+        Assert.Null(projectList!.Links.ShowAllAttendees);
     }
 
     [Fact]
@@ -106,8 +102,7 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
-        Assert.NotNull(projectList);
-        Assert.NotNull(projectList.Links.CreateProject);
+        Assert.NotNull(projectList!.Links.CreateProject);
     }
 
     [Fact]
@@ -119,7 +114,38 @@ public class GetProjectListTests
 
         var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
 
-        Assert.NotNull(projectList);
-        Assert.Null(projectList.Links.CreateProject);
+        Assert.Null(projectList!.Links.CreateProject);
+    }
+
+    [Fact]
+    public async Task DeleteProjectLinkIsEmptyIfNotAuthorized()
+    {
+        using var host = await InMemoryServer.Start();
+        var projectStore = host.Services.GetRequiredService<IProjectStore>();
+        var project = FakeData.ProjectFaker.Generate()
+            with { AllAttendees = Array.Empty<ProjectAttendee>() };
+        await projectStore.CreateProject(project);
+        using var client = host.GetTestClient()
+            .AuthenticateAsProjectWriter("1234"); // TODO use real id from IUserStore?
+
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+
+        Assert.Null(projectList!.Projects[0].Links.Delete);
+    }
+
+    [Fact]
+    public async Task DeleteProjectLinkIsNotEmptyIfAuthorized()
+    {
+        using var host = await InMemoryServer.Start();
+        var projectStore = host.Services.GetRequiredService<IProjectStore>();
+        var project = FakeData.ProjectFaker.Generate()
+            with { AllAttendees = Array.Empty<ProjectAttendee>() };
+        await projectStore.CreateProject(project);
+        using var client = host.GetTestClient()
+            .AuthenticateAsProjectWriter(project.Organizer.Id);
+
+        var projectList = await client.GetFromJsonAsync<ProjectListDto>("/api/projects", host.GetJsonSerializerOptions());
+
+        Assert.NotNull(projectList!.Projects[0].Links.Delete);
     }
 }

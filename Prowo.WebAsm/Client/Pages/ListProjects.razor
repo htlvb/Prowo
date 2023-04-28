@@ -135,6 +135,20 @@
                         {
                             <NavLink class="btn btn-blue" href=@project.Links.Edit>Bearbeiten</NavLink>
                         }
+                        @if (project.Links.Delete != null)
+                        {
+                            bool isDeletingProject = deletingProjects.Contains(project);
+                            <button class="btn btn-red" disabled=@(isDeletingProject) onclick=@(() => DeleteProject(project))>
+                                @if (isDeletingProject)
+                                {
+                                    <span class="spinner spinner-red"></span>
+                                }
+                                else
+                                {
+                                    <text>Löschen</text>
+                                }
+                            </button>
+                        }
                         @if (project.Links.ShowAttendees != null)
                         {
                             <NavLink class="btn btn-blue" href=@project.Links.ShowAttendees>Anmeldungen anzeigen</NavLink>
@@ -181,6 +195,7 @@
     private DateOnly? selectedDate;
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
     private HashSet<ProjectDto> loadingRegistrationProjects = new(ReferenceEqualityComparer.Instance);
+    private HashSet<ProjectDto> deletingProjects = new(ReferenceEqualityComparer.Instance);
     private bool showOnlyUserProjects = false;
 
     protected override async Task OnInitializedAsync()
@@ -206,6 +221,23 @@
     {
         this.showOnlyUserProjects = showOnlyUserProjects;
         StateHasChanged();
+    }
+
+    private async Task DeleteProject(ProjectDto project)
+    {
+        deletingProjects.Add(project);
+        StateHasChanged();
+        try
+        {
+            var response = await Http.DeleteAsync(project.Links.Delete);
+            response.EnsureSuccessStatusCode();
+            projectList = projectList with { Projects = projectList.Projects.Except(new[] { project }).ToList() };
+        }
+        finally
+        {
+            deletingProjects.Remove(project);
+            StateHasChanged();
+        }
     }
 
     private async Task RegisterCurrentUserForProject(ProjectDto project)

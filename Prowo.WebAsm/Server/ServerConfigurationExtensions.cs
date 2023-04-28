@@ -52,6 +52,22 @@ public static class ServerConfigurationExtensions
                 });
             });
 
+            options.AddPolicy("DeleteProject", policy =>
+            {
+                policy.RequireAssertion(ctx =>
+                {
+                    if (ctx.User.IsInRole("Project.Write.All"))
+                    {
+                        return true;
+                    }
+                    if (ctx.User.IsInRole("Project.Write") && ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId() && p.AllAttendees.Count == 0)
+                    {
+                        return true;
+                    }
+                    return false;
+                });
+            });
+
             options.AddPolicy("ChangeProjectOrganizer", policy => policy.RequireRole("Project.Write.All"));
             options.AddPolicy("AttendProject", policy => policy.RequireRole("Project.Attend"));
             options.AddPolicy("CreateReport", policy => policy.RequireRole("Report.Create"));
