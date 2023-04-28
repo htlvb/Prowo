@@ -1,0 +1,197 @@
+﻿@using System.Text.Json;
+@inject HttpClient Http
+
+@if (Project != null)
+{
+    <div class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500">
+        <div class="flex flex-col divide-y md:divide-y-0 divide-x-0 md:divide-x md:flex-row w-full">
+            <div class="flex flex-col p-2">
+                <span class="text-xl text-black">@Project.Title</span>
+                <span class="text-sm text-gray-600">
+                    <strong>@Project.Organizer.DisplayName</strong>
+                    @foreach (var coOrganizer in Project.CoOrganizers)
+                    {
+                        <text>, @coOrganizer.DisplayName</text>
+                    }
+                </span>
+                <span class="text-sm text-gray-600">@Project.Date.ToLongDateString() | @Project.StartTime @if (Project.EndTime.HasValue)
+                    {
+                        <text> - @Project.EndTime</text>
+                    }
+                </span>
+                <span class="text-sm text-gray-600">@Project.Location</span>
+                @{
+                    var diff = Project.ClosingDateLocalUserTime - DateTime.Now;
+                    string closingDateClassNames;
+                    if (diff > TimeSpan.FromDays(1))
+                    {
+                        closingDateClassNames = "text-green-600";
+                    }
+                    else if (diff > TimeSpan.Zero)
+                    {
+                        closingDateClassNames = "text-yellow-500";
+                    }
+                    else
+                    {
+                        closingDateClassNames = "text-red-500";
+                    }
+                }
+                <span class="text-sm text-gray-600">
+                    Anmeldeschluss:
+                    <span class="@closingDateClassNames">@Project.ClosingDateLocalUserTime.ToLongDateString() @Project.ClosingDateLocalUserTime.ToLongTimeString()</span>
+                </span>
+                @{
+                    double workload = (double)Project.Attendees / Project.MaxAttendees;
+                    string workloadClassNames;
+                    if (workload < 0.8)
+                    {
+                        workloadClassNames = "bg-green-500 text-white";
+                    }
+                    else if (workload < 1)
+                    {
+                        workloadClassNames = "bg-yellow-500";
+                    }
+                    else
+                    {
+                        workloadClassNames = "bg-red-500 text-white";
+                    }
+                }
+                <div class="grow flex items-end">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm p-2 rounded @workloadClassNames">@Project.Attendees / @Project.MaxAttendees</span>
+                        @if (Project.CurrentUserStatus == UserRoleForProjectDto.Registered)
+                        {
+                            <span class="text-sm text-green-500">Du bist angemeldet.</span>
+                        }
+                        else if (Project.CurrentUserStatus == UserRoleForProjectDto.Waiting)
+                        {
+                            <span class="text-sm text-yellow-500">Du bist auf der Warteliste.</span>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="p-2 grow">
+                <span class="text-sm whitespace-pre-wrap">
+                    @Project.Description
+                </span>
+            </div>
+            <div class="flex flex-col gap-2 p-2">
+                @if (Project.Links.Edit != null)
+                {
+                    <NavLink class="btn btn-blue" href=@Project.Links.Edit>Bearbeiten</NavLink>
+                }
+                @if (Project.Links.Delete != null)
+                {
+                    <button class="btn btn-red" disabled=@(isDeletingProject) onclick=@(() => DeleteProject(Project))>
+                        @if (isDeletingProject)
+                        {
+                            <span class="spinner spinner-red"></span>
+                        }
+                        else
+                        {
+                            <text>Löschen</text>
+                        }
+                    </button>
+                }
+                @if (Project.Links.ShowAttendees != null)
+                {
+                    <NavLink class="btn btn-blue" href=@Project.Links.ShowAttendees>Anmeldungen anzeigen</NavLink>
+                }
+                @if (Project.Links.Register != null)
+                {
+                    <button class="btn btn-green" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => RegisterCurrentUserForProject(Project))>
+                        @if (isLoadingRegistration)
+                        {
+                            <span class="spinner spinner-green"></span>
+                        }
+                        else
+                        {
+                            <text>Anmelden</text>
+                        }
+                    </button>
+                }
+                else if (Project.Links.Deregister != null)
+                {
+                    <button class="btn btn-red" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => DeregisterCurrentUserFromProject(Project))>
+                        @if (isLoadingRegistration)
+                        {
+                            <span class="spinner spinner-red"></span>
+                        }
+                        else
+                        {
+                            <text>Abmelden</text>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+@code {
+    private readonly JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+
+    [Parameter]
+    public ProjectDto? Project { get; set; }
+
+    [Parameter]
+    public Action<ProjectDto, ProjectDto>? OnUpdate { get; set; }
+
+    [Parameter]
+    public Action? OnDelete { get; set; }
+
+    private bool isLoadingRegistration;
+    private bool isDeletingProject;
+
+    private async Task DeleteProject(ProjectDto project)
+    {
+        isDeletingProject = true;
+        StateHasChanged();
+        try
+        {
+            var response = await Http.DeleteAsync(project.Links.Delete);
+            response.EnsureSuccessStatusCode();
+            OnDelete?.Invoke();
+        }
+        finally
+        {
+            isDeletingProject = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RegisterCurrentUserForProject(ProjectDto project)
+    {
+        isLoadingRegistration = true;
+        StateHasChanged();
+        try
+        {
+            var response = await Http.PostAsync(project.Links.Register, content: null);
+            response.EnsureSuccessStatusCode();
+            var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
+            OnUpdate?.Invoke(project, updatedProject);
+        }
+        finally
+        {
+            isLoadingRegistration = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeregisterCurrentUserFromProject(ProjectDto project)
+    {
+        isLoadingRegistration = true;
+        StateHasChanged();
+        try
+        {
+            var response = await Http.PostAsync(project.Links.Deregister, content: null);
+            response.EnsureSuccessStatusCode();
+            var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
+            OnUpdate?.Invoke(project, updatedProject);
+        }
+        finally
+        {
+            isLoadingRegistration = true;
+            StateHasChanged();
+        }
+    }
+}

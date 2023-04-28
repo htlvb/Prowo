@@ -39,7 +39,7 @@
     else
     {
         <div class="flex flex-col gap-2 border-gray-400 rounded shadow p-2">
-            @if (dates.Count > 1)
+            @if (dates != null && dates.Count > 1)
             {
                 <div class="flex flex-col md:flex-row gap-2">
                     <span class="md:self-center">Projekte nur von folgendem Tag anzeigen:</span>
@@ -62,140 +62,16 @@
 
         @foreach (var project in filteredProjects)
         {
-            <div class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500">
-                <div class="flex flex-col divide-y md:divide-y-0 divide-x-0 md:divide-x md:flex-row w-full">
-                    <div class="flex flex-col p-2">
-                        <span class="text-xl text-black">@project.Title</span>
-                        <span class="text-sm text-gray-600">
-                            <strong>@project.Organizer.DisplayName</strong>
-                            @foreach (var coOrganizer in project.CoOrganizers)
-                            {
-                                <text>, @coOrganizer.DisplayName</text>
-                            }
-                        </span>
-                        <span class="text-sm text-gray-600">@project.Date.ToLongDateString() | @project.StartTime @if (project.EndTime.HasValue) { <text> - @project.EndTime</text> }</span>
-                        <span class="text-sm text-gray-600">@project.Location</span>
-                        @{
-                            var diff = project.ClosingDateLocalUserTime - DateTime.Now;
-                            string closingDateClassNames;
-                            if (diff > TimeSpan.FromDays(1))
-                            {
-                                closingDateClassNames = "text-green-600";
-                            }
-                            else if (diff > TimeSpan.Zero)
-                            {
-                                closingDateClassNames = "text-yellow-500";
-                            }
-                            else
-                            {
-                                closingDateClassNames = "text-red-500";
-                            }
-                        }
-                        <span class="text-sm text-gray-600">
-                            Anmeldeschluss:
-                            <span class="@closingDateClassNames">@project.ClosingDateLocalUserTime.ToLongDateString() @project.ClosingDateLocalUserTime.ToLongTimeString()</span>
-                        </span>
-                        @{
-                            double workload = (double)project.Attendees / project.MaxAttendees;
-                            string workloadClassNames;
-                            if (workload < 0.8)
-                            {
-                                workloadClassNames = "bg-green-500 text-white";
-                            }
-                            else if (workload < 1)
-                            {
-                                workloadClassNames = "bg-yellow-500";
-                            }
-                            else
-                            {
-                                workloadClassNames = "bg-red-500 text-white";
-                            }
-                        }
-                        <div class="grow flex items-end">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm p-2 rounded @workloadClassNames">@project.Attendees / @project.MaxAttendees</span>
-                                @if (project.CurrentUserStatus == UserRoleForProjectDto.Registered)
-                                {
-                                    <span class="text-sm text-green-500">Du bist angemeldet.</span>
-                                }
-                                else if (project.CurrentUserStatus == UserRoleForProjectDto.Waiting)
-                                {
-                                    <span class="text-sm text-yellow-500">Du bist auf der Warteliste.</span>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-2 grow">
-                        <span class="text-sm whitespace-pre-wrap">
-                            @project.Description
-                        </span>
-                    </div>
-                    <div class="flex flex-col gap-2 p-2">
-                        @if (project.Links.Edit != null)
-                        {
-                            <NavLink class="btn btn-blue" href=@project.Links.Edit>Bearbeiten</NavLink>
-                        }
-                        @if (project.Links.Delete != null)
-                        {
-                            bool isDeletingProject = deletingProjects.Contains(project);
-                            <button class="btn btn-red" disabled=@(isDeletingProject) onclick=@(() => DeleteProject(project))>
-                                @if (isDeletingProject)
-                                {
-                                    <span class="spinner spinner-red"></span>
-                                }
-                                else
-                                {
-                                    <text>Löschen</text>
-                                }
-                            </button>
-                        }
-                        @if (project.Links.ShowAttendees != null)
-                        {
-                            <NavLink class="btn btn-blue" href=@project.Links.ShowAttendees>Anmeldungen anzeigen</NavLink>
-                        }
-                        @{
-                            bool isLoadingRegistration = loadingRegistrationProjects.Contains(project);
-                        }
-                        @if (project.Links.Register != null)
-                        {
-                            <button class="btn btn-green" disabled=@(project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => RegisterCurrentUserForProject(project))>
-                                @if (isLoadingRegistration)
-                                {
-                                    <span class="spinner spinner-green"></span>
-                                }
-                                else
-                                {
-                                    <text>Anmelden</text>
-                                }
-                            </button>
-                        }
-                        else if (project.Links.Deregister != null)
-                        {
-                            <button class="btn btn-red" disabled=@(project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => DeregisterCurrentUserFromProject(project))>
-                                @if (isLoadingRegistration)
-                                {
-                                    <span class="spinner spinner-red"></span>
-                                }
-                                else
-                                {
-                                    <text>Abmelden</text>
-                                }
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
+            <ProjectListItem @key=project Project="@project" OnUpdate="UpdateProject" OnDelete="@(() => RemoveProject(project))" />
         }
     }
 </div>
 
 @code {
+    private readonly JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
     private ProjectListDto? projectList;
-    private IReadOnlyList<DateOnly> dates;
+    private IReadOnlyList<DateOnly>? dates;
     private DateOnly? selectedDate;
-    private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
-    private HashSet<ProjectDto> loadingRegistrationProjects = new(ReferenceEqualityComparer.Instance);
-    private HashSet<ProjectDto> deletingProjects = new(ReferenceEqualityComparer.Instance);
     private bool showOnlyUserProjects = false;
 
     protected override async Task OnInitializedAsync()
@@ -223,56 +99,13 @@
         StateHasChanged();
     }
 
-    private async Task DeleteProject(ProjectDto project)
+    private void UpdateProject(ProjectDto oldProject, ProjectDto newProject)
     {
-        deletingProjects.Add(project);
-        StateHasChanged();
-        try
-        {
-            var response = await Http.DeleteAsync(project.Links.Delete);
-            response.EnsureSuccessStatusCode();
-            projectList = projectList with { Projects = projectList.Projects.Except(new[] { project }).ToList() };
-        }
-        finally
-        {
-            deletingProjects.Remove(project);
-            StateHasChanged();
-        }
+        projectList = projectList with { Projects = projectList.Projects.Select(p => ReferenceEquals(p, oldProject) ? newProject : p).ToList() };
     }
 
-    private async Task RegisterCurrentUserForProject(ProjectDto project)
+    private void RemoveProject(ProjectDto project)
     {
-        loadingRegistrationProjects.Add(project);
-        StateHasChanged();
-        try
-        {
-            var response = await Http.PostAsync(project.Links.Register, content: null);
-            response.EnsureSuccessStatusCode();
-            var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
-            projectList = projectList with { Projects = projectList.Projects.Select(p => ReferenceEquals(p, project) ? updatedProject : p).ToList() };
-        }
-        finally
-        {
-            loadingRegistrationProjects.Remove(project);
-            StateHasChanged();
-        }
-    }
-
-    private async Task DeregisterCurrentUserFromProject(ProjectDto project)
-    {
-        loadingRegistrationProjects.Add(project);
-        StateHasChanged();
-        try
-        {
-            var response = await Http.PostAsync(project.Links.Deregister, content: null);
-            response.EnsureSuccessStatusCode();
-            var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
-            projectList = projectList with { Projects = projectList.Projects.Select(p => ReferenceEquals(p, project) ? updatedProject : p).ToList() };
-        }
-        finally
-        {
-            loadingRegistrationProjects.Remove(project);
-            StateHasChanged();
-        }
+        projectList = projectList with { Projects = projectList.Projects.Except(new[] { project }).ToList() };
     }
 }
