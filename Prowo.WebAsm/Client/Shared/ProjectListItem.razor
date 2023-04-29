@@ -1,9 +1,11 @@
 ﻿@using System.Text.Json;
+@using Markdig;
+@using Markdig.Extensions.AutoLinks;
 @inject HttpClient Http
 
 @if (Project != null)
 {
-    <div class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500">
+    <div class="project border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500">
         <div class="flex flex-col divide-y md:divide-y-0 divide-x-0 md:divide-x md:flex-row w-full">
             <div class="flex flex-col p-2">
                 <span class="text-xl text-black">@Project.Title</span>
@@ -70,10 +72,8 @@
                     </div>
                 </div>
             </div>
-            <div class="p-2 grow">
-                <span class="text-sm whitespace-pre-wrap">
-                    @Project.Description
-                </span>
+            <div class="description p-2 grow">
+                @ProjectDescription
             </div>
             <div class="flex flex-col gap-2 p-2">
                 @if (Project.Links.Edit != null)
@@ -136,6 +136,22 @@
 
     [Parameter]
     public ProjectDto? Project { get; set; }
+
+    public MarkupString ProjectDescription
+    {
+        get
+        {
+            if (Project == null)
+            {
+                return default;
+            }
+            var markdownPipeline = new MarkdownPipelineBuilder()
+                .DisableHtml()
+                .UseAutoLinks(new AutoLinkOptions { OpenInNewWindow = true })
+                .Build();
+            return (MarkupString)Markdown.ToHtml(Project.Description, markdownPipeline);
+        }
+    }
 
     [Parameter]
     public Action<ProjectDto, ProjectDto>? OnUpdate { get; set; }

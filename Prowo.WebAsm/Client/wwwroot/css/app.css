@@ -90,6 +90,26 @@ td {
     @apply px-6 py-2;
 }
 
+a {
+    @apply text-blue-700;
+}
+
+.project .description {
+    @apply text-sm leading-6;
+}
+.project .description h1 {
+    @apply text-xl;
+}
+.project .description h1 {
+    @apply text-lg;
+}
+.project .description ol {
+    @apply list-inside list-decimal;
+}
+.project .description ul {
+    @apply list-inside list-disc;
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;
