@@ -11,9 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Client", "Prow
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Shared", "Prowo.WebAsm\Shared\Prowo.WebAsm.Shared.csproj", "{BA3DA2A0-B040-4BF5-B241-51331DB3F42D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prowo.ImportProjects", "Prowo.ImportProjects\Prowo.ImportProjects.csproj", "{83D33046-698E-44D1-9C81-3315F5EB8933}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.ImportProjects", "Prowo.ImportProjects\Prowo.ImportProjects.csproj", "{83D33046-698E-44D1-9C81-3315F5EB8933}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prowo.WebAsm.Server.IntegrationTests", "Prowo.WebAsm.Server.IntegrationTests\Prowo.WebAsm.Server.IntegrationTests.csproj", "{0E72C2F2-781D-4D27-BA82-63F64062FCD4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Server.IntegrationTests", "Prowo.WebAsm.Server.IntegrationTests\Prowo.WebAsm.Server.IntegrationTests.csproj", "{0E72C2F2-781D-4D27-BA82-63F64062FCD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
