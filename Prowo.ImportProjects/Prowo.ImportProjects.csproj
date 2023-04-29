@@ -6,7 +6,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <UserSecretsId>Prowo.WebAsm.Server-7C067297-85A8-46E3-AD40-D89E546C43EB</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
