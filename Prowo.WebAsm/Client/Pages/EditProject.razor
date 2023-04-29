@@ -144,7 +144,7 @@ else if (editingProject.Links.Save != null)
     [Parameter]
     public string? ProjectId { get; set; }
 
-    private EditingProject editingProject;
+    private EditingProject? editingProject;
     private bool isSubmitting;
     private string? errorMessage;
 
@@ -154,7 +154,7 @@ else if (editingProject.Links.Save != null)
     {
         try
         {
-            var project = await Http.GetFromJsonAsync<EditingProjectDto>($"api/projects/edit/{(ProjectId != null ? ProjectId : "new")}", serializerOptions);
+            var project = (await Http.GetFromJsonAsync<EditingProjectDto>($"api/projects/edit/{(ProjectId != null ? ProjectId : "new")}", serializerOptions))!;
             editingProject = EditingProject.FromProject(project);
         }
         catch (AccessTokenNotAvailableException exception)
@@ -170,7 +170,7 @@ else if (editingProject.Links.Save != null)
         StateHasChanged();
         try
         {
-            var project = editingProject.Data.ToProjectData();
+            var project = editingProject!.Data.ToProjectData();
             var response = await Http.PostAsJsonAsync(editingProject.Links.Save, project, serializerOptions);
             response.EnsureSuccessStatusCode();
             NavigationManager.NavigateTo("/projects");
@@ -206,14 +206,14 @@ else if (editingProject.Links.Save != null)
     public class EditingProjectData
     {
         [Required(ErrorMessage = "Titel darf nicht leer sein.")]
-        public string Title { get; set; }
+        public string Title { get; set; } = "";
         [Required(ErrorMessage = "Beschreibung darf nicht leer sein.")]
-        public string Description { get; set; }
+        public string Description { get; set; } = "";
         [Required(ErrorMessage = "Ort darf nicht leer sein.")]
-        public string Location { get; set; }
+        public string Location { get; set; } = "";
         [Required(ErrorMessage = "Organisator muss ausgewählt werden.")]
-        public string OrganizerId { get; set; }
-        public string[] CoOrganizerIds { get; set; }
+        public string? OrganizerId { get; set; }
+        public string[] CoOrganizerIds { get; set; } = Array.Empty<string>();
         public DateTime Date { get; set; }
         public DateTime StartTime { get; set; }
         public bool HasEndTime { get; set; }
@@ -246,7 +246,7 @@ else if (editingProject.Links.Save != null)
                 Title,
                 Description,
                 Location,
-                OrganizerId,
+                OrganizerId ?? throw new InvalidOperationException("Organizer is empty. Did you forget to validate?"),
                 CoOrganizerIds,
                 DateOnly.FromDateTime(Date),
                 TimeOnly.FromDateTime(StartTime),

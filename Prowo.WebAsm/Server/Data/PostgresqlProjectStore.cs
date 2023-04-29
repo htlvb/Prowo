@@ -96,7 +96,7 @@ namespace Prowo.WebAsm.Server.Data
             await using var dbConnection = new NpgsqlConnection(dbConnectionString);
             await dbConnection.OpenAsync();
             await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
-            return await Get(projectId);
+            return (await Get(projectId))!;
         }
 
         public async Task<Project> RemoveAttendee(string projectId, string userId)
@@ -110,7 +110,7 @@ namespace Prowo.WebAsm.Server.Data
             await using var dbConnection = new NpgsqlConnection(dbConnectionString);
             await dbConnection.OpenAsync();
             await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
-            return await Get(projectId);
+            return (await Get(projectId))!;
         }
 
         public void Dispose()
@@ -221,13 +221,17 @@ namespace Prowo.WebAsm.Server.Data
 
         private record DbProjectRegistrationUser(
             [property: JsonPropertyName("id")]Guid Id,
-            [property: JsonPropertyName("first_name")]string FirstName,
-            [property: JsonPropertyName("last_name")]string LastName,
-            [property: JsonPropertyName("class")]string Class
+            [property: JsonPropertyName("first_name")]string? FirstName,
+            [property: JsonPropertyName("last_name")]string? LastName,
+            [property: JsonPropertyName("class")]string? Class
         )
         {
             public ProjectAttendee ToAttendee()
             {
+                if (FirstName == null || LastName == null || Class == null)
+                {
+                    throw new InvalidOperationException($"Can't convert {nameof(DbProjectRegistrationUser)} to {nameof(ProjectAttendee)} because it looks like a deregistration.");
+                }
                 return new(Id.ToString(), FirstName, LastName, Class);
             }
 

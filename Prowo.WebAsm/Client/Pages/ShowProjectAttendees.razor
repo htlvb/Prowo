@@ -43,7 +43,7 @@ else
     [Parameter]
     public string? ProjectId { get; set; }
 
-    private ProjectAttendeesDto project;
+    private ProjectAttendeesDto? project;
 
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
 

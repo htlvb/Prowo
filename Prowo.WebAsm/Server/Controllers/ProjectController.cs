@@ -17,6 +17,8 @@ namespace Prowo.WebAsm.Server.Controllers
 
         private static DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today);
 
+        private string UserId => HttpContext.User.GetObjectId()!;
+
         public ProjectController(
             IProjectStore projectStore,
             IUserStore userStore,
@@ -62,7 +64,7 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpPost("{projectId}/deregister")]
         public async Task<ProjectDto> DeregisterFromProject(string projectId)
         {
-            var project = await projectStore.RemoveAttendee(projectId, HttpContext.User.GetObjectId());
+            var project = await projectStore.RemoveAttendee(projectId, UserId);
             return await GetProjectDtoFromProject(project);
         }
 
@@ -82,7 +84,7 @@ namespace Prowo.WebAsm.Server.Controllers
             else
             {
                 organizerCandidates = coOrganizerCandidates
-                    .Where(v => v.Id == HttpContext.User.GetObjectId())
+                    .Where(v => v.Id == UserId)
                     .ToList();
             }
 
@@ -98,7 +100,7 @@ namespace Prowo.WebAsm.Server.Controllers
                         "",
                         "",
                         "",
-                        HttpContext.User.GetObjectId(),
+                        UserId,
                         Array.Empty<string>(),
                         DateOnly.FromDateTime(DateTime.Today.AddDays(7)),
                         TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)),
@@ -291,20 +293,19 @@ namespace Prowo.WebAsm.Server.Controllers
 
             UserRoleForProjectDto getCurrentUserRole(Project project)
             {
-                var currentUserId = HttpContext.User.GetObjectId();
-                if (project.Organizer.Id == currentUserId)
+                if (project.Organizer.Id == UserId)
                 {
                     return UserRoleForProjectDto.Organizer;
                 }
-                if (project.CoOrganizers.Any(v => v.Id == currentUserId))
+                if (project.CoOrganizers.Any(v => v.Id == UserId))
                 {
                     return UserRoleForProjectDto.CoOrganizer;
                 }
-                if (project.RegisteredAttendees.Any(v => v.Id == currentUserId))
+                if (project.RegisteredAttendees.Any(v => v.Id == UserId))
                 {
                     return UserRoleForProjectDto.Registered;
                 }
-                if (project.WaitingAttendees.Any(v => v.Id == currentUserId))
+                if (project.WaitingAttendees.Any(v => v.Id == UserId))
                 {
                     return UserRoleForProjectDto.Waiting;
                 }

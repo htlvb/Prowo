@@ -16,7 +16,7 @@ public class InMemoryProjectStore : IProjectStore
         }
     }
 
-    public async Task<Project> Get(string projectId)
+    public async Task<Project?> Get(string projectId)
     {
         await Task.Yield();
         return projects.Find(v => v.Id == projectId);

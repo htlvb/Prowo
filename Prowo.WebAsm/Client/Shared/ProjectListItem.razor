@@ -84,11 +84,11 @@
                 {
                     if (deletionState == DeletionState.None)
                     {
-                        <button class="btn btn-red" onclick=@MarkForDeletion>Löschen</button>
+                        <button class="btn btn-red" onclick=@(() => MarkForDeletion())>Löschen</button>
                     }
                     else if (deletionState == DeletionState.IsMarkedForDeletion)
                     {
-                        <button class="btn btn-red-filled" onclick=@Delete>Wirklich löschen</button>
+                        <button class="btn btn-red-filled" onclick=@(() => Delete())>Wirklich löschen</button>
                     }
                     else if (deletionState == DeletionState.IsDeleting)
                     {
@@ -103,7 +103,7 @@
                 }
                 @if (Project.Links.Register != null)
                 {
-                    <button class="btn btn-green" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@RegisterCurrentUserForProject>
+                    <button class="btn btn-green" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => RegisterCurrentUserForProject())>
                         @if (isLoadingRegistration)
                         {
                             <span class="spinner spinner-green"></span>
@@ -116,7 +116,7 @@
                 }
                 else if (Project.Links.Deregister != null)
                 {
-                    <button class="btn btn-red" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@DeregisterCurrentUserFromProject>
+                    <button class="btn btn-red" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => DeregisterCurrentUserFromProject())>
                         @if (isLoadingRegistration)
                         {
                             <span class="spinner spinner-red"></span>
@@ -182,7 +182,7 @@
         StateHasChanged();
         try
         {
-            var response = await Http.DeleteAsync(Project.Links.Delete);
+            var response = await Http.DeleteAsync(Project!.Links.Delete);
             response.EnsureSuccessStatusCode();
             OnDelete?.Invoke();
         }
@@ -199,9 +199,9 @@
         StateHasChanged();
         try
         {
-            var response = await Http.PostAsync(Project.Links.Register, content: null);
+            var response = await Http.PostAsync(Project!.Links.Register, content: null);
             response.EnsureSuccessStatusCode();
-            var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
+            var updatedProject = (await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions))!;
             OnUpdate?.Invoke(Project, updatedProject);
         }
         finally
@@ -217,9 +217,9 @@
         StateHasChanged();
         try
         {
-            var response = await Http.PostAsync(Project.Links.Deregister, content: null);
+            var response = await Http.PostAsync(Project!.Links.Deregister, content: null);
             response.EnsureSuccessStatusCode();
-            var updatedProject = await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions);
+            var updatedProject = (await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions))!;
             OnUpdate?.Invoke(Project, updatedProject);
         }
         finally

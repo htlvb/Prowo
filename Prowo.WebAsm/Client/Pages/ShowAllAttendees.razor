@@ -72,8 +72,8 @@ else
 }
 
 @code {
-    private AttendanceOverviewDto attendanceOverview;
-    private GroupDto selectedGroup;
+    private AttendanceOverviewDto? attendanceOverview;
+    private GroupDto? selectedGroup;
 
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
 

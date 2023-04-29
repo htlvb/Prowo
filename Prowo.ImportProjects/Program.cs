@@ -40,7 +40,7 @@ using (var workbook = new XLWorkbook("Gesundheitstag_2022_10_17.xlsx"))
                     )
                     .Where(v => v != "").ToList();
                 var title = text[0];
-                string description = descriptions.First(v => v.Title == title).Description;
+                string? description = descriptions.First(v => v.Title == title).Description;
                 var fullDescription = string.Join(
                     "\n\n",
                     new[] {
