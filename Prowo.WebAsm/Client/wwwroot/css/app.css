@@ -95,7 +95,7 @@ a {
 }
 
 .project .description {
-    @apply text-sm leading-6;
+    @apply text-sm leading-6 whitespace-pre-wrap;
 }
 .project .description h1 {
     @apply text-xl;
