@@ -51,6 +51,7 @@ namespace Prowo.WebAsm.Server.Data
                 var userPage = await userPageRequest.GetAsync();
                 var users = userPage
                     .OfType<User>()
+                    .Where(v => v.Department != null)
                     .Select(v => new ProjectAttendee(v.Id, v.GivenName, v.Surname, v.Department, v.UserPrincipalName));
                 foreach (var user in users)
                 {
