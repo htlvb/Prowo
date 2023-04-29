@@ -39,13 +39,13 @@ namespace Prowo.WebAsm.Server.Data
 
         public async Task<ProjectAttendee> GetSelfAsProjectAttendee()
         {
-            var user = await graphServiceClient.Me.Request().Select("id,givenName,surname,department").GetAsync();
+            var user = await graphServiceClient.Me.Request().Select("id,givenName,surname,department,userPrincipalName").GetAsync();
             return new ProjectAttendee(user.Id, user.GivenName, user.Surname, user.Department, user.UserPrincipalName);
         }
 
         public async IAsyncEnumerable<ProjectAttendee> GetAttendeeCandidates()
         {
-            var userPageRequest = graphServiceClient.Groups[attendeeGroupId].Members.Request().Select("id,givenName,surname,department");
+            var userPageRequest = graphServiceClient.Groups[attendeeGroupId].Members.Request().Select("id,givenName,surname,department,userPrincipalName");
             while (userPageRequest != null)
             {
                 var userPage = await userPageRequest.GetAsync();
