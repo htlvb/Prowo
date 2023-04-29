@@ -24,7 +24,8 @@ var attendees = JsonDocument.Parse(File.ReadAllText("AttendeeCandidates.json"))
         UserId = v.GetProperty("ObjectId").GetString()!,
         FirstName = v.GetProperty("GivenName").GetString()!,
         LastName = v.GetProperty("Surname").GetString()!,
-        Class = v.GetProperty("Department").GetString()!
+        Class = v.GetProperty("Department").GetString()!,
+        MailAddress = v.GetProperty("UserPrincipalName").GetString()!
     })
     .ToList();
 var organizers = JsonDocument.Parse(File.ReadAllText("OrganizerCandidates.json"))
@@ -75,6 +76,7 @@ var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
                     firstName = v.FirstName,
                     lastName = v.LastName,
                     @class = v.Class,
+                    mailAddress = v.MailAddress,
                     timestamp = DateTime.UtcNow,
                     action = RegistrationAction.Register
                 })
@@ -109,7 +111,7 @@ foreach (var project in sampleProjects.Take(10))
     await using (var cmd = new NpgsqlCommand("INSERT INTO registration_event (project_id, \"user\", action, timestamp) SELECT UNNEST(@project_id), UNNEST(@user), UNNEST(@action), UNNEST(@timestamp)", dbConnection))
     {
         cmd.Parameters.AddWithValue("project_id", Enumerable.Repeat(Guid.Parse(project.Id), project.RegistrationEvents.Length).ToArray());
-        cmd.Parameters.AddWithValue("user", NpgsqlDbType.Array | NpgsqlDbType.Json, project.RegistrationEvents.Select(v => new { id = v.userId, first_name = v.firstName, last_name = v.lastName, @class = v.@class}).ToArray());
+        cmd.Parameters.AddWithValue("user", NpgsqlDbType.Array | NpgsqlDbType.Json, project.RegistrationEvents.Select(v => new { id = v.userId, first_name = v.firstName, last_name = v.lastName, @class = v.@class, mail_address = v.mailAddress}).ToArray());
         cmd.Parameters.AddWithValue("action", project.RegistrationEvents.Select(v => v.action).ToArray());
         cmd.Parameters.AddWithValue("timestamp", project.RegistrationEvents.Select(v => v.timestamp).ToArray());
 

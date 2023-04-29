@@ -4,7 +4,7 @@ Connect-AzureAD
 
 $attendeeGroupId = (Get-AzureADGroup -Filter "displayName eq 'GrpSchueler'").ObjectId
 Get-AzureADGroupMember -ObjectId $attendeeGroupId -All $true `
-    | Select-Object ObjectId,GivenName,Surname,Department `
+    | Select-Object ObjectId,GivenName,Surname,Department,UserPrincipalName `
     | ConvertTo-Json > .\AttendeeCandidates.json
 
 $organizerGroupId = (Get-AzureADGroup -Filter "displayName eq 'GrpLehrer'").ObjectId

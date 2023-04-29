@@ -103,7 +103,7 @@ namespace Prowo.WebAsm.Server.Data
         {
             var dbRegistrationEvent = new DbProjectRegistrationEvent(
                 Guid.Parse(projectId),
-                new DbProjectRegistrationUser(Guid.Parse(userId), null, null, null),
+                new DbProjectRegistrationUser(Guid.Parse(userId), null, null, null, null),
                 DateTime.UtcNow,
                 DbProjectRegistrationAction.Deregister
             );
@@ -223,21 +223,22 @@ namespace Prowo.WebAsm.Server.Data
             [property: JsonPropertyName("id")]Guid Id,
             [property: JsonPropertyName("first_name")]string? FirstName,
             [property: JsonPropertyName("last_name")]string? LastName,
-            [property: JsonPropertyName("class")]string? Class
+            [property: JsonPropertyName("class")]string? Class,
+            [property: JsonPropertyName("mail_address")]string? MailAddress
         )
         {
             public ProjectAttendee ToAttendee()
             {
-                if (FirstName == null || LastName == null || Class == null)
+                if (FirstName == null || LastName == null || Class == null || MailAddress == null)
                 {
                     throw new InvalidOperationException($"Can't convert {nameof(DbProjectRegistrationUser)} to {nameof(ProjectAttendee)} because it looks like a deregistration.");
                 }
-                return new(Id.ToString(), FirstName, LastName, Class);
+                return new(Id.ToString(), FirstName, LastName, Class, MailAddress);
             }
 
             public static DbProjectRegistrationUser FromAttendee(ProjectAttendee attendee)
             {
-                return new(Guid.Parse(attendee.Id), attendee.FirstName, attendee.LastName, attendee.Class);
+                return new(Guid.Parse(attendee.Id), attendee.FirstName, attendee.LastName, attendee.Class, attendee.MailAddress);
             }
         }
 

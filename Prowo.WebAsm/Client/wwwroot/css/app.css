@@ -91,7 +91,7 @@ td {
 }
 
 a {
-    @apply text-blue-700;
+    @apply text-blue-700 border-blue-700 hover:border-b;
 }
 
 .project .description {

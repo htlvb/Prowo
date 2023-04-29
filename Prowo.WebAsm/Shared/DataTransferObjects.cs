@@ -27,6 +27,7 @@ namespace Prowo.WebAsm.Shared
         string FirstName,
         string LastName,
         string Class,
+        string MailAddress,
         bool IsWaiting
     );
 

@@ -217,8 +217,8 @@ namespace Prowo.WebAsm.Server.Controllers
 
             var attendees = Enumerable
                 .Concat(
-                    project.RegisteredAttendees.Select((v, i) => new ProjectAttendeeDto(v.FirstName, v.LastName, v.Class, IsWaiting: false)),
-                    project.WaitingAttendees.Select((v, i) => new ProjectAttendeeDto(v.FirstName, v.LastName, v.Class, IsWaiting: true))
+                    project.RegisteredAttendees.Select((v, i) => new ProjectAttendeeDto(v.FirstName, v.LastName, v.Class, v.MailAddress, IsWaiting: false)),
+                    project.WaitingAttendees.Select((v, i) => new ProjectAttendeeDto(v.FirstName, v.LastName, v.Class, v.MailAddress, IsWaiting: true))
                 )
                 .OrderBy(v => v.IsWaiting)
                 .ThenBy(v => v.Class)

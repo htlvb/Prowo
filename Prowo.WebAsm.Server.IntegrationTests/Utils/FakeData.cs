@@ -85,11 +85,17 @@ public static class FakeData
 
     public static IReadOnlyList<ProjectAttendee> ProjectAttendees { get; } =
         new Faker<ProjectAttendee>()
-            .CustomInstantiator(v => new ProjectAttendee(
-                v.Random.Uuid().ToString(),
-                v.Name.FirstName(),
-                v.Name.LastName(),
-                $"{v.Random.Number(1, 8)}{v.Random.String2(1, "ABCD")}"
-            ))
+            .CustomInstantiator(v =>
+            {
+                var firstName = v.Name.FirstName();
+                var lastName = v.Name.LastName();
+                return new ProjectAttendee(
+                    v.Random.Uuid().ToString(),
+                    firstName,
+                    lastName,
+                    $"{v.Random.Number(1, 8)}{v.Random.String2(1, "ABCD")}",
+                    v.Internet.Email(firstName, lastName)
+                );
+            })
         .Generate(1000);
 }

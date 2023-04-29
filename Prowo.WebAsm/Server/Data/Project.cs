@@ -101,6 +101,7 @@ namespace Prowo.WebAsm.Server.Data
         string Id,
         string FirstName,
         string LastName,
-        string Class
+        string Class,
+        string MailAddress
     );
 }

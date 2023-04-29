@@ -40,7 +40,7 @@ namespace Prowo.WebAsm.Server.Data
         public async Task<ProjectAttendee> GetSelfAsProjectAttendee()
         {
             var user = await graphServiceClient.Me.Request().Select("id,givenName,surname,department").GetAsync();
-            return new ProjectAttendee(user.Id, user.GivenName, user.Surname, user.Department);
+            return new ProjectAttendee(user.Id, user.GivenName, user.Surname, user.Department, user.UserPrincipalName);
         }
 
         public async IAsyncEnumerable<ProjectAttendee> GetAttendeeCandidates()
@@ -51,7 +51,7 @@ namespace Prowo.WebAsm.Server.Data
                 var userPage = await userPageRequest.GetAsync();
                 var users = userPage
                     .OfType<User>()
-                    .Select(v => new ProjectAttendee(v.Id, v.GivenName, v.Surname, v.Department));
+                    .Select(v => new ProjectAttendee(v.Id, v.GivenName, v.Surname, v.Department, v.UserPrincipalName));
                 foreach (var user in users)
                 {
                     yield return user;

@@ -16,27 +16,44 @@ else
 {
     <h2 class="text-2xl pb-2">Teilnehmerliste "@project.Title"</h2>
     <span class="inline-block pb-4 text-sm text-gray-600">@project.Date.ToLongDateString(), @project.StartTime @if (project.EndTime.HasValue) { <text> - @project.EndTime</text> }</span>
-    <table>
-        <thead>
-            <tr>
-                <th>Nummer</th>
-                <th>Klasse</th>
-                <th>Nachname</th>
-                <th>Vorname</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var (attendee, number) in project.Attendees.Select((v, i) => (v, i + 1)))
-            {
-                <tr class="@(attendee.IsWaiting ? "bg-yellow-400" : "bg-green-400")">
-                    <td>@number</td>
-                    <td>@attendee.Class</td>
-                    <td>@attendee.LastName</td>
-                    <td>@attendee.FirstName</td>
-                </tr>
+
+    @if (project.Attendees.Count == 0)
+    {
+        <h3 class="text-lg">Keine Teilnehmer angemeldet.</h3>
+    }
+    else
+    {
+        <div class="print:hidden">
+            @{
+                string mailAddresses = string.Join(";", project.Attendees.Select(v => v.MailAddress));
+                string subject = $"{project.Title} am {project.Date.ToShortDateString()}";
+                string encodedSubject = Uri.EscapeDataString(subject);
             }
-        </tbody>
-    </table>
+            <a href="mailto:@mailAddresses?subject=@encodedSubject">E-Mail an alle schicken</a>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Nummer</th>
+                    <th>Klasse</th>
+                    <th>Nachname</th>
+                    <th>Vorname</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (attendee, number) in project.Attendees.Select((v, i) => (v, i + 1)))
+                {
+                    <tr class="@(attendee.IsWaiting ? "bg-yellow-400" : "bg-green-400")">
+                        <td>@number</td>
+                        <td>@attendee.Class</td>
+                        <td>@attendee.LastName</td>
+                        <td>@attendee.FirstName</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 }
 
 @code {
