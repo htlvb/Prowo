@@ -96,10 +96,10 @@ IXLCell GetRoomCell(IXLCell cell)
 NpgsqlConnection.GlobalTypeMapper.UseJsonNet();
 
 var configuration = new ConfigurationBuilder()
-    .AddUserSecrets<Program>()
+    .AddJsonFile("appsettings.json")
     .Build();
 
-string connectionString = configuration.GetConnectionString("PostgresqlDb");
+string? connectionString = configuration.GetConnectionString("PostgresqlDb");
 await using var dbConnection = new NpgsqlConnection(connectionString);
 await dbConnection.OpenAsync();
 
