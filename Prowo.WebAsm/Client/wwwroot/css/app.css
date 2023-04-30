@@ -94,10 +94,6 @@ td {
     @apply px-6 py-2;
 }
 
-a {
-    @apply text-blue-700 border-blue-700 hover:border-b;
-}
-
 .project .description {
     @apply text-sm leading-6 whitespace-pre-wrap;
 }
@@ -112,6 +108,9 @@ a {
 }
 .project .description ul {
     @apply list-inside list-disc;
+}
+.project .description a {
+    @apply text-blue-700 border-blue-700 hover:border-b;
 }
 
 #blazor-error-ui {
