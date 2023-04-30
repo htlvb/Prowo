@@ -29,23 +29,23 @@ else if (editingProject.Links.Save != null)
 
         <div class="input">
             <label class="block">
-                <span class="input-label">Titel</span> 
-                <InputText @bind-Value=editingProject.Data.Title class="input-text" />
+                <span class="input-label">Titel</span>
+                <InputText @bind-Value=editingProject.Data.Title class="input-text w-96 max-w-full" />
             </label>
         </div>
 
         <div class="input">
             <label class="block">
-                <span class="input-label">Beschreibung</span> 
-                <InputTextArea @bind-Value=editingProject.Data.Description class="input-text" rows="5" cols="70" />
+                <span class="input-label">Beschreibung</span>
+                <InputTextArea @bind-Value=editingProject.Data.Description class="input-text w-[32rem] max-w-full h-48" />
             </label>
-            <span class="text-xs">Tipp: Formatiere Text <span class="font-italic text-orange-500">*kursiv*</span>, <span class="font-bold text-orange-500">**fett**</span> und verwende <span class="text-lg text-orange-500"># Überschriften</span> und <span class="text-orange-500">* Aufzählungen</span>.</span>
+            <span class="text-xs">Tipp: Formatiere Text <span class="font-italic whitespace-nowrap text-orange-500">*kursiv*</span>, <span class="font-bold whitespace-nowrap text-orange-500">**fett**</span> und verwende <span class="text-lg whitespace-nowrap text-orange-500"># Überschriften</span> und <span class="whitespace-nowrap text-orange-500">* Aufzählungen</span>.</span>
         </div>
 
         <div class="input">
             <label class="block">
-                <span class="input-label">Ort</span> 
-                <InputText @bind-Value=editingProject.Data.Location class="input-text" />
+                <span class="input-label">Ort</span>
+                <InputText @bind-Value=editingProject.Data.Location class="input-text w-96 max-w-full" />
             </label>
         </div>
     
@@ -73,19 +73,20 @@ else if (editingProject.Links.Save != null)
         <div class="input">
             <label class="block">
                 <span class="input-label">Betreuer</span>
-                <InputSelect @bind-Value=editingProject.Data.CoOrganizerIds class="input-select">
+                <InputSelect @bind-Value=editingProject.Data.CoOrganizerIds class="input-select" size="15">
                 @foreach (var person in editingProject.CoOrganizerCandidates)
                 {
                     <option value=@person.Id>@person.DisplayName</option>
                 }
                 </InputSelect>
             </label>
+            <span class="text-xs inline-block pt-2">Tipp: Halte die <kbd>Strg</kbd>-Taste gedrückt, um mehrere Betreuer auszuwählen.</span>
         </div>
 
         <div class="input">
             <label class="block">
                 <span class="input-label">Maximale Teilnehmerzahl</span>
-                <InputNumber @bind-Value=editingProject.Data.MaxAttendees ParsingErrorMessage="Keine gültige Teilnehmerzahl." class="input-text" />
+                <InputNumber @bind-Value=editingProject.Data.MaxAttendees ParsingErrorMessage="Keine gültige Teilnehmerzahl." class="input-text w-24" />
             </label>
         </div>
 
