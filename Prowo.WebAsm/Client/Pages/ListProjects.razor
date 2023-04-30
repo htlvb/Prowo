@@ -63,16 +63,16 @@
                 </label>
             </div>
 
-            <div class="flex flex-col gap-2 mt-2">
+            <div class="flex flex-row flex-wrap gap-2 mt-2">
                 @{
                     var totalAvailableSlots = filteredProjectList.Sum(v => v.MaxAttendees);
                     var totalRegistrations = filteredProjectList.Sum(v => Math.Min(v.Attendees, v.MaxAttendees));
                     var totalWaitingCount = filteredProjectList.Sum(v => Math.Max(0, v.Attendees - v.MaxAttendees));
                 }
-                <div>Verfügbare Plätze gesamt: <span class="inline-block border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalAvailableSlots</span></div>
-                <div>Anmeldungen mit Fixplatz: <span class="inline-block border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalRegistrations</span></div>
-                <div>Freie Plätze: <span class="inline-block border border-black rounded bg-slate-100 font-semibold px-2 py-1">@(totalAvailableSlots - totalRegistrations)</span></div>
-                <div>Personen auf Warteliste: <span class="inline-block border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalWaitingCount</span></div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalAvailableSlots verfügbare Plätze</div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalRegistrations Anmeldungen mit Fixplatz</div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@(totalAvailableSlots - totalRegistrations) freie Plätze</div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalWaitingCount Personen auf der Warteliste</div>
             </div>
         </div>
 
