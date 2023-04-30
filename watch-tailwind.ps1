@@ -1,1 +1,5 @@
-.\.tools\tailwindcss.exe build -i .\Prowo.WebAsm\Client\wwwroot\css\app.css -o .\Prowo.WebAsm\Client\wwwroot\css\app.min.css -w
+.\.tools\tailwindcss.exe `
+    --input .\Prowo.WebAsm\Client\wwwroot\css\app.css `
+    --output .\Prowo.WebAsm\Client\wwwroot\css\app.min.css `
+    --watch `
+    --poll
