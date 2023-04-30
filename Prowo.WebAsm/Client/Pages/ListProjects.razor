@@ -38,6 +38,11 @@
     }
     else
     {
+        IEnumerable<ProjectDto> filteredProjects = projectList.Projects;
+        filteredProjects = selectedDate == null ? filteredProjects : filteredProjects.Where(v => v.Date == selectedDate);
+        filteredProjects = showOnlyUserProjects ? filteredProjects.Where(v => v.IsUserProject) : filteredProjects;
+        List<ProjectDto> filteredProjectList = filteredProjects.ToList();
+
         <div class="flex flex-col gap-2 border-gray-400 rounded shadow p-2">
             @if (dates != null && dates.Count > 1)
             {
@@ -49,18 +54,29 @@
                     }
                 </div>
             }
-            <label class="flex items-center relative gap-2">
-                <input type="checkbox" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" onchange=@((ChangeEventArgs e) => FilterUserProjects((bool)e.Value!)) />
-                <span class="w-12 h-6 flex items-center flex-shrink-0 p-1 bg-gray-300 rounded-full duration-300 ease-in-out peer-checked:bg-green-400 after:w-5 after:h-5 after:bg-white after:rounded-full after:shadow-md after:duration-300 peer-checked:after:translate-x-5"></span>
-                Nur meine Projekte anzeigen
-            </label>
+
+            <div>
+                <label class="inline-flex items-center relative gap-2">
+                    <input type="checkbox" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" onchange=@((ChangeEventArgs e) => FilterUserProjects((bool)e.Value!)) />
+                    <span class="w-12 h-6 flex items-center flex-shrink-0 p-1 bg-gray-300 rounded-full duration-300 ease-in-out peer-checked:bg-green-400 after:w-5 after:h-5 after:bg-white after:rounded-full after:shadow-md after:duration-300 peer-checked:after:translate-x-5"></span>
+                    Nur meine Projekte anzeigen
+                </label>
+            </div>
+
+            <div class="mt-2">
+                @{
+                    var totalAvailableSlots = filteredProjectList.Sum(v => v.MaxAttendees);
+                    var totalRegistrations = filteredProjectList.Sum(v => Math.Min(v.Attendees, v.MaxAttendees));
+                    var totalWaitingCount = filteredProjectList.Sum(v => Math.Max(0, v.Attendees - v.MaxAttendees));
+                }
+                <div>Verfügbare Plätze gesamt: @totalAvailableSlots</div>
+                <div>Anmeldungen mit Fixplatz: @totalRegistrations</div>
+                <div>Freie Plätze: @(totalAvailableSlots - totalRegistrations)</div>
+                <div>Personen auf Warteliste: @totalWaitingCount</div>
+            </div>
         </div>
 
-        IEnumerable<ProjectDto> filteredProjects = projectList.Projects;
-        filteredProjects = selectedDate == null ? filteredProjects : filteredProjects.Where(v => v.Date == selectedDate);
-        filteredProjects = showOnlyUserProjects ? filteredProjects.Where(v => v.IsUserProject) : filteredProjects;
-
-        @foreach (var project in filteredProjects)
+        @foreach (var project in filteredProjectList)
         {
             <ProjectListItem @key=project Project="@project" OnUpdate="UpdateProject" OnDelete="@(() => RemoveProject(project))" />
         }
