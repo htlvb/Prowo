@@ -66,13 +66,21 @@
             <div class="flex flex-row flex-wrap gap-2 mt-2">
                 @{
                     var totalAvailableSlots = filteredProjectList.Sum(v => v.MaxAttendees);
+                    var totalAvailableSlotsText = totalAvailableSlots == 1 ? "1 verfügbarer Platz" : $"{totalAvailableSlots} verfügbare Plätze";
+                    
                     var totalRegistrations = filteredProjectList.Sum(v => Math.Min(v.Attendees, v.MaxAttendees));
+                    var totalRegistrationsText = totalRegistrations == 1 ? "1 Anmeldung mit Fixplatz" : $"{totalRegistrations} Anmeldungen mit Fixplatz";
+
+                    var freeSlots = totalAvailableSlots - totalRegistrations;
+                    var freeSlotsText = freeSlots == 1 ? "1 freier Platz" : $"{freeSlots} freie Plätze";
+
                     var totalWaitingCount = filteredProjectList.Sum(v => Math.Max(0, v.Attendees - v.MaxAttendees));
+                    var totalWaitingCountText = totalWaitingCount == 1 ? "1 Person auf der Warteliste" : $"{totalWaitingCount} Personen auf der Warteliste";
                 }
-                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalAvailableSlots verfügbare Plätze</div>
-                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalRegistrations Anmeldungen mit Fixplatz</div>
-                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@(totalAvailableSlots - totalRegistrations) freie Plätze</div>
-                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalWaitingCount Personen auf der Warteliste</div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalAvailableSlotsText</div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalRegistrationsText</div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@freeSlotsText</div>
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalWaitingCountText</div>
             </div>
         </div>
 
