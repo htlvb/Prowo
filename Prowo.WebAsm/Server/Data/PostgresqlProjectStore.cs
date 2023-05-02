@@ -19,11 +19,8 @@ namespace Prowo.WebAsm.Server.Data
         {
             List<DbProject> projects;
             List<DbProjectRegistrationEvent> registrationEvents;
-            await using (var dbConnection = new NpgsqlConnection(dbConnectionString))
+            await using (var dbConnection = await Connect())
             {
-                await dbConnection.OpenAsync();
-                dbConnection.TypeMapper.MapEnum<DbProjectRegistrationAction>("registration_action");
-
                 projects = await ReadAllProjects(dbConnection, timestamp).ToList();
                 registrationEvents = await ReadRegistrations(dbConnection, projects.Select(v => v.Id).ToArray()).ToList();
             }
@@ -37,9 +34,7 @@ namespace Prowo.WebAsm.Server.Data
 
         public async Task<Project?> Get(string projectId)
         {
-            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
-            await dbConnection.OpenAsync();
-            dbConnection.TypeMapper.MapEnum<DbProjectRegistrationAction>("registration_action");
+            await using var dbConnection = await Connect();
 
             if (!Guid.TryParse(projectId, out var projectGuid))
             {
@@ -62,8 +57,7 @@ namespace Prowo.WebAsm.Server.Data
             {
                 return;
             }
-            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
-            await dbConnection.OpenAsync();
+            await using var dbConnection = await Connect();
             using var cmd = new NpgsqlCommand("DELETE FROM project WHERE id = @id", dbConnection);
             cmd.Parameters.AddWithValue("id", projectGuid);
             await cmd.ExecuteNonQueryAsync();
@@ -72,16 +66,14 @@ namespace Prowo.WebAsm.Server.Data
         public async Task CreateProject(Project project)
         {
             var dbProject = DbProject.FromDomain(project);
-            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
-            await dbConnection.OpenAsync();
+            await using var dbConnection = await Connect();
             await CreateProject(dbConnection, dbProject);
         }
 
         public async Task UpdateProject(Project project)
         {
             var dbProject = DbProject.FromDomain(project);
-            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
-            await dbConnection.OpenAsync();
+            await using var dbConnection = await Connect();
             await UpdateProject(dbConnection, dbProject);
         }
 
@@ -93,8 +85,7 @@ namespace Prowo.WebAsm.Server.Data
                 DateTime.UtcNow,
                 DbProjectRegistrationAction.Register
             );
-            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
-            await dbConnection.OpenAsync();
+            await using var dbConnection = await Connect();
             await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
             return (await Get(projectId))!;
         }
@@ -107,8 +98,7 @@ namespace Prowo.WebAsm.Server.Data
                 DateTime.UtcNow,
                 DbProjectRegistrationAction.Deregister
             );
-            await using var dbConnection = new NpgsqlConnection(dbConnectionString);
-            await dbConnection.OpenAsync();
+            await using var dbConnection = await Connect();
             await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
             return (await Get(projectId))!;
         }
@@ -140,6 +130,14 @@ namespace Prowo.WebAsm.Server.Data
                 return null;
             }
             return DbProject.FromReader(reader);
+        }
+
+        private async Task<NpgsqlConnection> Connect()
+        {
+            var dbConnection = new NpgsqlConnection(dbConnectionString);
+            await dbConnection.OpenAsync();
+            dbConnection.TypeMapper.MapEnum<DbProjectRegistrationAction>("registration_action");
+            return dbConnection;
         }
 
         private static async Task CreateProject(NpgsqlConnection dbConnection, DbProject project)
