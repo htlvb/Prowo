@@ -65,6 +65,8 @@
 
             <div class="flex flex-row flex-wrap gap-2 mt-2">
                 @{
+                    var projectCountText = filteredProjectList.Count == 1 ? "1 Projekt" : $"{filteredProjectList.Count} Projekte";
+
                     var totalAvailableSlots = filteredProjectList.Sum(v => v.MaxAttendees);
                     var totalAvailableSlotsText = totalAvailableSlots == 1 ? "1 verfügbarer Platz" : $"{totalAvailableSlots} verfügbare Plätze";
                     
@@ -77,6 +79,7 @@
                     var totalWaitingCount = filteredProjectList.Sum(v => Math.Max(0, v.Attendees - v.MaxAttendees));
                     var totalWaitingCountText = totalWaitingCount == 1 ? "1 Person auf der Warteliste" : $"{totalWaitingCount} Personen auf der Warteliste";
                 }
+                <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@projectCountText</div>
                 <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalAvailableSlotsText</div>
                 <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@totalRegistrationsText</div>
                 <div class="border border-black rounded bg-slate-100 font-semibold px-2 py-1">@freeSlotsText</div>
