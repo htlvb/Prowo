@@ -109,7 +109,7 @@ td {
 .project .description ul {
     @apply list-inside list-disc;
 }
-.project .description a {
+a.link, .project .description a {
     @apply text-blue-700 border-blue-700 hover:border-b;
 }
 

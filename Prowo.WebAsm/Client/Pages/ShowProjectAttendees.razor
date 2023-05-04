@@ -23,13 +23,17 @@ else
     }
     else
     {
-        <div class="print:hidden">
+        <div class="flex flex-col gap-2 print:hidden">
             @{
-                string mailAddresses = string.Join(";", project.Attendees.Select(v => v.MailAddress));
+                string allMailAddresses = string.Join(";", project.Attendees.Select(v => v.MailAddress));
+                string registeredAddresses = string.Join(";", project.Attendees.Where(v => !v.IsWaiting).Select(v => v.MailAddress));
+                string waitingAddresses = string.Join(";", project.Attendees.Where(v => v.IsWaiting).Select(v => v.MailAddress));
                 string subject = $"{project.Title} am {project.Date.ToShortDateString()}";
                 string encodedSubject = Uri.EscapeDataString(subject);
             }
-            <a href="mailto:@mailAddresses?subject=@encodedSubject">E-Mail an alle schicken</a>
+            <div><a class="link" href="mailto:@allMailAddresses?subject=@encodedSubject">E-Mail an alle schicken</a></div>
+            <div><a class="link" href="mailto:@registeredAddresses?subject=@encodedSubject">E-Mail an Anmeldungen mit Fixplatz schicken</a></div>
+            <div><a class="link" href="mailto:@waitingAddresses?subject=@encodedSubject">E-Mail an Anmeldungen auf Warteliste schicken</a></div>
         </div>
 
         <table>
