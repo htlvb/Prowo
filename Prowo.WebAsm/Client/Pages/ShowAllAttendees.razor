@@ -64,8 +64,8 @@ else
                                             var isRegistrationDeleting = deletionState.HasValue && deletionState.Value == RegistrationDeletionState.Deleting;
                                             var isRegistrationDeleted = deletionState.HasValue && deletionState.Value == RegistrationDeletionState.Deleted;
                                             var opacityStyle = isRegistrationDeleting || isRegistrationDeleted ? "opacity-50" : "";
-                                            <div>
-                                                <span class="inline-block px-4 py-2 rounded-l last:rounded-r @background @opacityStyle">
+                                            <div class="flex items-stretch">
+                                                <div class="px-4 py-2 rounded-l last:rounded-r @background @opacityStyle">
                                                     @if (project.ShowProjectAttendeesLink != null)
                                                     {
                                                         <a class="link" href="@project.ShowProjectAttendeesLink">@project.LongName</a>
@@ -74,7 +74,7 @@ else
                                                     {
                                                         <span>@project.LongName</span>
                                                     }
-                                                </span>
+                                                </div>
                                                 @if (project.DeregisterUserLink != null)
                                                 {
                                                     var bgStyle = isRegistrationMarkedForDeletion ? "bg-red-400" : "bg-slate-300";
@@ -93,7 +93,7 @@ else
                                                 {
                                                     string subject = $"Abmeldung vom Projekt \"{project.Name}\"";
                                                     string encodedSubject = Uri.EscapeDataString(subject);
-                                                    <a href="mailto:@student.MailAddress?subject=@encodedSubject" class="inline-block px-4 py-2 bg-slate-300 last:rounded-r" title="Benachrichtigung schicken">
+                                                    <a href="mailto:@student.MailAddress?subject=@encodedSubject" class="flex items-center px-4 py-2 bg-slate-300 last:rounded-r" title="Benachrichtigung schicken">
                                                         <i class="fa-solid fa-paper-plane"></i>
                                                     </a>
                                                 }
