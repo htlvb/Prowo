@@ -62,10 +62,26 @@ namespace Prowo.WebAsm.Server.Controllers
         }
 
         [HttpPost("{projectId}/deregister")]
-        public async Task<ProjectDto> DeregisterFromProject(string projectId)
+        public async Task<ProjectDto> DeregisterCurrentUserFromProject(string projectId)
         {
             var project = await projectStore.RemoveAttendee(projectId, UserId);
             return await GetProjectDtoFromProject(project);
+        }
+
+        [HttpDelete("{projectId}/attendees/{userId}")]
+        public async Task<IActionResult> DeregisterUserFromProject(string projectId, string userId)
+        {
+            var project = await projectStore.Get(projectId);
+            if (project == null || project.Date < MinDate)
+            {
+                return NotFound("Project doesn't exist or is too old.");
+            }
+            if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
+            {
+                return Forbid();
+            }
+            await projectStore.RemoveAttendee(projectId, userId);
+            return Ok();
         }
 
         [HttpGet("edit/{projectId}")]
@@ -240,17 +256,40 @@ namespace Prowo.WebAsm.Server.Controllers
         {
             var attendeeCandidates = await userStore.GetAttendeeCandidates().ToList();
             var projects = await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList();
+            var canDeregisterUserTasks = projects
+                .Select(async p => new { Project = p, CanDeregisterUsers = (await authService.AuthorizeAsync(HttpContext.User, p, "UpdateProject")).Succeeded });
+            var canDeregisterUsers = await Task.WhenAll(canDeregisterUserTasks);
+            var canDeregisterUserLookup =
+                canDeregisterUsers.ToDictionary(v => v.Project, v => v.CanDeregisterUsers);
             var projectsByUserAndDate = projects
                 .SelectMany(p =>
                 {
                     var time = p.EndTime.HasValue ? $"{p.StartTime} - {p.EndTime}" : $"{p.StartTime}";
                     var projectDisplayName = $"{time}: {p.Title} ({p.Location})";
-                    return Enumerable.Concat(
-                        p.RegisteredAttendees.Select((v, i) => new { UserId = v.Id, ProjectDisplayName = projectDisplayName, ProjectDate = p.Date, IsWaiting = false }),
-                        p.WaitingAttendees.Select((v, i) => new { UserId = v.Id, ProjectDisplayName = projectDisplayName, ProjectDate = p.Date, IsWaiting = true })
-                    );
+                    var showProjectAttendeesLink = $"projects/attendees/{p.Id}";
+                    var canDeregisterUsersOfProject = canDeregisterUserLookup[p];
+                    return Enumerable
+                        .Concat(
+                            p.RegisteredAttendees.Select(v => new { Attendee = v, IsWaiting = false }),
+                            p.WaitingAttendees.Select(v => new { Attendee = v, IsWaiting = true })
+                        )
+                        .Select(v => new
+                        {
+                            Key = new
+                            {
+                                UserId = v.Attendee.Id,
+                                ProjectDate = p.Date
+                            },
+                            Value = new StudentProjectDto(
+                                p.Title,
+                                projectDisplayName,
+                                v.IsWaiting,
+                                showProjectAttendeesLink,
+                                canDeregisterUsersOfProject ? Url.Action(nameof(DeregisterUserFromProject), new { projectId = p.Id, userId = v.Attendee.Id }) : default
+                            )
+                        });
                 })
-                .ToLookup(v => new { v.UserId, v.ProjectDate }, v => new StudentProjectDto(v.ProjectDisplayName, v.IsWaiting));
+                .ToLookup(v => v.Key, v => v.Value);
             var dates = projects
                 .Select(p => p.Date)
                 .Distinct()
@@ -266,7 +305,7 @@ namespace Prowo.WebAsm.Server.Controllers
                             var projectsPerDate = dates
                                 .Select(d => new StudentProjectsAtDateDto(projectsByUserAndDate[new { UserId = a.Id, ProjectDate = d }].ToList()))
                                 .ToList();
-                            return new StudentDto(a.FirstName, a.LastName, projectsPerDate);
+                            return new StudentDto(a.FirstName, a.LastName, a.MailAddress, projectsPerDate);
                         })
                         .OrderBy(v => v.LastName)
                         .ThenBy(v => v.FirstName)
@@ -339,7 +378,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 getCurrentUserRole(project),
                 new ProjectLinksDto(
                     canRegister ? Url.Action(nameof(RegisterForProject), new { projectId = project.Id }) : default,
-                    canDeregister ? Url.Action(nameof(DeregisterFromProject), new { projectId = project.Id }) : default,
+                    canDeregister ? Url.Action(nameof(DeregisterCurrentUserFromProject), new { projectId = project.Id }) : default,
                     canUpdate ? $"projects/edit/{project.Id}" : default,
                     canDelete ? Url.Action(nameof(DeleteProject), new { projectId = project.Id }) : default,
                     canShowAttendees ? $"projects/attendees/{project.Id}" : default

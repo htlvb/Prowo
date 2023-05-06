@@ -9,11 +9,11 @@ namespace Prowo.WebAsm.Shared
 
     public record GroupDto(string Name, IReadOnlyList<StudentDto> Students);
 
-    public record StudentDto(string FirstName, string LastName, IReadOnlyList<StudentProjectsAtDateDto> Projects);
+    public record StudentDto(string FirstName, string LastName, string MailAddress, IReadOnlyList<StudentProjectsAtDateDto> Projects);
 
     public record StudentProjectsAtDateDto(IReadOnlyList<StudentProjectDto> List);
 
-    public record StudentProjectDto(string Name, bool IsWaiting);
+    public record StudentProjectDto(string Name, string LongName, bool IsWaiting, string? ShowProjectAttendeesLink, string? DeregisterUserLink);
 
     public record ProjectAttendeesDto(
         string Title,
