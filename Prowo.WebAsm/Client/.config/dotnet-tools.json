@@ -7,6 +7,12 @@
       "commands": [
         "dotnet-msidentity"
       ]
+    },
+    "microsoft.web.librarymanager.cli": {
+      "version": "2.1.175",
+      "commands": [
+        "libman"
+      ]
     }
   }
 }
