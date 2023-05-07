@@ -32,8 +32,11 @@ else
                 string encodedSubject = Uri.EscapeDataString(subject);
             }
             <div><a class="link" href="mailto:@allMailAddresses?subject=@encodedSubject">E-Mail an alle schicken</a></div>
-            <div><a class="link" href="mailto:@registeredAddresses?subject=@encodedSubject">E-Mail an Anmeldungen mit Fixplatz schicken</a></div>
-            <div><a class="link" href="mailto:@waitingAddresses?subject=@encodedSubject">E-Mail an Anmeldungen auf Warteliste schicken</a></div>
+            @if (waitingAddresses != "")
+            {
+                <div><a class="link" href="mailto:@registeredAddresses?subject=@encodedSubject">E-Mail an Anmeldungen mit Fixplatz schicken</a></div>
+                <div><a class="link" href="mailto:@waitingAddresses?subject=@encodedSubject">E-Mail an Anmeldungen auf Warteliste schicken</a></div>
+            }
         </div>
 
         <table>
