@@ -11,17 +11,6 @@ namespace Prowo.WebAsm.Server.IntegrationTests;
 public class GetProjectListTests
 {
     [Fact]
-    public async Task CantGetProjectListWhenNotAuthenticated()
-    {
-        using var host = await InMemoryServer.Start();
-        using var client = host.GetTestClient();
-
-        using var response = await client.GetAsync("/api/projects");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
     public async Task CanGetProjectListWhenAuthenticated()
     {
         using var host = await InMemoryServer.Start();

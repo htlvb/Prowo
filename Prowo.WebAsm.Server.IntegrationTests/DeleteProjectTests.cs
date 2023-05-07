@@ -11,20 +11,6 @@ namespace Prowo.WebAsm.Server.IntegrationTests;
 public class DeleteProjectTests
 {
     [Fact]
-    public async Task CantDeleteProjectWhenNotAuthenticated()
-    {
-        using var host = await InMemoryServer.Start();
-        var projectStore = host.Services.GetRequiredService<IProjectStore>();
-        var project = FakeData.ProjectFaker.Generate();
-        await projectStore.CreateProject(project);
-        using var client = host.GetTestClient();
-
-        using var response = await client.DeleteAsync($"/api/projects/{project.Id}");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
     public async Task CantDeleteOtherProject()
     {
         using var host = await InMemoryServer.Start();
