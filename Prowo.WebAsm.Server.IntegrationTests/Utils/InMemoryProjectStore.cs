@@ -44,8 +44,18 @@ public class InMemoryProjectStore : IProjectStore
         throw new NotImplementedException();
     }
 
-    public Task<Project> RemoveAttendee(string projectId, string userId)
+    public async Task<Project> RemoveAttendee(string projectId, string userId)
     {
-        throw new NotImplementedException();
+        await Task.Yield();
+        int index = projects.FindIndex(v => v.Id == projectId);
+        if (index < 0)
+        {
+            throw new Exception("Project not found");
+        }
+        projects[index] = projects[index] with
+        {
+            AllAttendees = projects[index].AllAttendees.Where(v => v.Id != userId).ToList()
+        };
+        return projects[index];
     }
 }
