@@ -1,15 +1,10 @@
-using Bogus;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Server.IntegrationTests.Utils;
 using Prowo.WebAsm.Shared;
-using System.Linq;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace Prowo.WebAsm.Server.IntegrationTests;
 

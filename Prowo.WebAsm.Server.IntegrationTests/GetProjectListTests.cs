@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Server.IntegrationTests.Utils;
 using Prowo.WebAsm.Shared;
-using System.Net;
 using System.Net.Http.Json;
 
 namespace Prowo.WebAsm.Server.IntegrationTests;

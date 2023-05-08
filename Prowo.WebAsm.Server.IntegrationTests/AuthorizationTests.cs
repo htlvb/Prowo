@@ -132,12 +132,12 @@ public class AuthorizationTests
     {
         // Arrange
         using var host = await InMemoryServer.Start();
-        using var client = host.GetTestClient();
         var projectStore = host.Services.GetRequiredService<IProjectStore>();
         foreach (var project in projects)
         {
             await projectStore.CreateProject(project);
         }
+        using var client = host.GetTestClient();
         using var request = new HttpRequestMessage(httpMethod, url)
         {
             Content = httpContent

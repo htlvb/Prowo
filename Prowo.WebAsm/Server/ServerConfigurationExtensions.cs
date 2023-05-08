@@ -1,9 +1,7 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.Identity.Web;
+﻿using Microsoft.Identity.Web;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
 using System.Reflection;
-using System.Text.Json;
 
 public static class ServerConfigurationExtensions
 {

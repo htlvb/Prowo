@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Linq;
 using System.Text.Json.Serialization;
 using Npgsql;
 using NpgsqlTypes;

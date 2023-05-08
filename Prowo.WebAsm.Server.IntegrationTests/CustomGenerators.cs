@@ -3,7 +3,6 @@ using FsCheck.Fluent;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
 using System.Net.Mail;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Prowo.WebAsm.Server.IntegrationTests;
 

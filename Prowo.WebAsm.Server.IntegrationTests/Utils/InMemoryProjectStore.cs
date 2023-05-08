@@ -1,5 +1,4 @@
-﻿using Prowo.WebAsm.Client.Pages;
-using Prowo.WebAsm.Server.Data;
+﻿using Prowo.WebAsm.Server.Data;
 
 namespace Prowo.WebAsm.Server.IntegrationTests.Utils;
 

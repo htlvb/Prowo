@@ -2,7 +2,6 @@
 using FsCheck.Xunit;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Graph;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Server.IntegrationTests.Utils;
 using System.Net;
