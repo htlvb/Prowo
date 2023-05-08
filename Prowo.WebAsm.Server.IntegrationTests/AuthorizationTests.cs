@@ -70,7 +70,7 @@ public class AuthorizationTests
             default(HttpContent?)
 
         };
-        foreach (var project in CustomGenerators.EditingProjectDataDtoGenerator().Generator.Sample(10))
+        foreach (var project in CustomGenerators.ValidEditingProjectDataDtoGenerator().Generator.Sample(10))
         {
             yield return new object?[]
             {
@@ -82,7 +82,7 @@ public class AuthorizationTests
         }
         foreach (var p in CustomGenerators.AttendableProjectGenerator().Generator.Sample(10))
         {
-            foreach (var update in CustomGenerators.EditingProjectDataDtoGenerator().Generator.Sample(10))
+            foreach (var update in CustomGenerators.ValidEditingProjectDataDtoGenerator().Generator.Sample(10))
             {
                 yield return new object?[]
                 {

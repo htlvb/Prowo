@@ -210,6 +210,17 @@ public static class CustomGenerators
         return Arb.From(gen);
     }
 
+    public record ValidEditingProjectDataDto(EditingProjectDataDto Project);
+
+    public static Arbitrary<ValidEditingProjectDataDto> ValidEditingProjectDataDtoGenerator()
+    {
+        var gen =
+            from project in EditingProjectDataDtoGenerator().Generator
+            where project.ClosingDate > DateTime.Today
+            select new ValidEditingProjectDataDto(project);
+        return Arb.From(gen);
+    }
+
     //public static Arbitrary<TimeOnly> TimeOnlyGenerator()
     //{
     //    var gen =
