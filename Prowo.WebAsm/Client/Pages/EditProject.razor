@@ -236,7 +236,7 @@ else if (editingProject.Links.Save != null)
                 StartTime = projectData.Date.ToDateTime(projectData.StartTime),
                 HasEndTime = projectData.EndTime != null,
                 EndTime = projectData.Date.ToDateTime(projectData.EndTime == null ? TimeOnly.MinValue : projectData.EndTime.Value),
-                ClosingDate = projectData.ClosingDate,
+                ClosingDate = projectData.ClosingDate.Date,
                 MaxAttendees = projectData.MaxAttendees
             };
         }
