@@ -1,0 +1,89 @@
+﻿@using System.Text.Json;
+
+@inject HttpClient Http
+
+@if (RegistrationLink != null)
+{
+    var bgStyle = state == State.Selected ? "bg-red-400" : "bg-slate-300";
+    var title = state switch
+    {
+        State.None => "Abmelden",
+        State.Selected => "Wirklich abmelden",
+        _ => ""
+    };
+    var opacityStyle = state == State.Executing || state == State.Executed ? "opacity-50" : "";
+    var animationStyle = state == State.Executing ? "animate-bounce" : "";
+    <button class="inline-block px-4 py-2 @bgStyle first:rounded-l last:rounded-r @opacityStyle" title="@title" onclick="@(() => Execute())" disabled="@(state == State.Executing || state == State.Executed)">
+        <i class="fa-solid fa-arrow-right-from-bracket @animationStyle"></i>
+    </button>
+
+    @if (state == State.Executed && ProjectName != null && StudentMailAddress != null)
+    {
+        string subject = $"Abmeldung vom Projekt \"{ProjectName}\"";
+        string encodedSubject = Uri.EscapeDataString(subject);
+        <a href="mailto:@StudentMailAddress?subject=@encodedSubject" class="flex items-center px-4 py-2 bg-slate-300 last:rounded-r" title="Benachrichtigung schicken">
+            <i class="fa-solid fa-paper-plane"></i>
+        </a>
+    }
+}
+
+@code {
+    private readonly JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+
+    [Parameter]
+    public string? RegistrationLink { get; set; }
+
+    [Parameter]
+    public Action<State>? OnStateChanged { get; set; }
+
+    [Parameter]
+    public string? ProjectName { get; set; }
+
+    [Parameter]
+    public string? StudentMailAddress { get; set; }
+
+    public enum State
+    {
+        None,
+        Selected,
+        Executing,
+        Executed
+    }
+
+    private State state;
+
+    private void SetState(State state)
+    {
+        this.state = state;
+        StateHasChanged();
+        OnStateChanged?.Invoke(state);
+    }
+
+    private void Select()
+    {
+    }
+
+    private async Task Execute()
+    {
+        if (state == State.None)
+        {
+            SetState(State.Selected);
+        }
+        else if (state == State.Selected)
+        {
+            SetState(State.Executing);
+            try
+            {
+                var response = await Http.DeleteAsync(RegistrationLink);
+                response.EnsureSuccessStatusCode();
+                OnStateChanged?.Invoke(state);
+                SetState(State.Executed);
+            }
+            catch
+            {
+                SetState(State.Selected);
+                throw;
+            }
+        }
+    }
+}

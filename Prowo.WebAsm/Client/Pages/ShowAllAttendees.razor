@@ -59,10 +59,9 @@ else
                                         @foreach (var project in projects.List)
                                         {
                                             var background = project.IsWaiting ? "bg-yellow-400" : "bg-green-400";
-                                            var deletionState = registrationDeletionState.TryGetValue(project, out var s) ? s : new Nullable<RegistrationDeletionState>();
-                                            var isRegistrationMarkedForDeletion = deletionState.HasValue && deletionState.Value == RegistrationDeletionState.MarkedForDeletion;
-                                            var isRegistrationDeleting = deletionState.HasValue && deletionState.Value == RegistrationDeletionState.Deleting;
-                                            var isRegistrationDeleted = deletionState.HasValue && deletionState.Value == RegistrationDeletionState.Deleted;
+                                            var deletionState = registrationDeletionState.TryGetValue(project, out var s) ? s : new Nullable<DeregisterUserButton.State>();
+                                            var isRegistrationDeleting = deletionState.HasValue && deletionState.Value == DeregisterUserButton.State.Executing;
+                                            var isRegistrationDeleted = deletionState.HasValue && deletionState.Value == DeregisterUserButton.State.Executed;
                                             var opacityStyle = isRegistrationDeleting || isRegistrationDeleted ? "opacity-50" : "";
                                             <div class="flex items-stretch">
                                                 <div class="px-4 py-2 rounded-l last:rounded-r @background @opacityStyle">
@@ -75,28 +74,11 @@ else
                                                         <span>@project.LongName</span>
                                                     }
                                                 </div>
-                                                @if (project.DeregisterUserLink != null)
-                                                {
-                                                    var bgStyle = isRegistrationMarkedForDeletion ? "bg-red-400" : "bg-slate-300";
-                                                    var title = deletionState switch
-                                                    {
-                                                        var v when !v.HasValue => "Abmelden",
-                                                        var v when v.HasValue && v.Value == RegistrationDeletionState.MarkedForDeletion => "Wirklich abmelden",
-                                                        _ => ""
-                                                    };
-                                                    var animationStyle = deletionState == RegistrationDeletionState.Deleting ? "animate-bounce" : "";
-                                                    <button class="inline-block px-4 py-2 @bgStyle last:rounded-r @opacityStyle" title="@title" onclick="@(() => DeregisterUser(project))" disabled="@isRegistrationDeleted">
-                                                        <i class="fa-solid fa-arrow-right-from-bracket @animationStyle"></i>
-                                                    </button>
-                                                }
-                                                @if (isRegistrationDeleted)
-                                                {
-                                                    string subject = $"Abmeldung vom Projekt \"{project.Name}\"";
-                                                    string encodedSubject = Uri.EscapeDataString(subject);
-                                                    <a href="mailto:@student.MailAddress?subject=@encodedSubject" class="flex items-center px-4 py-2 bg-slate-300 last:rounded-r" title="Benachrichtigung schicken">
-                                                        <i class="fa-solid fa-paper-plane"></i>
-                                                    </a>
-                                                }
+                                                <DeregisterUserButton
+                                                    RegistrationLink="@project.UserRegistrationLink"
+                                                    OnStateChanged="@(state => ChangeRegistrationState(project, state))"
+                                                    ProjectName="@project.Name"
+                                                    StudentMailAddress="@student.MailAddress" />
                                             </div>
                                         }
                                     </div>
@@ -114,14 +96,7 @@ else
     private AttendanceOverviewDto? attendanceOverview;
     private GroupDto? selectedGroup;
 
-    private enum RegistrationDeletionState
-    {
-        MarkedForDeletion,
-        Deleting,
-        Deleted
-    }
-
-    private Dictionary<StudentProjectDto, RegistrationDeletionState> registrationDeletionState = new();
+    private Dictionary<StudentProjectDto, DeregisterUserButton.State> registrationDeletionState = new();
 
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
 
@@ -144,32 +119,9 @@ else
         StateHasChanged();
     }
 
-    private async Task DeregisterUser(StudentProjectDto project)
+    private void ChangeRegistrationState(StudentProjectDto project, DeregisterUserButton.State state)
     {
-        if (registrationDeletionState.TryGetValue(project, out var deletionState))
-        {
-            registrationDeletionState[project] = RegistrationDeletionState.Deleting;
-            StateHasChanged();
-
-            try
-            {
-                var response = await Http.DeleteAsync(project.DeregisterUserLink);
-                response.EnsureSuccessStatusCode();
-
-                registrationDeletionState[project] = RegistrationDeletionState.Deleted;
-                StateHasChanged();
-            }
-            catch
-            {
-                registrationDeletionState[project] = RegistrationDeletionState.MarkedForDeletion;
-                StateHasChanged();
-                throw;
-            }
-        }
-        else
-        {
-            registrationDeletionState.Add(project, RegistrationDeletionState.MarkedForDeletion);
-            StateHasChanged();
-        }
+        registrationDeletionState[project] = state;
+        StateHasChanged();
     }
 }

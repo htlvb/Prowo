@@ -13,7 +13,7 @@ namespace Prowo.WebAsm.Shared
 
     public record StudentProjectsAtDateDto(IReadOnlyList<StudentProjectDto> List);
 
-    public record StudentProjectDto(string Name, string LongName, bool IsWaiting, string? ShowProjectAttendeesLink, string? DeregisterUserLink);
+    public record StudentProjectDto(string Name, string LongName, bool IsWaiting, string? ShowProjectAttendeesLink, string? UserRegistrationLink);
 
     public record ProjectAttendeesDto(
         string Title,
@@ -28,7 +28,8 @@ namespace Prowo.WebAsm.Shared
         string LastName,
         string Class,
         string MailAddress,
-        bool IsWaiting
+        bool IsWaiting,
+        string? RegistrationLink
     );
 
     public record EditingProjectDto(

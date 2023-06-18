@@ -46,6 +46,7 @@ else
                     <th>Klasse</th>
                     <th>Nachname</th>
                     <th>Vorname</th>
+                    <th>Abmelden</th>
                 </tr>
             </thead>
             <tbody>
@@ -56,6 +57,15 @@ else
                         <td>@attendee.Class</td>
                         <td>@attendee.LastName</td>
                         <td>@attendee.FirstName</td>
+                        <td>
+                            <div class="flex">
+                                <DeregisterUserButton
+                                    RegistrationLink="@attendee.RegistrationLink"
+                                    OnStateChanged="@(state => ChangeRegistrationState(attendee, state))"
+                                    ProjectName="@project.Title"
+                                    StudentMailAddress="@attendee.MailAddress" />
+                            </div>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -69,6 +79,8 @@ else
 
     private ProjectAttendeesDto? project;
 
+    private Dictionary<ProjectAttendeeDto, DeregisterUserButton.State> registrationDeletionState = new();
+
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
 
     protected override async Task OnInitializedAsync()
@@ -81,5 +93,10 @@ else
         {
             exception.Redirect();
         }
+    }
+
+    private void ChangeRegistrationState(ProjectAttendeeDto attendee, DeregisterUserButton.State state)
+    {
+        registrationDeletionState[attendee] = state;
     }
 }

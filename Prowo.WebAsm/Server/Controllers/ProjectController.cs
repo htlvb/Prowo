@@ -231,11 +231,18 @@ namespace Prowo.WebAsm.Server.Controllers
                 return NotFound("Project doesn't exist or is too old.");
             }
 
+            var canDeregisterUsers = (await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded;
+
             var attendees = Enumerable
                 .Concat(
-                    project.RegisteredAttendees.Select((v, i) => new ProjectAttendeeDto(v.FirstName, v.LastName, v.Class, v.MailAddress, IsWaiting: false)),
-                    project.WaitingAttendees.Select((v, i) => new ProjectAttendeeDto(v.FirstName, v.LastName, v.Class, v.MailAddress, IsWaiting: true))
+                    project.RegisteredAttendees.Select((v, i) => new { Attendee = v, IsWaiting = false }),
+                    project.WaitingAttendees.Select((v, i) => new { Attendee = v, IsWaiting = true })
                 )
+                .Select(v =>
+                {
+                    var deregisterUrl = canDeregisterUsers ? Url.Action(nameof(DeregisterUserFromProject), new { projectId = project.Id, userId = v.Attendee.Id }) : default;
+                    return new ProjectAttendeeDto(v.Attendee.FirstName, v.Attendee.LastName, v.Attendee.Class, v.Attendee.MailAddress, v.IsWaiting, deregisterUrl);
+                })
                 .OrderBy(v => v.IsWaiting)
                 .ThenBy(v => v.Class)
                 .ThenBy(v => v.LastName)
