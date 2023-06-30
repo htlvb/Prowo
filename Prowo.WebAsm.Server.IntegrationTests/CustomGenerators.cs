@@ -19,21 +19,12 @@ public static class CustomGenerators
         return Arb.From(gen);
     }
 
-    public static Arbitrary<DateOnly> DateOnlyGenerator()
-    {
-        return ArbMap.Default.ArbFor<DateTime>()
-            .Convert(DateOnly.FromDateTime, v => v.ToDateTime(TimeOnly.MinValue));
-    }
-
-    public record FutureDate(DateOnly Date);
-
-    public static Arbitrary<FutureDate> FutureDateGenerator()
+    public static Arbitrary<DateOnly> ProjectDateGenerator()
     {
         var gen =
-            from days in ArbMap.Default.GeneratorFor<PositiveInt>()
-            let dateTime = DateTime.Today.AddDays((int)days)
-            let date = DateOnly.FromDateTime(dateTime)
-            select new FutureDate(date);
+            from offset in Gen.Choose(-100, 100)
+            let date = DateTime.Today.AddDays(offset)
+            select DateOnly.FromDateTime(date);
         return Arb.From(gen);
     }
 
@@ -66,8 +57,9 @@ public static class CustomGenerators
 
     public static Arbitrary<ClosingDate> ClosingDateGenerator(DateOnly projectDate)
     {
+        var daysToProject = Math.Abs(projectDate.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber);
         var gen =
-            from offsetMinutes in Gen.Choose(0, 60 * 24 * 365 * 3)
+            from offsetMinutes in Gen.Choose(0, 2 * daysToProject * 24 * 60)
             let date = projectDate.ToDateTime(TimeOnly.MinValue).AddMinutes(-offsetMinutes)
             select new ClosingDate(date);
         return Arb.From(gen);
@@ -112,7 +104,7 @@ public static class CustomGenerators
             from location in ArbMap.Default.GeneratorFor<NonEmptyString>()
             from organizer in ProjectOrganizerGenerator().Generator
             from coOrganizers in ProjectOrganizerGenerator().Array().Generator
-            from date in DateOnlyGenerator().Generator
+            from date in ProjectDateGenerator().Generator
             from startTime in StartTimeGenerator().Generator
             from endTime in EndTimeGenerator(startTime).Generator
             from closingDate in ClosingDateGenerator(date).Generator
@@ -141,7 +133,7 @@ public static class CustomGenerators
     {
         var gen =
             from project in ProjectGenerator().Generator
-            where project.ClosingDate > DateTime.Today
+            where project.ClosingDate > DateTime.UtcNow
             select new AttendableProject(project);
         return Arb.From(gen);
     }
@@ -155,6 +147,19 @@ public static class CustomGenerators
             let project = p.Project
             where project.AllAttendees.Count > 0
             select new AttendableProjectWithAttendees(project);
+        return Arb.From(gen);
+    }
+
+    public record UnattendableProjectWithAttendees(Project Project);
+
+    public static Arbitrary<UnattendableProjectWithAttendees> UnattendableProjectWithAttendeesGenerator()
+    {
+        var gen =
+            from project in ProjectGenerator().Generator
+            where project.Date > DateOnly.FromDateTime(DateTime.Today)
+            where project.ClosingDate < DateTime.Today
+            where project.AllAttendees.Count > 0
+            select new UnattendableProjectWithAttendees(project);
         return Arb.From(gen);
     }
 
@@ -189,7 +194,7 @@ public static class CustomGenerators
             from location in ArbMap.Default.GeneratorFor<NonEmptyString>()
             from organizerId in ArbMap.Default.GeneratorFor<Guid>()
             from coOrganizerIds in ArbMap.Default.ArbFor<Guid>().Array().Generator
-            from date in DateOnlyGenerator().Generator
+            from date in ProjectDateGenerator().Generator
             from startTime in StartTimeGenerator().Generator
             from endTime in EndTimeGenerator(startTime).Generator
             from closingDate in ClosingDateGenerator(date).Generator

@@ -27,7 +27,7 @@ public static class InMemoryServer
                             .AddScheme<TestAuthHandlerOptions, TestAuthHandler>(TestAuthHandler.SchemeName, options => { });
                         services.AddProwoAuthorizationRules();
                         services.AddProwoControllers();
-                        services.AddSingleton<IUserStore>(new InMemoryUserStore(FakeData.ProjectOrganizers));
+                        services.AddSingleton<IUserStore>(new InMemoryUserStore(FakeData.ProjectOrganizers, FakeData.ProjectAttendees.First()));
                         services.AddSingleton<IProjectStore, InMemoryProjectStore>();
                     })
                     .Configure(app =>

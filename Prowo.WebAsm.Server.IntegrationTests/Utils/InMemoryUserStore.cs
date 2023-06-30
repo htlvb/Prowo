@@ -5,10 +5,14 @@ namespace Prowo.WebAsm.Server.IntegrationTests.Utils;
 public class InMemoryUserStore : IUserStore
 {
     private readonly IReadOnlyCollection<ProjectOrganizer> organizerCandidates;
+    private readonly ProjectAttendee selfAsProjectAttendee;
 
-    public InMemoryUserStore(IReadOnlyCollection<ProjectOrganizer> organizerCandidates)
+    public InMemoryUserStore(
+        IReadOnlyCollection<ProjectOrganizer> organizerCandidates,
+        ProjectAttendee selfAsProjectAttendee)
     {
         this.organizerCandidates = organizerCandidates;
+        this.selfAsProjectAttendee = selfAsProjectAttendee;
     }
 
     public IAsyncEnumerable<ProjectAttendee> GetAttendeeCandidates()
@@ -25,8 +29,9 @@ public class InMemoryUserStore : IUserStore
         }
     }
 
-    public Task<ProjectAttendee> GetSelfAsProjectAttendee()
+    public async Task<ProjectAttendee> GetSelfAsProjectAttendee()
     {
-        throw new NotImplementedException();
+        await Task.Yield();
+        return selfAsProjectAttendee;
     }
 }

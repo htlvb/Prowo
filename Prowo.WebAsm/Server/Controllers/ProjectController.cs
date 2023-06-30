@@ -56,16 +56,36 @@ namespace Prowo.WebAsm.Server.Controllers
         [Authorize(Policy = "AttendProject")]
         public async Task<IActionResult> RegisterForProject(string projectId)
         {
+            var project = await projectStore.Get(projectId);
+            if (project == null || project.Date < MinDate)
+            {
+                return NotFound("Project doesn't exist or is too old.");
+            }
+            if (project.ClosingDate <= DateTime.UtcNow)
+            {
+                return BadRequest("Project registrations can't be changed.");
+            }
+
             var attendee = await userStore.GetSelfAsProjectAttendee();
-            var project = await projectStore.AddAttendee(projectId, attendee);
-            return Ok(await GetProjectDtoFromProject(project));
+            var updatedProject = await projectStore.AddAttendee(projectId, attendee);
+            return Ok(await GetProjectDtoFromProject(updatedProject));
         }
 
         [HttpPost("{projectId}/deregister")]
-        public async Task<ProjectDto> DeregisterCurrentUserFromProject(string projectId)
+        public async Task<IActionResult> DeregisterCurrentUserFromProject(string projectId)
         {
-            var project = await projectStore.RemoveAttendee(projectId, UserId);
-            return await GetProjectDtoFromProject(project);
+            var project = await projectStore.Get(projectId);
+            if (project == null || project.Date < MinDate)
+            {
+                return NotFound("Project doesn't exist or is too old.");
+            }
+            if (project.ClosingDate <= DateTime.UtcNow)
+            {
+                return BadRequest("Project registrations can't be changed.");
+            }
+
+            var updatedProject = await projectStore.RemoveAttendee(projectId, UserId);
+            return Ok(await GetProjectDtoFromProject(updatedProject));
         }
 
         [HttpDelete("{projectId}/attendees/{userId}")]
