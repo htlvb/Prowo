@@ -166,9 +166,9 @@ az account set --name $subscriptionName
 
 "=== Creating SQL DB"
 $dbAdmin = az ad user show --id eggj@htlvb.at | ConvertFrom-Json
-az sql server create --name $dbServerName --resource-group $resourceGroupName --location $regionName --enable-ad-only-auth --external-admin-principal-type User --external-admin-name $dbAdmin.userPrincipalName --external-admin-sid $dbAdmin.id
-az sql server firewall-rule create --resource-group $resourceGroupName --name AllowAzureResources --server $dbServername --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-az sql db create --resource-group $resourceGroupName --server $dbServerName --name $dbDatabaseName --edition GeneralPurpose --family Gen5 --compute-model Serverless --capacity 1 --max-size 2GB --backup-storage-redundancy Zone
+az sql server create --name $dbServerName --resource-group $resourceGroupName --location $regionName --enable-ad-only-auth --external-admin-principal-type User --external-admin-name $dbAdmin.userPrincipalName --external-admin-sid $dbAdmin.id -o none
+az sql server firewall-rule create --resource-group $resourceGroupName --name AllowAzureResources --server $dbServername --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0 -o none
+az sql db create --resource-group $resourceGroupName --server $dbServerName --name $dbDatabaseName --edition GeneralPurpose --family Gen5 --compute-model Serverless --capacity 1 --max-size 2GB --backup-storage-redundancy Zone -o none
 
 $dbTemporaryFirewallRuleName = az sql server firewall-rule create --resource-group $resourceGroupName --name TempAllowAll --server $dbServername --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255 --query name -o tsv
 $dbCmd = az sql db show-connection-string --server $dbServerName --name $dbDatabaseName --client sqlcmd --auth-type ADIntegrated -o tsv
