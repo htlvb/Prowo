@@ -16,9 +16,9 @@
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.96.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
-    <PackageReference Include="Npgsql" Version="6.0.7" />
-    <PackageReference Include="Npgsql.Json.NET" Version="6.0.7" />
+    <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
 
   <ItemGroup>

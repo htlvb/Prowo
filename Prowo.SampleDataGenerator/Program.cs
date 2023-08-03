@@ -1,19 +1,15 @@
-﻿using Microsoft.Extensions.Configuration;
-using Npgsql;
-using NpgsqlTypes;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-
-NpgsqlConnection.GlobalTypeMapper.UseJsonNet();
-NpgsqlConnection.GlobalTypeMapper.MapEnum<RegistrationAction>("registration_action");
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
 
-string? connectionString = configuration.GetConnectionString("PostgresqlDb");
-await using var dbConnection = new NpgsqlConnection(connectionString);
+string? connectionString = configuration.GetConnectionString("Mssql");
+await using var dbConnection = new SqlConnection(connectionString);
 await dbConnection.OpenAsync();
 
 var attendees = JsonDocument.Parse(File.ReadAllText("AttendeeCandidates.json"))
@@ -65,7 +61,7 @@ var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
             Date = date,
             StartTime = TimeSpan.ParseExact(startTimeString, "h\\:mm", CultureInfo.InvariantCulture),
             EndTime = endTimeString != null ? TimeSpan.ParseExact(endTimeString, "h\\:mm", CultureInfo.InvariantCulture) : default(TimeSpan?),
-            ClosingDate = date.AddDays(Random.Shared.Next(-30, 1)).ToUniversalTime(),
+            ClosingDate = date.AddDays(Random.Shared.Next(-30, 1)).AddSeconds(-1).ToUniversalTime(),
             MaxAttendees = maxAttendees,
             RegistrationEvents = attendees
                 .OrderBy(_ => Random.Shared.NextDouble())
@@ -78,45 +74,54 @@ var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
                     @class = v.Class,
                     mailAddress = v.MailAddress,
                     timestamp = DateTime.UtcNow,
-                    action = RegistrationAction.Register
+                    action = "register"
                 })
                 .ToArray()
         };
     });
 
-await using (var cmd = new NpgsqlCommand("DELETE FROM project", dbConnection))
+await using (var cmd = new SqlCommand("DELETE FROM project", dbConnection))
 {
     await cmd.ExecuteNonQueryAsync();
 }
 
+var jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = false, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
 foreach (var project in sampleProjects.Take(10))
 {
-    await using (var cmd = new NpgsqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection))
+    await using (var cmd = new SqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection))
     {
         cmd.Parameters.AddWithValue("id", Guid.Parse(project.Id));
         cmd.Parameters.AddWithValue("title", project.Title);
         cmd.Parameters.AddWithValue("description", project.Description);
         cmd.Parameters.AddWithValue("location", project.Location);
-        cmd.Parameters.AddWithValue("organizer", NpgsqlDbType.Json, project.Organizer);
-        cmd.Parameters.AddWithValue("co_organizers", NpgsqlDbType.Json, project.CoOrganizers);
+        cmd.Parameters.AddWithValue("organizer", JsonSerializer.Serialize(project.Organizer, jsonSerializerOptions));
+        cmd.Parameters.AddWithValue("co_organizers", JsonSerializer.Serialize(project.CoOrganizers, jsonSerializerOptions));
         cmd.Parameters.AddWithValue("date", project.Date);
         cmd.Parameters.AddWithValue("start_time", project.StartTime);
-        cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? DBNull.Value);
         cmd.Parameters.AddWithValue("closing_date", project.ClosingDate);
         cmd.Parameters.AddWithValue("maxAttendees", project.MaxAttendees);
 
         await cmd.ExecuteScalarAsync();
     }
 
-    await using (var cmd = new NpgsqlCommand("INSERT INTO registration_event (project_id, \"user\", action, timestamp) SELECT UNNEST(@project_id), UNNEST(@user), UNNEST(@action), UNNEST(@timestamp)", dbConnection))
+    foreach (var registrationEvent in project.RegistrationEvents)
     {
-        cmd.Parameters.AddWithValue("project_id", Enumerable.Repeat(Guid.Parse(project.Id), project.RegistrationEvents.Length).ToArray());
-        cmd.Parameters.AddWithValue("user", NpgsqlDbType.Array | NpgsqlDbType.Json, project.RegistrationEvents.Select(v => new { id = v.userId, first_name = v.firstName, last_name = v.lastName, @class = v.@class, mail_address = v.mailAddress}).ToArray());
-        cmd.Parameters.AddWithValue("action", project.RegistrationEvents.Select(v => v.action).ToArray());
-        cmd.Parameters.AddWithValue("timestamp", project.RegistrationEvents.Select(v => v.timestamp).ToArray());
+        await using var cmd = new SqlCommand("INSERT INTO registration_event (project_id, [user], action, timestamp) VALUES(@project_id, @user, @action, @timestamp)", dbConnection);
+        var user = new {
+            id = registrationEvent.userId, 
+            first_name = registrationEvent.firstName, 
+            last_name = registrationEvent.lastName, 
+            @class = registrationEvent.@class,
+            mail_address = registrationEvent.mailAddress
+        };
+
+        cmd.Parameters.AddWithValue("project_id", Guid.Parse(project.Id));
+        cmd.Parameters.AddWithValue("user", JsonSerializer.Serialize(user, jsonSerializerOptions));
+        cmd.Parameters.AddWithValue("action", registrationEvent.action);
+        cmd.Parameters.AddWithValue("timestamp", registrationEvent.timestamp);
 
         await cmd.ExecuteNonQueryAsync();
     }
 }
-
-enum RegistrationAction { Register, Deregister }

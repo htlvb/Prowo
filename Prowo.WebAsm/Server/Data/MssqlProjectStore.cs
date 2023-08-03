@@ -1,15 +1,20 @@
-﻿using System.Data;
+﻿using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using Npgsql;
-using NpgsqlTypes;
 
 namespace Prowo.WebAsm.Server.Data
 {
-    public class PostgresqlProjectStore : IProjectStore, IDisposable
+    public class MssqlProjectStore : IProjectStore, IDisposable
     {
         private readonly string dbConnectionString;
+        private static readonly JsonSerializerOptions jsonSerializerOptions = new()
+        {
+            WriteIndented = false,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
-        public PostgresqlProjectStore(string dbConnectionString)
+        public MssqlProjectStore(string dbConnectionString)
         {
             this.dbConnectionString = dbConnectionString;
         }
@@ -57,7 +62,7 @@ namespace Prowo.WebAsm.Server.Data
                 return;
             }
             await using var dbConnection = await Connect();
-            using var cmd = new NpgsqlCommand("DELETE FROM project WHERE id = @id", dbConnection);
+            using var cmd = new SqlCommand("DELETE FROM project WHERE id = @id", dbConnection);
             cmd.Parameters.AddWithValue("id", projectGuid);
             await cmd.ExecuteNonQueryAsync();
         }
@@ -82,7 +87,7 @@ namespace Prowo.WebAsm.Server.Data
                 Guid.Parse(projectId),
                 DbProjectRegistrationUser.FromAttendee(attendee),
                 DateTime.UtcNow,
-                DbProjectRegistrationAction.Register
+                "register"
             );
             await using var dbConnection = await Connect();
             await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
@@ -95,7 +100,7 @@ namespace Prowo.WebAsm.Server.Data
                 Guid.Parse(projectId),
                 new DbProjectRegistrationUser(Guid.Parse(userId), null, null, null, null),
                 DateTime.UtcNow,
-                DbProjectRegistrationAction.Deregister
+                "deregister"
             );
             await using var dbConnection = await Connect();
             await AddRegistrationEvent(dbConnection, dbRegistrationEvent);
@@ -107,10 +112,10 @@ namespace Prowo.WebAsm.Server.Data
         }
 
         private static async IAsyncEnumerable<DbProject> ReadAllProjects(
-            NpgsqlConnection dbConnection,
+            SqlConnection dbConnection,
             DateTime minDate)
         {
-            using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE date >= @minDate", dbConnection);
+            using var cmd = new SqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE date >= @minDate", dbConnection);
             cmd.Parameters.AddWithValue("minDate", minDate);
             await using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
@@ -119,9 +124,9 @@ namespace Prowo.WebAsm.Server.Data
             }
         }
 
-        private async Task<DbProject?> ReadProject(NpgsqlConnection dbConnection, Guid projectGuid)
+        private static async Task<DbProject?> ReadProject(SqlConnection dbConnection, Guid projectGuid)
         {
-            using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE id = @projectId", dbConnection);
+            using var cmd = new SqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE id = @projectId", dbConnection);
             cmd.Parameters.AddWithValue("projectId", projectGuid);
             await using var reader = await cmd.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
@@ -131,23 +136,22 @@ namespace Prowo.WebAsm.Server.Data
             return DbProject.FromReader(reader);
         }
 
-        private async Task<NpgsqlConnection> Connect()
+        private async Task<SqlConnection> Connect()
         {
-            var dbConnection = new NpgsqlConnection(dbConnectionString);
+            var dbConnection = new SqlConnection(dbConnectionString);
             await dbConnection.OpenAsync();
-            dbConnection.TypeMapper.MapEnum<DbProjectRegistrationAction>("registration_action");
             return dbConnection;
         }
 
-        private static async Task CreateProject(NpgsqlConnection dbConnection, DbProject project)
+        private static async Task CreateProject(SqlConnection dbConnection, DbProject project)
         {
-            using var cmd = new NpgsqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection);
+            using var cmd = new SqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection);
             cmd.Parameters.AddWithValue("id", project.Id);
             cmd.Parameters.AddWithValue("title", project.Title);
             cmd.Parameters.AddWithValue("description", project.Description);
             cmd.Parameters.AddWithValue("location", project.Location);
-            cmd.Parameters.AddWithValue("organizer", NpgsqlDbType.Json, project.Organizer);
-            cmd.Parameters.AddWithValue("co_organizers", NpgsqlDbType.Json, project.CoOrganizers);
+            cmd.Parameters.AddWithValue("organizer", JsonSerializer.Serialize(project.Organizer, jsonSerializerOptions));
+            cmd.Parameters.AddWithValue("co_organizers", JsonSerializer.Serialize(project.CoOrganizers, jsonSerializerOptions));
             cmd.Parameters.AddWithValue("date", project.Date);
             cmd.Parameters.AddWithValue("start_time", project.StartTime);
             cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? DBNull.Value);
@@ -156,15 +160,15 @@ namespace Prowo.WebAsm.Server.Data
             await cmd.ExecuteNonQueryAsync();
         }
 
-        private static async Task UpdateProject(NpgsqlConnection dbConnection, DbProject project)
+        private static async Task UpdateProject(SqlConnection dbConnection, DbProject project)
         {
-            using var cmd = new NpgsqlCommand("UPDATE project SET title=@title, description=@description, location=@location, organizer=@organizer, co_organizers=@co_organizers, date=@date, start_time=@start_time, end_time=@end_time, closing_date=@closing_date, maxAttendees=@maxAttendees WHERE id=@id", dbConnection);
+            using var cmd = new SqlCommand("UPDATE project SET title=@title, description=@description, location=@location, organizer=@organizer, co_organizers=@co_organizers, date=@date, start_time=@start_time, end_time=@end_time, closing_date=@closing_date, maxAttendees=@maxAttendees WHERE id=@id", dbConnection);
             cmd.Parameters.AddWithValue("id", project.Id);
             cmd.Parameters.AddWithValue("title", project.Title);
             cmd.Parameters.AddWithValue("description", project.Description);
             cmd.Parameters.AddWithValue("location", project.Location);
-            cmd.Parameters.AddWithValue("organizer", NpgsqlDbType.Json, project.Organizer);
-            cmd.Parameters.AddWithValue("co_organizers", NpgsqlDbType.Json, project.CoOrganizers);
+            cmd.Parameters.AddWithValue("organizer", JsonSerializer.Serialize(project.Organizer, jsonSerializerOptions));
+            cmd.Parameters.AddWithValue("co_organizers", JsonSerializer.Serialize(project.CoOrganizers, jsonSerializerOptions));
             cmd.Parameters.AddWithValue("date", project.Date);
             cmd.Parameters.AddWithValue("start_time", project.StartTime);
             cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? DBNull.Value);
@@ -174,11 +178,18 @@ namespace Prowo.WebAsm.Server.Data
         }
 
         private static async IAsyncEnumerable<DbProjectRegistrationEvent> ReadRegistrations(
-            NpgsqlConnection dbConnection,
+            SqlConnection dbConnection,
             params Guid[] projectIds)
         {
-            using var cmd = new NpgsqlCommand("SELECT project_id, \"user\", timestamp, action FROM registration_event WHERE project_id = ANY(@projectIds) ORDER BY project_id, timestamp", dbConnection);
-            cmd.Parameters.AddWithValue("projectIds", projectIds);
+            var projectIdParameterNames = Enumerable
+                .Range(1, projectIds.Length)
+                .Select(i => $"@projectId{i}");
+            var projectIdParameters = Enumerable
+                .Range(1, projectIds.Length)
+                .Select(i => new SqlParameter($"projectId{i}", projectIds[i - 1]))
+                .ToArray();
+            using var cmd = new SqlCommand($"SELECT project_id, [user], timestamp, action FROM registration_event WHERE project_id IN({string.Join(", ", projectIdParameterNames)}) ORDER BY project_id, timestamp", dbConnection);
+            cmd.Parameters.AddRange(projectIdParameters);
             await using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
@@ -187,12 +198,12 @@ namespace Prowo.WebAsm.Server.Data
         }
 
         private static async Task AddRegistrationEvent(
-            NpgsqlConnection dbConnection,
+            SqlConnection dbConnection,
             DbProjectRegistrationEvent registrationEvent)
         {
-            using var cmd = new NpgsqlCommand("INSERT INTO registration_event (project_id, \"user\", timestamp, action) VALUES (@project_id, @user, @timestamp, @action)", dbConnection);
+            using var cmd = new SqlCommand("INSERT INTO registration_event (project_id, [user], timestamp, action) VALUES (@project_id, @user, @timestamp, @action)", dbConnection);
             cmd.Parameters.AddWithValue("project_id", registrationEvent.ProjectId);
-            cmd.Parameters.AddWithValue("user", NpgsqlDbType.Json, registrationEvent.User);
+            cmd.Parameters.AddWithValue("user", JsonSerializer.Serialize(registrationEvent.User, jsonSerializerOptions));
             cmd.Parameters.AddWithValue("timestamp", registrationEvent.Timestamp);
             cmd.Parameters.AddWithValue("action", registrationEvent.Action);
             await cmd.ExecuteNonQueryAsync();
@@ -204,11 +215,11 @@ namespace Prowo.WebAsm.Server.Data
             List<ProjectAttendee> result = new();
             foreach (var entry in registrationEvents)
             {
-                if (entry.Action == DbProjectRegistrationAction.Register && !result.Any(v => v.Id == entry.User.Id.ToString()))
+                if (entry.Action == "register" && !result.Any(v => v.Id == entry.User.Id.ToString()))
                 {
                     result.Add(entry.User.ToAttendee());
                 }
-                else if (entry.Action == DbProjectRegistrationAction.Deregister)
+                else if (entry.Action == "deregister")
                 {
                     result.RemoveAll(v => v.Id == entry.User.Id.ToString());
                 }
@@ -239,22 +250,20 @@ namespace Prowo.WebAsm.Server.Data
             }
         }
 
-        private enum DbProjectRegistrationAction { Register, Deregister }
-
         private record DbProjectRegistrationEvent(
             Guid ProjectId,
             DbProjectRegistrationUser User,
             DateTime Timestamp,
-            DbProjectRegistrationAction Action 
+            string Action 
         )
         {
-            public static DbProjectRegistrationEvent FromReader(NpgsqlDataReader reader)
+            public static DbProjectRegistrationEvent FromReader(SqlDataReader reader)
             {
                 return new DbProjectRegistrationEvent(
                     reader.GetGuid(0),
-                    reader.GetFieldValue<DbProjectRegistrationUser>(1),
+                    JsonSerializer.Deserialize<DbProjectRegistrationUser>(reader.GetString(1), jsonSerializerOptions)!,
                     reader.GetDateTime(2),
-                    reader.GetFieldValue<DbProjectRegistrationAction>(3)
+                    reader.GetString(3)
                 );
             }
         }
@@ -303,18 +312,18 @@ namespace Prowo.WebAsm.Server.Data
             int MaxAttendees
         )
         {
-            public static DbProject FromReader(NpgsqlDataReader reader)
+            public static DbProject FromReader(SqlDataReader reader)
             {
                 return new DbProject(
                     reader.GetGuid(0),
                     reader.GetString(1),
                     reader.GetString(2),
                     reader.GetString(3),
-                    reader.GetFieldValue<DbProjectOrganizer>(4),
-                    reader.GetFieldValue<DbProjectOrganizer[]>(5),
+                    JsonSerializer.Deserialize<DbProjectOrganizer>(reader.GetString(4), jsonSerializerOptions)!,
+                    JsonSerializer.Deserialize<DbProjectOrganizer[]>(reader.GetString(5), jsonSerializerOptions)!,
                     reader.GetDateTime(6),
                     reader.GetTimeSpan(7),
-                    reader.GetFieldValue<TimeSpan?>(8),
+                    reader.IsDBNull(8) ? null : reader.GetTimeSpan(8),
                     reader.GetDateTime(9),
                     reader.GetInt32(10)
                 );

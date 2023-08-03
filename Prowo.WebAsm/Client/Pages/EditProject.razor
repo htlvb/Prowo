@@ -252,7 +252,7 @@ else if (editingProject.Links.Save != null)
                 DateOnly.FromDateTime(Date),
                 TimeOnly.FromDateTime(StartTime),
                 (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
-                ClosingDate.Add(TimeOnly.MaxValue.ToTimeSpan()),
+                ClosingDate.AddDays(1).AddSeconds(-1),
                 MaxAttendees
             );
         }

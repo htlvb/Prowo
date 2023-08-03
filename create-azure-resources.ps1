@@ -1,9 +1,8 @@
 $subscriptionName = "Pay-As-You-Go"
 $resourceGroupName = "rg-prowo"
 $regionName = "westeurope"
-$dbServerName = "prowo-db"
-$dbDatabaseName = "prowo"
-$dbAdminName = "postgres"
+$dbServerName = "dbs-prowo"
+$dbDatabaseName = "db-prowo"
 $logAnalyticsWorkspace = "prowo-law"
 $containerAppEnvironment = "prowo-cae"
 $containerAppName = "prowo-ca"
@@ -12,7 +11,6 @@ $clientAppName = "Prowo-Client"
 
 # TODO set $gitHubAccessToken
 # TODO set $dockerHubPassword
-# TODO set $dbAdminUserPassword
 
 az extension add --upgrade -n account
 az extension add --upgrade -n rdbms-connect --version 1.0.3 # error with newer versions, s. https://github.com/Azure/azure-cli/issues/25067
@@ -166,23 +164,21 @@ az ad app permission admin-consent --id $clientApp.appId
 az logout
 az account set --name $subscriptionName
 
-"=== Creating PostgreSQLDb"
-az postgres flexible-server create `
-    --admin-user $dbAdminName `
-    --admin-password $dbAdminUserPassword `
-    --database-name $dbDatabaseName `
-    --location $regionName `
-    --name $dbServerName `
-    --public-access 0.0.0.0 `
-    --resource-group $resourceGroupName `
-    --sku-name Standard_B1ms `
-    --storage-size 32 `
-    --tier Burstable
-$postgreSqlDbConnectionString = "Server=$dbServerName.postgres.database.azure.com;Database=$dbDatabaseName;Port=5432;User Id=$dbAdminName;Password=$dbAdminUserPassword;Ssl Mode=VerifyFull;"
+"=== Creating SQL DB"
+$dbAdmin = az ad user show --id eggj@htlvb.at | ConvertFrom-Json
+az sql server create --name $dbServerName --resource-group $resourceGroupName --location $regionName --enable-ad-only-auth --external-admin-principal-type User --external-admin-name $dbAdmin.userPrincipalName --external-admin-sid $dbAdmin.id
+az sql server firewall-rule create --resource-group $resourceGroupName --name AllowAzureResources --server $dbServername --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
+az sql db create --resource-group $resourceGroupName --server $dbServerName --name $dbDatabaseName --edition GeneralPurpose --family Gen5 --compute-model Serverless --capacity 1 --max-size 2GB --backup-storage-redundancy Zone
 
-$dbTemporaryFirewallRuleName = az postgres flexible-server firewall-rule create --resource-group $resourceGroupName --name $dbServerName --rule-name TempAllowAll --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255 --query name -o tsv
-az postgres flexible-server execute --admin-user $dbAdminName --admin-password $dbAdminUserPassword --name $dbServerName --database-name $dbDatabaseName --file-path .\db-schema.sql
-az postgres flexible-server firewall-rule delete --resource-group $resourceGroupName --name $dbServerName --rule-name $dbTemporaryFirewallRuleName --yes
+$dbTemporaryFirewallRuleName = az sql server firewall-rule create --resource-group $resourceGroupName --name TempAllowAll --server $dbServername --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255 --query name -o tsv
+$dbCmd = az sql db show-connection-string --server $dbServerName --name $dbDatabaseName --client sqlcmd --auth-type ADIntegrated -o tsv
+$dbCmd = $dbCmd -replace "-N","-N true" # fix cmd line args
+$accessToken = az account get-access-token --query accessToken -o tsv
+$dbCmd = "$dbCmd -P $accessToken"
+Invoke-Expression "$dbCmd -i db-schema.sql"
+az sql server firewall-rule delete --resource-group $resourceGroupName --server $dbServername --name $dbTemporaryFirewallRuleName
+
+$mssqlDbConnectionString = az sql db show-connection-string --server $dbServerName --name $dbDatabaseName --client ado.net --auth-type ADIntegrated -o tsv
 
 "=== Creating Container App"
 az monitor log-analytics workspace create --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName
@@ -193,8 +189,8 @@ az containerapp create `
     --name $containerAppName `
     --target-port 80 `
     --ingress external `
-    --secrets "postgresql-db-connection-string=$postgreSqlDbConnectionString" "aad-client-secret=$($serverAppCredentials.password)" `
-    --env-vars "ConnectionStrings__PostgresqlDb=secretref:postgresql-db-connection-string" "AzureAd__ClientSecret=secretref:aad-client-secret" `
+    --secrets "mssql-db-connection-string=$mssqlDbConnectionString" "aad-client-secret=$($serverAppCredentials.password)" `
+    --env-vars "ConnectionStrings__Mssql=secretref:mssql-db-connection-string" "AzureAd__ClientSecret=secretref:aad-client-secret" `
     --environment $containerAppEnvironment `
     --resource-group $resourceGroupName `
     -o none
@@ -224,6 +220,6 @@ az ad app delete --id (az ad app list --filter "displayName eq '$clientAppName'"
 az containerapp delete --name $containerAppName --resource-group $resourceGroupName --yes
 az containerapp env delete --name $containerAppEnvironment --resource-group $resourceGroupName --yes
 az monitor log-analytics workspace delete --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName --yes
-az postgres flexible-server delete --name $dbServerName --resource-group $resourceGroupName --yes
+az sql server delete --resource-group $resourceGroupName --name $dbServerName --yes
 az group delete --name $resourceGroupName --yes
 #>
