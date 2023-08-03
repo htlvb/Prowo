@@ -179,6 +179,7 @@ Invoke-Expression "$dbCmd -i db-schema.sql"
 az sql server firewall-rule delete --resource-group $resourceGroupName --server $dbServername --name $dbTemporaryFirewallRuleName
 
 $mssqlDbConnectionString = az sql db show-connection-string --server $dbServerName --name $dbDatabaseName --client ado.net --auth-type ADIntegrated -o tsv
+$mssqlDbConnectionString = $mssqlDbConnectionString -replace "Authentication=""Active Directory Integrated""", "Authentication=""Active Directory Managed Identity"""
 
 "=== Creating Container App"
 az monitor log-analytics workspace create --workspace-name $logAnalyticsWorkspace --resource-group $resourceGroupName
@@ -191,6 +192,7 @@ az containerapp create `
     --ingress external `
     --secrets "mssql-db-connection-string=$mssqlDbConnectionString" "aad-client-secret=$($serverAppCredentials.password)" `
     --env-vars "ConnectionStrings__Mssql=secretref:mssql-db-connection-string" "AzureAd__ClientSecret=secretref:aad-client-secret" `
+    --system-assigned `
     --environment $containerAppEnvironment `
     --resource-group $resourceGroupName `
     -o none
@@ -212,6 +214,20 @@ az containerapp github-action add `
     --service-principal-tenant-id $sp.tenantId `
     --token $gitHubAccessToken `
     --resource-group $resourceGroupName
+
+"=== Setup access from Container App to DB"
+$dbTemporaryFirewallRuleName = az sql server firewall-rule create --resource-group $resourceGroupName --name TempAllowAll --server $dbServername --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255 --query name -o tsv
+$dbCmd = az sql db show-connection-string --server $dbServerName --name $dbDatabaseName --client sqlcmd --auth-type ADIntegrated -o tsv
+$dbCmd = $dbCmd -replace "-N","-N true" # fix cmd line args
+$accessToken = az account get-access-token --query accessToken -o tsv
+$dbCmd = "$dbCmd -P $accessToken"
+$sql = @"
+CREATE USER [$containerAppName] FROM EXTERNAL PROVIDER
+ALTER ROLE db_datareader ADD MEMBER [$containerAppName]
+ALTER ROLE db_datawriter ADD MEMBER [$containerAppName]
+"@
+Invoke-Expression "$dbCmd -Q ""$sql"""
+az sql server firewall-rule delete --resource-group $resourceGroupName --server $dbServername --name $dbTemporaryFirewallRuleName
 
 <#
 "=== Deleting resources"
