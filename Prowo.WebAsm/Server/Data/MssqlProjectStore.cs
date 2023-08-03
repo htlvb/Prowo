@@ -181,6 +181,10 @@ namespace Prowo.WebAsm.Server.Data
             SqlConnection dbConnection,
             params Guid[] projectIds)
         {
+            if (projectIds.Length == 0)
+            {
+                yield break;
+            }
             var projectIdParameterNames = Enumerable
                 .Range(1, projectIds.Length)
                 .Select(i => $"@projectId{i}");
