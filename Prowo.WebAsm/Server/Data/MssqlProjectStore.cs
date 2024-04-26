@@ -138,7 +138,10 @@ namespace Prowo.WebAsm.Server.Data
 
         private async Task<SqlConnection> Connect()
         {
-            var dbConnection = new SqlConnection(dbConnectionString);
+            var dbConnection = new SqlConnection(dbConnectionString)
+            {
+                RetryLogicProvider = SqlConfigurableRetryFactory.CreateFixedRetryProvider(new SqlRetryLogicOption { NumberOfTries = 5 })
+            };
             await dbConnection.OpenAsync();
             return dbConnection;
         }
