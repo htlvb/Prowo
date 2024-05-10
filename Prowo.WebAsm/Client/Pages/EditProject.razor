@@ -39,7 +39,11 @@ else if (editingProject.Links.Save != null)
                 <span class="input-label">Beschreibung</span>
                 <InputTextArea @bind-Value=editingProject.Data.Description class="input-text w-[32rem] max-w-full h-48" />
             </label>
-            <span class="text-xs">Tipp: Formatiere Text <span class="italic whitespace-nowrap text-orange-500">*kursiv*</span>, <span class="font-bold whitespace-nowrap text-orange-500">**fett**</span> und verwende <span class="text-lg whitespace-nowrap text-orange-500"># Überschriften</span> und <span class="whitespace-nowrap text-orange-500">* Aufzählungen</span>.</span>
+            <ul class="list-disc list-inside text-xs">
+                <li>Verwende <span class="text-lg text-orange-500"># Überschriften</span> und <span class="text-orange-500">* Aufzählungen</span></li>
+                <li>Formatiere Text <span class="italic text-orange-500">*kursiv*</span> und <span class="font-bold text-orange-500">**fett**</span></li>
+                <li>Zwei Zeilenumbrüche hindereinander erzeugen einen neuen Absatz.</li>
+            </ul>
         </div>
 
         <div class="input">
