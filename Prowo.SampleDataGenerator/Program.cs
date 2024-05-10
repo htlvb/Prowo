@@ -61,7 +61,7 @@ var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
             Date = date,
             StartTime = TimeSpan.ParseExact(startTimeString, "h\\:mm", CultureInfo.InvariantCulture),
             EndTime = endTimeString != null ? TimeSpan.ParseExact(endTimeString, "h\\:mm", CultureInfo.InvariantCulture) : default(TimeSpan?),
-            ClosingDate = date.AddDays(Random.Shared.Next(-30, 1)).AddSeconds(-1).ToUniversalTime(),
+            ClosingDate = date.AddDays(Random.Shared.Next(-14, 1)).AddSeconds(-1).ToUniversalTime(),
             MaxAttendees = maxAttendees,
             RegistrationEvents = attendees
                 .OrderBy(_ => Random.Shared.NextDouble())
@@ -87,8 +87,9 @@ await using (var cmd = new SqlCommand("DELETE FROM project", dbConnection))
 
 var jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = false, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-foreach (var project in sampleProjects.Take(10))
+foreach (var project in sampleProjects.Take(50))
 {
+    Console.WriteLine($"Creating project \"{project.Title}\"");
     await using (var cmd = new SqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection))
     {
         cmd.Parameters.AddWithValue("id", Guid.Parse(project.Id));
