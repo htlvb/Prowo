@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout to the branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4.1.5
 
       - name: Initialize
         run: ./init.sh
@@ -31,17 +31,17 @@ jobs:
         run: dotnet test
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3.3.0
 
       - name: Log in to container registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3.1.0
         with:
           registry: docker.io
           username: ${{ secrets.PROWOCA_REGISTRY_USERNAME }}
           password: ${{ secrets.PROWOCA_REGISTRY_PASSWORD }}
 
       - name: Build and push container image to registry
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5.3.0
         with:
           push: true
           tags: johannesegger/prowo:${{ github.sha }}
@@ -61,7 +61,7 @@ jobs:
 
 
       - name: Deploy to containerapp
-        uses: azure/CLI@v1
+        uses: azure/CLI@v2.0.0
         with:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
