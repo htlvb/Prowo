@@ -72,20 +72,9 @@ namespace Prowo.WebAsm.Server.Controllers
         }
 
         [HttpPost("{projectId}/deregister")]
-        public async Task<IActionResult> DeregisterCurrentUserFromProject(string projectId)
+        public IActionResult DeregisterCurrentUserFromProject(string projectId)
         {
-            var project = await projectStore.Get(projectId);
-            if (project == null || project.Date < MinDate)
-            {
-                return NotFound("Project doesn't exist or is too old.");
-            }
-            if (project.ClosingDate <= DateTime.UtcNow)
-            {
-                return BadRequest("Project registrations can't be changed.");
-            }
-
-            var updatedProject = await projectStore.RemoveAttendee(projectId, UserId);
-            return Ok(await GetProjectDtoFromProject(updatedProject));
+            return BadRequest("Project registrations can't be changed.");
         }
 
         [HttpDelete("{projectId}/attendees/{userId}")]
@@ -383,9 +372,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 userRole != UserRoleForProjectDto.Registered &&
                 userRole != UserRoleForProjectDto.Waiting &&
                 (await authService.AuthorizeAsync(HttpContext.User, project, "AttendProject")).Succeeded;
-            var canDeregister =
-                userRole == UserRoleForProjectDto.Registered ||
-                userRole == UserRoleForProjectDto.Waiting;
+            var canDeregister = false;
             var canUpdate = (await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded;
             var canDelete = (await authService.AuthorizeAsync(HttpContext.User, project, "DeleteProject")).Succeeded;
             var canShowAttendees = (await authService.AuthorizeAsync(HttpContext.User, project, "CreateReport")).Succeeded;
