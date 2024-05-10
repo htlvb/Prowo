@@ -55,7 +55,7 @@ jobs:
     
     steps:
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2.1.0
         with:
           creds: ${{ secrets.PROWOCA_AZURE_CREDENTIALS }}
 
