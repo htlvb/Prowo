@@ -138,10 +138,10 @@ namespace Prowo.WebAsm.Server.Controllers
                         "",
                         UserId,
                         Array.Empty<string>(),
-                        DateOnly.FromDateTime(DateTime.Today.AddDays(7)),
+                        DateOnly.FromDateTime(DateTime.Today.AddDays(14)),
                         TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)),
                         TimeOnly.FromTimeSpan(TimeSpan.FromHours(13)),
-                        DateTime.UtcNow.Date.AddDays(14).ToUserTime(),
+                        DateTime.UtcNow.Date.AddDays(7).ToUserTime(),
                         20
                     ),
                     organizerCandidates,
