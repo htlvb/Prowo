@@ -17,7 +17,7 @@ var attendees = JsonDocument.Parse(File.ReadAllText("AttendeeCandidates.json"))
     .EnumerateArray()
     .Select(v => new
     {
-        UserId = v.GetProperty("ObjectId").GetString()!,
+        UserId = v.GetProperty("Id").GetString()!,
         FirstName = v.GetProperty("GivenName").GetString()!,
         LastName = v.GetProperty("Surname").GetString()!,
         Class = v.GetProperty("Department").GetString()!,
@@ -31,7 +31,7 @@ var organizers = JsonDocument.Parse(File.ReadAllText("OrganizerCandidates.json")
     {
         return new
         {
-            id = v.GetProperty("ObjectId").GetString()!,
+            id = v.GetProperty("Id").GetString()!,
             first_name = v.GetProperty("GivenName").GetString()!,
             last_name = v.GetProperty("Surname").GetString()!,
             short_name = Regex.Replace(v.GetProperty("UserPrincipalName").GetString()!, "@.*$", ""),
