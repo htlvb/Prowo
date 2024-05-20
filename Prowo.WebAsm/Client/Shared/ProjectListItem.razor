@@ -83,15 +83,15 @@
                 }
                 @if (Project.Links.Delete != null)
                 {
-                    if (deletionState == DeletionState.None)
+                    if (deletionState == ConfirmableActionState.None)
                     {
                         <button class="btn btn-red" onclick=@(() => MarkForDeletion())>Löschen</button>
                     }
-                    else if (deletionState == DeletionState.IsMarkedForDeletion)
+                    else if (deletionState == ConfirmableActionState.IsPreparedToExecute)
                     {
                         <button class="btn btn-red-filled" onclick=@(() => Delete())>Wirklich löschen</button>
                     }
-                    else if (deletionState == DeletionState.IsDeleting)
+                    else if (deletionState == ConfirmableActionState.IsExecuting)
                     {
                         <button class="btn btn-red-filled" disabled="true">
                             <span class="spinner spinner-white"></span>
@@ -104,29 +104,37 @@
                 }
                 @if (Project.Links.Register != null)
                 {
-                    <button class="btn btn-green" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => RegisterCurrentUserForProject())>
-                        @if (isLoadingRegistration)
-                        {
-                            <span class="spinner spinner-green"></span>
-                        }
-                        else
-                        {
-                            <text>Anmelden</text>
-                        }
-                    </button>
+                    if (registrationState == ConfirmableActionState.None)
+                    {
+                        <button class="btn btn-green" onclick=@(() => MarkForRegistration())>Anmelden</button>
+                    }
+                    else if (registrationState == ConfirmableActionState.IsPreparedToExecute)
+                    {
+                        <button class="btn btn-green-filled" onclick=@(() => RegisterCurrentUserForProject())>Verbindlich anmelden</button>
+                    }
+                    else if (registrationState == ConfirmableActionState.IsExecuting)
+                    {
+                        <button class="btn btn-green-filled" disabled="true">
+                            <span class="spinner spinner-white"></span>
+                        </button>
+                    }
                 }
                 else if (Project.Links.Deregister != null)
                 {
-                    <button class="btn btn-red" disabled=@(Project.RegistrationDisabled || isLoadingRegistration) onclick=@(() => DeregisterCurrentUserFromProject())>
-                        @if (isLoadingRegistration)
-                        {
-                            <span class="spinner spinner-red"></span>
-                        }
-                        else
-                        {
-                            <text>Abmelden</text>
-                        }
-                    </button>
+                    if (registrationState == ConfirmableActionState.None)
+                    {
+                        <button class="btn btn-red" onclick=@(() => MarkForDeregistration())>Abmelden</button>
+                    }
+                    else if (registrationState == ConfirmableActionState.IsPreparedToExecute)
+                    {
+                        <button class="btn btn-red-filled" onclick=@(() => DeregisterCurrentUserFromProject())>Wirklich abmelden</button>
+                    }
+                    else if (registrationState == ConfirmableActionState.IsExecuting)
+                    {
+                        <button class="btn btn-red-filled" disabled="true">
+                            <span class="spinner spinner-white"></span>
+                        </button>
+                    }
                 }
             </div>
         </div>
@@ -160,26 +168,26 @@
     [Parameter]
     public Action? OnDelete { get; set; }
 
-    private bool isLoadingRegistration;
-
-    enum DeletionState
+    enum ConfirmableActionState
     {
         None,
-        IsMarkedForDeletion,
-        IsDeleting
+        IsPreparedToExecute,
+        IsExecuting
     }
 
-    private DeletionState deletionState;
+    private ConfirmableActionState deletionState;
+
+    private ConfirmableActionState registrationState;
 
     private void MarkForDeletion()
     {
-        deletionState = DeletionState.IsMarkedForDeletion;
+        deletionState = ConfirmableActionState.IsPreparedToExecute;
         StateHasChanged();
     }
 
     private async Task Delete()
     {
-        deletionState = DeletionState.IsDeleting;
+        deletionState = ConfirmableActionState.IsExecuting;
         StateHasChanged();
         try
         {
@@ -189,14 +197,20 @@
         }
         finally
         {
-            deletionState = DeletionState.None;
+            deletionState = ConfirmableActionState.None;
             StateHasChanged();
         }
     }
 
+    private void MarkForRegistration()
+    {
+        registrationState = ConfirmableActionState.IsPreparedToExecute;
+        StateHasChanged();
+    }
+
     private async Task RegisterCurrentUserForProject()
     {
-        isLoadingRegistration = true;
+        registrationState = ConfirmableActionState.IsExecuting;
         StateHasChanged();
         try
         {
@@ -207,14 +221,20 @@
         }
         finally
         {
-            isLoadingRegistration = false;
+            registrationState = ConfirmableActionState.None;
             StateHasChanged();
         }
     }
 
+    private void MarkForDeregistration()
+    {
+        registrationState = ConfirmableActionState.IsPreparedToExecute;
+        StateHasChanged();
+    }
+
     private async Task DeregisterCurrentUserFromProject()
     {
-        isLoadingRegistration = true;
+        registrationState = ConfirmableActionState.IsExecuting;
         StateHasChanged();
         try
         {
@@ -225,7 +245,7 @@
         }
         finally
         {
-            isLoadingRegistration = true;
+            registrationState = ConfirmableActionState.None;
             StateHasChanged();
         }
     }

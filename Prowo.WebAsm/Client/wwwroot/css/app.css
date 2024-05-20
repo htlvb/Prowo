@@ -44,6 +44,9 @@
 .btn-green {
     @apply text-green-700 border-green-500;
 }
+.btn-green-filled {
+    @apply text-white bg-green-500 border-green-500;
+}
 .btn-green:hover:not([disabled]) {
     @apply shadow-green-500;
 }
