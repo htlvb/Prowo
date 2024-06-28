@@ -29,7 +29,7 @@ namespace Prowo.WebAsm.Server.Data
 
             foreach (var project in projects)
             {
-                var attendees = CalculateActualAttendees(registrationEvents.Where(v => v.ProjectId == project.Id));
+                var attendees = CalculateActualAttendees(registrationEvents.Where(v => v.ProjectId == project.Id), project.MaxAttendees);
                 yield return project.ToDomain(attendees);
             }
         }
@@ -48,7 +48,7 @@ namespace Prowo.WebAsm.Server.Data
                 return null;
             }
             var registrationEvents = await ReadRegistrations(dbConnection, dbProject.Id).ToList();
-            var attendees = CalculateActualAttendees(registrationEvents);
+            var attendees = CalculateActualAttendees(registrationEvents, dbProject.MaxAttendees);
 
             return dbProject.ToDomain(attendees);
         }
@@ -195,14 +195,17 @@ namespace Prowo.WebAsm.Server.Data
         }
 
         private static List<ProjectAttendee> CalculateActualAttendees(
-            IEnumerable<DbProjectRegistrationEvent> registrationEvents)
+            IEnumerable<DbProjectRegistrationEvent> registrationEvents, int maxAttendees)
         {
             List<ProjectAttendee> result = new();
             foreach (var entry in registrationEvents)
             {
                 if (entry.Action == DbProjectRegistrationAction.Register && !result.Any(v => v.Id == entry.User.Id.ToString()))
                 {
-                    result.Add(entry.User.ToAttendee());
+                    if (result.Count < maxAttendees) // Ignore registrations while attendee list was full
+                    {
+                        result.Add(entry.User.ToAttendee());
+                    }
                 }
                 else if (entry.Action == DbProjectRegistrationAction.Deregister)
                 {
