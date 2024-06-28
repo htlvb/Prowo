@@ -25,8 +25,8 @@ builder.Services.AddProwoAuthorizationRules();
 
 builder.Services.AddSingleton<IProjectStore>(provider =>
 {
-    string connectionString = builder.Configuration.GetConnectionString("Mssql");
-    return new MssqlProjectStore(connectionString);
+    string connectionString = builder.Configuration.GetConnectionString("Pgsql");
+    return new PgsqlProjectStore(connectionString);
 });
 
 builder.Services.AddScoped<IUserStore>(provider =>

@@ -1,12 +1,14 @@
-version: "3.9"
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres
     ports:
-      - 1433:1433
+      - 5432:5432
+    volumes:
+      - ./db-schema.sql:/docker-entrypoint-initdb.d/01-db-schema.sql
+      # - ./db-sample.sql:/docker-entrypoint-initdb.d/02-db-sample.sql
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=Test123$
+      - POSTGRES_USER=prowo
+      - POSTGRES_PASSWORD=prowo
   adminer:
     image: adminer
     ports:
