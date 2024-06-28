@@ -5,7 +5,7 @@ CREATE TABLE project(
     id UUID PRIMARY KEY NOT NULL,
     title VARCHAR NOT NULL,
     description VARCHAR NOT NULL,
-    location VARCHAR(50) NOT NULL,
+    location VARCHAR NOT NULL,
     organizer JSON NOT NULL,
     co_organizers JSON NOT NULL,
     date DATE NOT NULL,
