@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prowo.WebAsm.Server.Integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prowo.ImportProjectsFromMssql", "Prowo.ImportProjectsFromMssql\Prowo.ImportProjectsFromMssql.csproj", "{8521907D-4B77-4C1B-BEDC-991379409D8D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prowo.Console", "Prowo.Console\Prowo.Console.csproj", "{8569FE49-6773-44AA-A61E-D35C1C84EB5D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{8521907D-4B77-4C1B-BEDC-991379409D8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8521907D-4B77-4C1B-BEDC-991379409D8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8521907D-4B77-4C1B-BEDC-991379409D8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8569FE49-6773-44AA-A61E-D35C1C84EB5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8569FE49-6773-44AA-A61E-D35C1C84EB5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8569FE49-6773-44AA-A61E-D35C1C84EB5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8569FE49-6773-44AA-A61E-D35C1C84EB5D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
