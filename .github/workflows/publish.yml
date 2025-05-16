@@ -21,6 +21,13 @@ jobs:
       - name: Checkout to the branch
         uses: actions/checkout@v4
 
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: | 
+            6.x
+            8.x
+
       - name: Initialize
         run: ./init.sh
         
