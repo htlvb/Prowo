@@ -25,15 +25,15 @@ builder.Services.AddProwoAuthorizationRules();
 
 builder.Services.AddSingleton<IProjectStore>(provider =>
 {
-    string connectionString = builder.Configuration.GetConnectionString("Pgsql");
+    var connectionString = builder.Configuration.GetConnectionString("Pgsql") ?? throw new Exception("\"ConnectionStrings:Pgsql\" not found");
     return new PgsqlProjectStore(connectionString);
 });
 
 builder.Services.AddScoped<IUserStore>(provider =>
 {
     return new UserStore(
-        builder.Configuration.GetSection("AppSettings")["OrganizerGroupId"],
-        builder.Configuration.GetSection("AppSettings")["AttendeeGroupId"],
+        builder.Configuration.GetSection("AppSettings")["OrganizerGroupId"] ?? throw new Exception("\"AppSettings:OrganizerGroupId\" not found"),
+        builder.Configuration.GetSection("AppSettings")["AttendeeGroupId"] ?? throw new Exception("\"AppSettings:OrganizerGroupId\" not found"),
         provider.GetRequiredService<GraphServiceClient>());
 });
 

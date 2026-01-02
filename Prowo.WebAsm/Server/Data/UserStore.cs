@@ -1,4 +1,5 @@
 ﻿using Microsoft.Graph;
+using Models = Microsoft.Graph.Models;
 using System.Text.RegularExpressions;
 
 namespace Prowo.WebAsm.Server.Data
@@ -19,47 +20,55 @@ namespace Prowo.WebAsm.Server.Data
             this.graphServiceClient = graphServiceClient;
         }
 
-        public async IAsyncEnumerable<ProjectOrganizer> GetOrganizerCandidates()
+        public IAsyncEnumerable<ProjectOrganizer> GetOrganizerCandidates()
         {
-            var userPageRequest = graphServiceClient.Groups[organizerGroupId].Members.Request().Top(999);
-            while (userPageRequest != null)
-            {
-                var userPage = await userPageRequest.GetAsync();
-                var users = userPage
-                    .OfType<User>()
-                    .Select(v => new ProjectOrganizer(v.Id, v.GivenName, v.Surname, Regex.Replace(v.UserPrincipalName, "@.*$", "")));
-                foreach (var user in users)
+            return graphServiceClient
+                .ReadAll<Models.User, Models.UserCollectionResponse>(
+                    graphServiceClient.Groups[organizerGroupId].Members.GraphUser.GetAsync()
+                )
+                .Select(v =>
                 {
-                    yield return user;
-                }
+                    if (v.Id == null || v.UserPrincipalName == null)
+                    {
+                        return null;
+                    }
 
-                userPageRequest = userPage.NextPageRequest;
-            }
+                    return new ProjectOrganizer(
+                        v.Id,
+                        v.GivenName ?? "",
+                        v.Surname ?? "",
+                        Regex.Replace(v.UserPrincipalName, "@.*$", ""));
+                })
+                .OfType<ProjectOrganizer>();
         }
 
         public async Task<ProjectAttendee> GetSelfAsProjectAttendee()
         {
-            var user = await graphServiceClient.Me.Request().Select("id,givenName,surname,department,userPrincipalName").GetAsync();
-            return new ProjectAttendee(user.Id, user.GivenName, user.Surname, user.Department, user.UserPrincipalName);
+            var user = await graphServiceClient.Me.GetAsync(v =>
+                v.QueryParameters.Select = ["id", "givenName", "surname", "department", "userPrincipalName"]);
+            if (user == null || user.Id == null || user.Department == null || user.UserPrincipalName == null)
+            {
+                throw new Exception($"Graph user not found or has incomplete data (Id = {user?.Id}, Department = {user?.Department}, UserPrincipalName = {user?.UserPrincipalName})");
+            }
+            return new ProjectAttendee(user.Id, user.GivenName ?? "", user.Surname ?? "", user.Department, user.UserPrincipalName);
         }
 
-        public async IAsyncEnumerable<ProjectAttendee> GetAttendeeCandidates()
+        public IAsyncEnumerable<ProjectAttendee> GetAttendeeCandidates()
         {
-            var userPageRequest = graphServiceClient.Groups[attendeeGroupId].Members.Request().Select("id,givenName,surname,department,userPrincipalName");
-            while (userPageRequest != null)
-            {
-                var userPage = await userPageRequest.GetAsync();
-                var users = userPage
-                    .OfType<User>()
-                    .Where(v => v.Department != null)
-                    .Select(v => new ProjectAttendee(v.Id, v.GivenName, v.Surname, v.Department, v.UserPrincipalName));
-                foreach (var user in users)
+            return graphServiceClient
+                .ReadAll<Models.User, Models.UserCollectionResponse>(
+                    graphServiceClient.Groups[attendeeGroupId].Members.GraphUser.GetAsync(v =>
+                        v.QueryParameters.Select = ["id", "givenName", "surname", "department", "userPrincipalName"]
+                    ))
+                .Select(v =>
                 {
-                    yield return user;
-                }
-
-                userPageRequest = userPage.NextPageRequest;
-            }
+                    if (v.Id == null || v.Department == null || v.UserPrincipalName == null)
+                    {
+                        return null;
+                    }
+                    return new ProjectAttendee(v.Id, v.GivenName ?? "", v.Surname ?? "", v.Department, v.UserPrincipalName);
+                })
+                .OfType<ProjectAttendee>();
         }
     }
 }
