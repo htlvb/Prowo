@@ -62,6 +62,10 @@ $serverAppRequiredResourceAccesses = New-TemporaryFile
     "resourceAppId": "$msGraphId",
     "resourceAccess": [
         {
+            "id": "$(az ad sp show --id $msGraphId --query "oauth2PermissionScopes[?value=='User.Read'].id | [0]" -o tsv)",
+            "type": "Scope"
+        },
+        {
             "id": "$(az ad sp show --id $msGraphId --query "oauth2PermissionScopes[?value=='GroupMember.Read.All'].id | [0]" -o tsv)",
             "type": "Scope"
         },
@@ -145,8 +149,7 @@ $clientAppSpaRedirectUris = New-TemporaryFile
 {
     "redirectUris": [
         "https://localhost/authentication/login-callback",
-        "https://prowo.htlvb.at/authentication/login-callback",
-        "https://prowo-ca.delightfulbeach-9d9e17e5.westeurope.azurecontainerapps.io/authentication/login-callback"
+        "https://prowo.htlvb.at/authentication/login-callback"
     ]
 }
 "@ | Set-Content $clientAppSpaRedirectUris

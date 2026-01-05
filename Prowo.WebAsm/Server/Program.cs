@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
@@ -13,10 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddLocalization();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"))
+builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration)
     .EnableTokenAcquisitionToCallDownstreamApi()
-    .AddMicrosoftGraph(builder.Configuration.GetSection("GraphBeta"))
+    .AddMicrosoftGraph(builder.Configuration.GetSection("Graph"))
     .AddInMemoryTokenCaches();
 builder.Services.AddProwoControllers();
 builder.Services.AddRazorPages();
