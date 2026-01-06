@@ -63,7 +63,8 @@ namespace Prowo.WebAsm.Shared
 
     public record ProjectListLinksDto(
         string? ShowAllAttendees,
-        string? CreateProject
+        string? CreateProject,
+        string? DuplicateProject
     );
 
     public record ProjectDto(
@@ -113,5 +114,13 @@ namespace Prowo.WebAsm.Shared
         string? Edit,
         string? Delete,
         string? ShowAttendees
+    );
+
+    public record ProjectToDuplicateDto(
+        string DuplicateLink,
+        string Title,
+        string OrganizerShortName,
+        IReadOnlyCollection<string> CoOrganizerShortNames,
+        DateOnly Date
     );
 }

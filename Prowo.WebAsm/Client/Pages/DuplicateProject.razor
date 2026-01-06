@@ -1,0 +1,56 @@
+@page "/projects/duplicate"
+
+@using Microsoft.AspNetCore.Authorization
+@using System.Text.Json
+
+@attribute [Authorize]
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<PageTitle>Projekt erstellen - HTLVB Prowo</PageTitle>
+
+<h2 class="text-2xl mb-4">Projekt duplizieren</h2>
+
+@if (projects == null)
+{
+    <p><em>Frühere Projekte werden geladen...</em></p>
+}
+else
+{
+    <div class="grid grid-cols-3 gap-2">
+    @foreach (var project in projects)
+    {
+        <div class="btn !flex flex-col" @onclick="() => EditProjectFromTemplate(project.DuplicateLink)">
+            <span class="grow">@project.Title</span>
+            <span class="text-sm opacity-50">
+                <span class="whitespace-nowrap">
+                    @project.OrganizerShortName
+                    @if (project.CoOrganizerShortNames.Count > 0)
+                    {
+                        <text> + @project.CoOrganizerShortNames.Count</text>
+                    }
+                </span>
+                &ndash;
+                <span class="whitespace-nowrap">@project.Date</span>
+            </span>
+        </div>
+    }
+    </div>
+}
+
+@code {
+    private readonly JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+
+    private List<ProjectToDuplicateDto>? projects;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = (await Http.GetFromJsonAsync<List<ProjectToDuplicateDto>>($"api/projects/templates", serializerOptions))!;
+    }
+
+    private void EditProjectFromTemplate(string projectDuplicateLink)
+    {
+        NavigationManager.NavigateTo(projectDuplicateLink);
+    }
+}

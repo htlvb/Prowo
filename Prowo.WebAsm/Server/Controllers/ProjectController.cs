@@ -47,9 +47,28 @@ namespace Prowo.WebAsm.Server.Controllers
                 projectDtos,
                 new ProjectListLinksDto(
                     canCreateReport && projectDtos.Count > 0 ? "projects/all-attendees" : default,
-                    canCreateProject ? "projects/new" : default
+                    canCreateProject ? "projects/new" : default,
+                    canCreateProject ? "projects/duplicate" : default
                 )
             );
+        }
+        
+        [HttpGet("templates")]
+        public async Task<IEnumerable<ProjectToDuplicateDto>> GetProjectsToDuplicate()
+        {
+            return (await projectStore.GetAllSince(DateTime.MinValue).ToList())
+                .OrderBy(p => p.CoOrganizers.Select(v => v.Id).Concat([p.Organizer.Id]).Contains(UserId) ? 1 : 2)
+                .ThenByDescending(v => v.Date)
+                .Select(p =>
+                {
+                    return new ProjectToDuplicateDto(
+                        $"/projects/edit/{p.Id}?duplicate=true",
+                        p.Title,
+                        p.Organizer.ShortName,
+                        [..p.CoOrganizers.Select(v => v.ShortName)],
+                        p.Date
+                    );
+                });
         }
 
         [HttpPost("{projectId}/register")]
@@ -94,32 +113,38 @@ namespace Prowo.WebAsm.Server.Controllers
         }
 
         [HttpGet("edit/{projectId}")]
-        public async Task<IActionResult> GetProject(string projectId)
+        public async Task<IActionResult> GetProject(string projectId, [FromQuery]bool duplicate = false)
         {
-            IReadOnlyList<ProjectOrganizerDto> coOrganizerCandidates = (await userStore.GetOrganizerCandidates().ToList())
-                .OrderBy(v => v.LastName)
-                .ThenBy(v => v.FirstName)
-                .Select(v => new ProjectOrganizerDto(v.Id, $"{v.LastName} {v.FirstName} ({v.ShortName})"))
-                .ToList();
-            IReadOnlyList<ProjectOrganizerDto> organizerCandidates;
-            if ((await authService.AuthorizeAsync(HttpContext.User, "ChangeProjectOrganizer")).Succeeded)
-            {
-                organizerCandidates = coOrganizerCandidates;
-            }
-            else
-            {
-                organizerCandidates = coOrganizerCandidates
-                    .Where(v => v.Id == UserId)
-                    .ToList();
-            }
+            var (organizerCandidates, coOrganizerCandidates) = await GetOrganizerCandidates();
 
-            if (projectId == "new")
+            Project? project = null;
+            if (projectId != "new")
+            {
+                project = await projectStore.Get(projectId);
+            }
+            
+            var isCreating = projectId == "new" || duplicate;
+            if (isCreating)
             {
                 if (!(await authService.AuthorizeAsync(HttpContext.User, "CreateProject")).Succeeded)
                 {
                     return Forbid();
                 }
+            }
+            else
+            {
+                if (project == null || project.Date < MinDate)
+                {
+                    return NotFound("Project doesn't exist or is too old.");
+                }
+                if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
+                {
+                    return Forbid();
+                }
+            }
 
+            if (project == null)
+            {
                 var result = new EditingProjectDto(
                     new EditingProjectDataDto(
                         "",
@@ -143,36 +168,63 @@ namespace Prowo.WebAsm.Server.Controllers
             }
             else
             {
-                var project = await projectStore.Get(projectId);
-                if (project == null || project.Date < MinDate)
-                {
-                    return NotFound("Project doesn't exist or is too old.");
-                }
-                if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
-                {
-                    return Forbid();
-                }
+                var organizerId = organizerCandidates.Select(v => v.Id).Contains(project.Organizer.Id)
+                    ? project.Organizer.Id
+                    : UserId;
+                var coOrganizerIds = project.CoOrganizers
+                    .Where(p => coOrganizerCandidates.Select(v => v.Id).Contains(p.Id))
+                    .Select(v => v.Id)
+                    .ToArray();
+                var date = duplicate
+                    ? DateOnly.FromDateTime(DateTime.Today.AddDays(14))
+                    : project.Date;
+                var closingDate = duplicate
+                    ? DateTime.UtcNow.Date.AddDays(7).ToUserTime()
+                    : project.ClosingDate.ToUserTime();
+                var saveUrl = duplicate
+                    ? Url.Action(nameof(CreateProject))
+                    : Url.Action(nameof(UpdateProject), new { projectId = project.Id });
                 var result = new EditingProjectDto(
                     new EditingProjectDataDto(
                         project.Title,
                         project.Description,
                         project.Location,
-                        project.Organizer.Id,
-                        project.CoOrganizers.Select(v => v.Id).ToArray(),
-                        project.Date,
+                        organizerId,
+                        coOrganizerIds,
+                        date,
                         project.StartTime,
                         project.EndTime,
-                        project.ClosingDate.ToUserTime(),
+                        closingDate,
                         project.MaxAttendees
                     ),
                     organizerCandidates,
                     coOrganizerCandidates,
-                    new EditingProjectLinksDto(
-                        Url.Action(nameof(UpdateProject), new { projectId = project.Id })
-                    )
+                    new EditingProjectLinksDto(saveUrl)
                 );
                 return Ok(result);
             }
+        }
+
+        private async Task<(IReadOnlyList<ProjectOrganizerDto> coOrganizerCandidates, IReadOnlyList<ProjectOrganizerDto> organizerCandidates)> GetOrganizerCandidates()
+        {
+            IReadOnlyList<ProjectOrganizerDto> coOrganizerCandidates = (await userStore.GetOrganizerCandidates().ToList())
+                .OrderBy(v => v.LastName)
+                .ThenBy(v => v.FirstName)
+                .Select(v => new ProjectOrganizerDto(v.Id, $"{v.LastName} {v.FirstName} ({v.ShortName})"))
+                .ToList();
+            IReadOnlyList<ProjectOrganizerDto> organizerCandidates;
+            if ((await authService.AuthorizeAsync(HttpContext.User, "ChangeProjectOrganizer")).Succeeded)
+            {
+                organizerCandidates = coOrganizerCandidates;
+            }
+            else
+            {
+                organizerCandidates = coOrganizerCandidates
+                    .Where(v => v.Id == UserId)
+                    .ToList();
+            }
+
+            return (organizerCandidates, coOrganizerCandidates);
         }
 
         [HttpPost("")]

@@ -27,6 +27,13 @@
             <span class="text-xl text-black align-middle">Neues Projekt anlegen</span>
         </NavLink>
     }
+    @if (projectList != null && projectList.Links.DuplicateProject != null)
+    {
+        <NavLink class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500 p-2" href=@projectList.Links.DuplicateProject>
+            <span class="text-4xl text-black align-middle">⧉</span>
+            <span class="text-xl text-black align-middle">Neues Projekt aus bestehendem anlegen</span>
+        </NavLink>
+    }
 
     @if (projectList == null)
     {

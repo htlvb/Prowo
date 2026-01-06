@@ -10,7 +10,7 @@
 
 <PageTitle>Projekt bearbeiten - HTLVB Prowo</PageTitle>
 
-@if (ProjectId == null)
+@if (IsNewProject)
 {
     <h2 class="text-2xl mb-4">Projekt anlegen</h2>
 }
@@ -131,7 +131,7 @@ else if (editingProject.Links.Save != null)
 
         <div class="input flex items-center gap-2">
             <button type="submit" class="btn btn-green" disabled=@isSubmitting>
-                @(ProjectId == null ? "Projekt anlegen" : "Projekt aktualisieren")
+                @(IsNewProject ? "Projekt anlegen" : "Projekt aktualisieren")
             </button>
             @if (isSubmitting)
             {
@@ -148,6 +148,12 @@ else if (editingProject.Links.Save != null)
 @code {
     [Parameter]
     public string? ProjectId { get; set; }
+    
+    [SupplyParameterFromQuery]
+    [Parameter]
+    public bool Duplicate { get; set; }
+
+    public bool IsNewProject => ProjectId == null || Duplicate;
 
     private EditingProject? editingProject;
     private bool isSubmitting;
@@ -159,7 +165,7 @@ else if (editingProject.Links.Save != null)
     {
         try
         {
-            var project = (await Http.GetFromJsonAsync<EditingProjectDto>($"api/projects/edit/{(ProjectId != null ? ProjectId : "new")}", serializerOptions))!;
+            var project = (await Http.GetFromJsonAsync<EditingProjectDto>($"api/projects/edit/{ProjectId ?? "new"}?duplicate={Duplicate}", serializerOptions))!;
             editingProject = EditingProject.FromProject(project);
         }
         catch (AccessTokenNotAvailableException exception)
