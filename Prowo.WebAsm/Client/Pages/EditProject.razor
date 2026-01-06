@@ -75,18 +75,38 @@ else if (editingProject.Links.Save != null)
         </div>
 
         <div class="input">
-            <label class="block">
-                <span class="input-label">Betreuer</span>
-                <InputSelect @bind-Value=editingProject.Data.CoOrganizerIds class="input-select" size="15">
-                @foreach (var person in editingProject.CoOrganizerCandidates)
+            <div class="flex items-baseline gap-2">
+                <span class="input-label">Betreuer (@editingProject.Data.CoOrganizerIds.Length)</span>
+                @if (editingProject.Data.CoOrganizerIds.Length > 0)
                 {
-                    <option value=@person.Id>@person.DisplayName</option>
+                    @if (showAllCoOrganizerCandidates)
+                    {
+                        <a class="text-xs text-blue-700 underline cursor-pointer" @onclick="() => showAllCoOrganizerCandidates = false">Nur ausgewählte anzeigen</a>
+                    }
+                    else
+                    {
+                        <a class="text-xs text-blue-700 underline cursor-pointer" @onclick="() => showAllCoOrganizerCandidates = true">Alle anzeigen</a>
+                    }
                 }
-                </InputSelect>
-            </label>
-            <span class="text-xs inline-block pt-2">Tipp: Halte die <kbd>Strg</kbd>-Taste gedrückt, um mehrere Betreuer auszuwählen.</span>
+            </div>
+            <div class="flex gap-2">
+                <div class="flex flex-col gap-0.5 h-[400px] overflow-y-scroll border border-slate-300 rounded text-sm">
+                    @{
+                        var coOrganizerCandidates = showAllCoOrganizerCandidates
+                            ? editingProject.CoOrganizerCandidates
+                            : editingProject.CoOrganizerCandidates.Where(v => editingProject.Data.CoOrganizerIds.Contains(v.Id));
+                    }
+                    @foreach (var person in coOrganizerCandidates)
+                    {
+                        var classes = editingProject.Data.CoOrganizerIds.Contains(person.Id)
+                            ? "rounded bg-orange-500/50"
+                            : "";
+                        <div class="@classes cursor-pointer px-2 py-1" @onclick="() => ToggleSelectCoOrganizer(person.Id)">@person.DisplayName</div>
+                    }
+                </div>
+            </div>
         </div>
-
+        
         <div class="input">
             <label class="block">
                 <span class="input-label">Maximale Teilnehmerzahl</span>
@@ -156,6 +176,21 @@ else if (editingProject.Links.Save != null)
     public bool IsNewProject => ProjectId == null || Duplicate;
 
     private EditingProject? editingProject;
+    private string[] CoOrganizerNames
+    {
+        get
+        {
+            if (editingProject == null) return [];
+
+            return editingProject.CoOrganizerCandidates
+                .Where(v => editingProject.Data.CoOrganizerIds.Contains(v.Id))
+                .OrderBy(v => v.DisplayName)
+                .Select(v => v.DisplayName)
+                .ToArray();
+        }
+    }
+    private bool showAllCoOrganizerCandidates = true;
+
     private bool isSubmitting;
     private string? errorMessage;
 
@@ -171,6 +206,25 @@ else if (editingProject.Links.Save != null)
         catch (AccessTokenNotAvailableException exception)
         {
             exception.Redirect();
+        }
+    }
+
+    private void ToggleSelectCoOrganizer(string organizerId)
+    {
+        if (editingProject == null) return;
+        
+        if (editingProject.Data.CoOrganizerIds.Contains(organizerId))
+        {
+            editingProject.Data.CoOrganizerIds = [..editingProject.Data.CoOrganizerIds.Where(v => v != organizerId)];
+        }
+        else
+        {
+            editingProject.Data.CoOrganizerIds = [..editingProject.Data.CoOrganizerIds, organizerId];
+        }
+
+        if (editingProject.Data.CoOrganizerIds.Length == 0)
+        {
+            showAllCoOrganizerCandidates = true;
         }
     }
 

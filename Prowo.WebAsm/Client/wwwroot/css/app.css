@@ -80,10 +80,6 @@
     @apply mt-6 text-red-500;
 }
 
-kbd {
-    @apply px-2 py-1.5 text-xs text-gray-800 border border-gray-200 rounded-lg;
-}
-
 tr {
     @apply border-b border-gray-300;
 }
