@@ -93,6 +93,9 @@ td {
     @apply px-6 py-2;
 }
 
+.project .description > *:not(:last-child) {
+    @apply pb-2;
+}
 .project .description {
     @apply text-sm leading-6;
 }
