@@ -34,6 +34,12 @@ builder.Services.AddScoped<IUserStore>(provider =>
         builder.Configuration.GetSection("AppSettings")["AttendeeGroupId"] ?? throw new Exception("\"AppSettings:OrganizerGroupId\" not found"),
         provider.GetRequiredService<GraphServiceClient>());
 });
+builder.Services.AddSingleton<IRegistrationStrategy>(new LogicalAndCombinationStrategy([
+    new NoRegistrationAfterClosingDateStrategy(),
+    new NoRegistrationIfRegisteredStrategy(),
+    new NoWaitingListStrategy(),
+    new SingleRegistrationPerDayStrategy()
+]));
 
 var app = builder.Build();
 

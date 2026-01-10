@@ -29,6 +29,10 @@ public static class InMemoryServer
                         services.AddProwoControllers();
                         services.AddSingleton<IUserStore>(new InMemoryUserStore(FakeData.ProjectOrganizers, FakeData.ProjectAttendees.First()));
                         services.AddSingleton<IProjectStore, InMemoryProjectStore>();
+                        services.AddSingleton<IRegistrationStrategy>(new LogicalAndCombinationStrategy([
+                            new NoRegistrationAfterClosingDateStrategy(),
+                            new NoRegistrationIfRegisteredStrategy()
+                        ]));
                     })
                     .Configure(app =>
                     {

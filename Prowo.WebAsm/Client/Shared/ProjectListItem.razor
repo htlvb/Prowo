@@ -110,7 +110,7 @@
                     }
                     else if (registrationState == ConfirmableActionState.IsPreparedToExecute)
                     {
-                        <button class="btn btn-green-filled" onclick=@(() => RegisterCurrentUserForProject())>Verbindlich anmelden</button>
+                        <button class="btn btn-green-filled" onclick=@(() => RegisterCurrentUserForProject())>Wirklich anmelden?</button>
                     }
                     else if (registrationState == ConfirmableActionState.IsExecuting)
                     {
@@ -127,7 +127,7 @@
                     }
                     else if (registrationState == ConfirmableActionState.IsPreparedToExecute)
                     {
-                        <button class="btn btn-red-filled" onclick=@(() => DeregisterCurrentUserFromProject())>Wirklich abmelden</button>
+                        <button class="btn btn-red-filled" onclick=@(() => DeregisterCurrentUserFromProject())>Wirklich abmelden?</button>
                     }
                     else if (registrationState == ConfirmableActionState.IsExecuting)
                     {
@@ -163,7 +163,7 @@
     }
 
     [Parameter]
-    public Action<ProjectDto, ProjectDto>? OnUpdate { get; set; }
+    public Action<IReadOnlyList<ProjectDto>>? OnUpdate { get; set; }
 
     [Parameter]
     public Action? OnDelete { get; set; }
@@ -216,8 +216,8 @@
         {
             var response = await Http.PostAsync(Project!.Links.Register, content: null);
             response.EnsureSuccessStatusCode();
-            var updatedProject = (await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions))!;
-            OnUpdate?.Invoke(Project, updatedProject);
+            var updatedProjects = (await response.Content.ReadFromJsonAsync<ProjectDto[]>(serializerOptions))!;
+            OnUpdate?.Invoke(updatedProjects);
         }
         finally
         {
@@ -240,8 +240,8 @@
         {
             var response = await Http.PostAsync(Project!.Links.Deregister, content: null);
             response.EnsureSuccessStatusCode();
-            var updatedProject = (await response.Content.ReadFromJsonAsync<ProjectDto>(serializerOptions))!;
-            OnUpdate?.Invoke(Project, updatedProject);
+            var updatedProjects = (await response.Content.ReadFromJsonAsync<ProjectDto[]>(serializerOptions))!;
+            OnUpdate?.Invoke(updatedProjects);
         }
         finally
         {

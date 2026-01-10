@@ -21,6 +21,27 @@ namespace Prowo.WebAsm.Server.Data
         public IEnumerable<ProjectAttendee> RegisteredAttendees => AllAttendees.Take(MaxAttendees);
         public IEnumerable<ProjectAttendee> WaitingAttendees => AllAttendees.Skip(MaxAttendees);
 
+        public UserRoleForProject GetUserRole(string userId)
+        {
+            if (Organizer.Id == userId)
+            {
+                return UserRoleForProject.Organizer;
+            }
+            if (CoOrganizers.Any(v => v.Id == userId))
+            {
+                return UserRoleForProject.CoOrganizer;
+            }
+            if (RegisteredAttendees.Any(v => v.Id == userId))
+            {
+                return UserRoleForProject.Registered;
+            }
+            if (WaitingAttendees.Any(v => v.Id == userId))
+            {
+                return UserRoleForProject.Waiting;
+            }
+            return UserRoleForProject.NotRelated;
+        }
+
         public static bool TryCreateFromEditingProjectDataDto(
             EditingProjectDataDto projectData,
             string projectId,
@@ -95,6 +116,15 @@ namespace Prowo.WebAsm.Server.Data
             errorMessage = null;
             return true;
         }
+    }
+    
+    public enum UserRoleForProject
+    {
+        NotRelated,
+        Registered,
+        Waiting,
+        Organizer,
+        CoOrganizer
     }
 
     public record ProjectAttendee(

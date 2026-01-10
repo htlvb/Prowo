@@ -19,18 +19,12 @@ namespace Prowo.WebAsm.Server.Data
 
         public async IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
         {
-            List<DbProject> projects;
-            List<DbProjectRegistrationEvent> registrationEvents;
-            await using (var dbConnection = await dataSource.OpenConnectionAsync())
+            await using var dbConnection = await dataSource.OpenConnectionAsync();
+            await using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE date >= @minDate", dbConnection);
+            cmd.Parameters.AddWithValue("minDate", timestamp);
+            await foreach (var project in ReadProjects(dbConnection, cmd))
             {
-                projects = await ReadAllProjects(dbConnection, timestamp).ToList();
-                registrationEvents = await ReadRegistrations(dbConnection, projects.Select(v => v.Id).ToArray()).ToList();
-            }
-
-            foreach (var project in projects)
-            {
-                var attendees = CalculateActualAttendees(registrationEvents.Where(v => v.ProjectId == project.Id), project.MaxAttendees);
-                yield return project.ToDomain(attendees);
+                yield return project;
             }
         }
 
@@ -105,18 +99,37 @@ namespace Prowo.WebAsm.Server.Data
             return (await Get(projectId))!;
         }
 
+        public async Task<List<Project>> GetUserRegistrationsForDate(string attendeeId, DateOnly projectDate)
+        {
+            await using var dbConnection = await dataSource.OpenConnectionAsync();
+            await using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE date = @date", dbConnection);
+            cmd.Parameters.AddWithValue("date", projectDate.ToDateTime(TimeOnly.MinValue));
+            return await ReadProjects(dbConnection, cmd).ToList();
+        }
+
         public void Dispose()
         {
             dataSource.Dispose();
         }
 
-        private static async IAsyncEnumerable<DbProject> ReadAllProjects(
+        private static async IAsyncEnumerable<Project> ReadProjects(
             NpgsqlConnection dbConnection,
-            DateTime minDate)
+            NpgsqlCommand readProjectsCommand)
         {
-            using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE date >= @minDate", dbConnection);
-            cmd.Parameters.AddWithValue("minDate", minDate);
-            await using var reader = await cmd.ExecuteReaderAsync();
+            var projects = await ReadDbProjects(readProjectsCommand).ToList();
+            var registrationEvents = await ReadRegistrations(dbConnection, projects.Select(v => v.Id).ToArray()).ToList();
+
+            foreach (var project in projects)
+            {
+                var attendees = CalculateActualAttendees(registrationEvents.Where(v => v.ProjectId == project.Id), project.MaxAttendees);
+                yield return project.ToDomain(attendees);
+            }
+        }
+
+        private static async IAsyncEnumerable<DbProject> ReadDbProjects(NpgsqlCommand command)
+        {
+            
+            await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
                 yield return DbProject.FromReader(reader);

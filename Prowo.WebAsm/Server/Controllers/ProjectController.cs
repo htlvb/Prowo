@@ -14,6 +14,7 @@ namespace Prowo.WebAsm.Server.Controllers
         private readonly IProjectStore projectStore;
         private readonly IUserStore userStore;
         private readonly IAuthorizationService authService;
+        private readonly IRegistrationStrategy registrationStrategy;
 
         private static DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today);
 
@@ -22,25 +23,19 @@ namespace Prowo.WebAsm.Server.Controllers
         public ProjectController(
             IProjectStore projectStore,
             IUserStore userStore,
-            IAuthorizationService authService)
+            IAuthorizationService authService,
+            IRegistrationStrategy registrationStrategy)
         {
             this.projectStore = projectStore;
             this.userStore = userStore;
             this.authService = authService;
+            this.registrationStrategy = registrationStrategy;
         }
 
         [HttpGet("")]
         public async Task<ProjectListDto> GetProjectList()
         {
-            var projects = (await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
-                .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v); // Sort by date, but don't change order of projects with same date;
-
-            var projectDtos = new List<ProjectDto>();
-            foreach (var project in projects)
-            {
-                var projectDto = await GetProjectDtoFromProject(project);
-                projectDtos.Add(projectDto);
-            }
+            var projectDtos = await GetProjects();
             var canCreateProject = (await authService.AuthorizeAsync(HttpContext.User, "CreateProject")).Succeeded;
             var canCreateReport = (await authService.AuthorizeAsync(HttpContext.User, "CreateReport")).Succeeded;
             return new ProjectListDto(
@@ -52,7 +47,26 @@ namespace Prowo.WebAsm.Server.Controllers
                 )
             );
         }
-        
+
+        private async Task<List<ProjectDto>> GetProjects()
+        {
+            var projects = (await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
+                .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v) // Sort by date, but don't change order of projects with same date
+                .ToList();
+
+            var selfAsAttendee = await userStore.GetSelfAsProjectAttendee();
+            var registrationActions = registrationStrategy.GetRegistrationActions(selfAsAttendee, projects);
+            
+            var projectDtos = new List<ProjectDto>();
+            foreach (var project in projects)
+            {
+                var projectDto = await GetProjectDtoFromProject(project, registrationActions[project]);
+                projectDtos.Add(projectDto);
+            }
+
+            return projectDtos;
+        }
+
         [HttpGet("templates")]
         public async Task<IEnumerable<ProjectToDuplicateDto>> GetProjectsToDuplicate()
         {
@@ -75,25 +89,41 @@ namespace Prowo.WebAsm.Server.Controllers
         [Authorize(Policy = "AttendProject")]
         public async Task<IActionResult> RegisterForProject(string projectId)
         {
-            var project = await projectStore.Get(projectId);
-            if (project == null || project.Date < MinDate)
+            var projects = await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToListAsync();
+            var project = projects.Find(v => v.Id == projectId);
+            if (project == null)
             {
                 return NotFound("Project doesn't exist or is too old.");
             }
-            if (project.ClosingDate <= DateTime.UtcNow)
+            var attendee = await userStore.GetSelfAsProjectAttendee();
+            var registrationActions = registrationStrategy.GetRegistrationActions(attendee, projects)[project];
+            if (!registrationActions.CanRegister)
             {
-                return BadRequest("Project registrations can't be changed.");
+                return BadRequest("Project registration strategy doesn't allow registration.");
             }
 
-            var attendee = await userStore.GetSelfAsProjectAttendee();
-            var updatedProject = await projectStore.AddAttendee(projectId, attendee);
-            return Ok(await GetProjectDtoFromProject(updatedProject));
+            await projectStore.AddAttendee(projectId, attendee);
+            return Ok(await GetProjects());
         }
 
         [HttpPost("{projectId}/deregister")]
-        public IActionResult DeregisterCurrentUserFromProject(string projectId)
+        public async Task<IActionResult> DeregisterCurrentUserFromProject(string projectId)
         {
-            return BadRequest("Project registrations can't be changed.");
+            var projects = await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToListAsync();
+            var project = projects.Find(v => v.Id == projectId);
+            if (project == null)
+            {
+                return NotFound("Project doesn't exist or is too old.");
+            }
+            var attendee = await userStore.GetSelfAsProjectAttendee();
+            var registrationActions = registrationStrategy.GetRegistrationActions(attendee, projects)[project];
+            if (!registrationActions.CanDeregister)
+            {
+                return BadRequest("Project registration strategy doesn't allow deregistration.");
+            }
+
+            await projectStore.RemoveAttendee(projectId, attendee.Id);
+            return Ok(await GetProjects());
         }
 
         [HttpDelete("{projectId}/attendees/{userId}")]
@@ -391,40 +421,13 @@ namespace Prowo.WebAsm.Server.Controllers
             return organizerCandidates.ToDictionary(v => v.Id);
         }
 
-        private async Task<ProjectDto> GetProjectDtoFromProject(Project project)
+        private async Task<ProjectDto> GetProjectDtoFromProject(Project project, ProjectRegistrationActions registrationActions)
         {
-            ProjectOrganizerDto mapOrganizer(ProjectOrganizer organizer)
-            {
-                return new ProjectOrganizerDto(organizer.Id, $"{organizer.LastName} {organizer.FirstName} ({organizer.ShortName})");
-            }
-
-            UserRoleForProjectDto getCurrentUserRole(Project project)
-            {
-                if (project.Organizer.Id == UserId)
-                {
-                    return UserRoleForProjectDto.Organizer;
-                }
-                if (project.CoOrganizers.Any(v => v.Id == UserId))
-                {
-                    return UserRoleForProjectDto.CoOrganizer;
-                }
-                if (project.RegisteredAttendees.Any(v => v.Id == UserId))
-                {
-                    return UserRoleForProjectDto.Registered;
-                }
-                if (project.WaitingAttendees.Any(v => v.Id == UserId))
-                {
-                    return UserRoleForProjectDto.Waiting;
-                }
-                return UserRoleForProjectDto.NotRelated;
-            }
-
-            var userRole = getCurrentUserRole(project);
+            var userRole = project.GetUserRole(UserId);
             var canRegister =
-                userRole != UserRoleForProjectDto.Registered &&
-                userRole != UserRoleForProjectDto.Waiting &&
-                (await authService.AuthorizeAsync(HttpContext.User, project, "AttendProject")).Succeeded;
-            var canDeregister = false;
+                registrationActions.CanRegister &&
+                (await authService.AuthorizeAsync(HttpContext.User, "AttendProject")).Succeeded;
+            var canDeregister = registrationActions.CanDeregister;
             var canUpdate = (await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded;
             var canDelete = (await authService.AuthorizeAsync(HttpContext.User, project, "DeleteProject")).Succeeded;
             var canShowAttendees = (await authService.AuthorizeAsync(HttpContext.User, project, "CreateReport")).Succeeded;
@@ -432,8 +435,8 @@ namespace Prowo.WebAsm.Server.Controllers
                 project.Title,
                 project.Description,
                 project.Location,
-                mapOrganizer(project.Organizer),
-                project.CoOrganizers.Select(mapOrganizer).ToArray(),
+                project.Organizer.ToDto(),
+                project.CoOrganizers.Select(v => v.ToDto()).ToArray(),
                 project.Date,
                 project.StartTime,
                 project.EndTime,
@@ -441,7 +444,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 project.ClosingDate.ToUserTime(),
                 project.AllAttendees.Count,
                 project.MaxAttendees,
-                getCurrentUserRole(project),
+                userRole.ToDto(),
                 new ProjectLinksDto(
                     canRegister ? Url.Action(nameof(RegisterForProject), new { projectId = project.Id }) : default,
                     canDeregister ? Url.Action(nameof(DeregisterCurrentUserFromProject), new { projectId = project.Id }) : default,
