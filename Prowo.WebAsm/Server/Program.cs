@@ -35,10 +35,12 @@ builder.Services.AddSingleton<IProjectStore>(provider =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped(provider =>
 {
-    return new KeycloakAdminApiClientFactory(
-        builder.Configuration.GetSection("Keycloak")["BaseUrl"] ?? throw new Exception("\"Keycloak:BaseUrl\" not found"),
+    var baseUrl = builder.Configuration.GetSection("Keycloak")["BaseUrl"] ?? throw new Exception("\"Keycloak:BaseUrl\" not found");
+    var accessTokenProvider = new KeycloakAccessTokenProvider(
+        new Uri(baseUrl).Host,
         provider.GetRequiredService<IHttpContextAccessor>()
     );
+    return new KeycloakAdminApiClientFactory(baseUrl, accessTokenProvider);
 });
 builder.Services.AddScoped<IUserStore>(provider =>
 {
