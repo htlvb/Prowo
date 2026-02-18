@@ -30,22 +30,22 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthHandlerOptions>
             claims.Add(new Claim(ClaimTypes.Name, authHeader.Parameter));
             if (authHeader.Parameter.StartsWith("project-attendee-"))
             {
-                claims.Add(new Claim(ClaimTypes.Role, "Project.Attend"));
+                claims.Add(new Claim(ClaimTypes.Role, "project-attendee"));
                 claims.Add(new Claim("oid", authHeader.Parameter.Substring("project-attendee-".Length)));
             }
             else if (authHeader.Parameter.StartsWith("project-writer-"))
             {
-                claims.Add(new Claim(ClaimTypes.Role, "Project.Write"));
+                claims.Add(new Claim(ClaimTypes.Role, "project-creator"));
                 claims.Add(new Claim("oid", authHeader.Parameter.Substring("project-writer-".Length)));
             }
             else if (authHeader.Parameter.StartsWith("all-project-writer-"))
             {
-                claims.Add(new Claim(ClaimTypes.Role, "Project.Write.All"));
+                claims.Add(new Claim(ClaimTypes.Role, "all-projects-editor"));
                 claims.Add(new Claim("oid", authHeader.Parameter.Substring("all-project-writer-".Length)));
             }
             else if (authHeader.Parameter.StartsWith("report-creator-"))
             {
-                claims.Add(new Claim(ClaimTypes.Role, "Report.Create"));
+                claims.Add(new Claim(ClaimTypes.Role, "report-viewer"));
                 claims.Add(new Claim("oid", authHeader.Parameter.Substring("report-creator-".Length)));
             }
         }

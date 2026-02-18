@@ -16,11 +16,11 @@ public static class ServerConfigurationExtensions
             {
                 policy.RequireAssertion(ctx =>
                 {
-                    if (ctx.User.IsInRole("Project.Write.All"))
+                    if (ctx.User.IsInRole("all-projects-editor"))
                     {
                         return true;
                     }
-                    if (ctx.User.IsInRole("Project.Write"))
+                    if (ctx.User.IsInRole("project-creator"))
                     {
                         if (ctx.Resource == null)
                         {
@@ -38,11 +38,11 @@ public static class ServerConfigurationExtensions
             {
                 policy.RequireAssertion(ctx =>
                 {
-                    if (ctx.User.IsInRole("Project.Write.All"))
+                    if (ctx.User.IsInRole("all-projects-editor"))
                     {
                         return true;
                     }
-                    if (ctx.User.IsInRole("Project.Write") && ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
+                    if (ctx.User.IsInRole("project-creator") && ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId())
                     {
                         return true;
                     }
@@ -54,11 +54,11 @@ public static class ServerConfigurationExtensions
             {
                 policy.RequireAssertion(ctx =>
                 {
-                    if (ctx.User.IsInRole("Project.Write.All"))
+                    if (ctx.User.IsInRole("all-projects-editor"))
                     {
                         return true;
                     }
-                    if (ctx.User.IsInRole("Project.Write") && ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId() && p.AllAttendees.Count == 0)
+                    if (ctx.User.IsInRole("project-creator") && ctx.Resource is Project p && p.Organizer.Id == ctx.User.GetObjectId() && p.AllAttendees.Count == 0)
                     {
                         return true;
                     }
@@ -66,9 +66,9 @@ public static class ServerConfigurationExtensions
                 });
             });
 
-            options.AddPolicy("ChangeProjectOrganizer", policy => policy.RequireRole("Project.Write.All"));
-            options.AddPolicy("AttendProject", policy => policy.RequireRole("Project.Attend"));
-            options.AddPolicy("CreateReport", policy => policy.RequireRole("Report.Create"));
+            options.AddPolicy("ChangeProjectOrganizer", policy => policy.RequireRole("all-projects-editor"));
+            options.AddPolicy("AttendProject", policy => policy.RequireRole("project-attendee"));
+            options.AddPolicy("CreateReport", policy => policy.RequireRole("report-viewer"));
         });
     }
 

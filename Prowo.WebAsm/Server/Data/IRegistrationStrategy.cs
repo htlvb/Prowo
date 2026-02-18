@@ -4,12 +4,12 @@ public record ProjectRegistrationActions(bool CanRegister, bool CanDeregister);
 
 public interface IRegistrationStrategy
 {
-    Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects);
+    Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects);
 }
 
 public class FreeRegistrationStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
         return projects.ToDictionary(v => v, _ => new ProjectRegistrationActions(true, true));
     }
@@ -17,7 +17,7 @@ public class FreeRegistrationStrategy : IRegistrationStrategy
 
 public class IrrevocableRegistrationStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
         return projects.ToDictionary(v => v, _ => new ProjectRegistrationActions(true, false));
     }
@@ -25,7 +25,7 @@ public class IrrevocableRegistrationStrategy : IRegistrationStrategy
 
 public class SingleRegistrationPerDayStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
         return projects.ToDictionary(
             v => v,
@@ -33,7 +33,7 @@ public class SingleRegistrationPerDayStrategy : IRegistrationStrategy
             {
                 var canRegister = projects
                     .Where(p => p.Date == project.Date && p.Id != project.Id)
-                    .All(p => !p.AllAttendees.Select(v => v.Id).Contains(attendee.Id));
+                    .All(p => !p.AllAttendees.Select(v => v.Id).Contains(attendeeId));
                 return new ProjectRegistrationActions(canRegister, true);
             });
     }
@@ -41,7 +41,7 @@ public class SingleRegistrationPerDayStrategy : IRegistrationStrategy
 
 public class NoWaitingListStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
         return projects.ToDictionary(
             v => v,
@@ -55,7 +55,7 @@ public class NoWaitingListStrategy : IRegistrationStrategy
 
 public class NoRegistrationAfterClosingDateStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
         return projects.ToDictionary(
             v => v,
@@ -70,16 +70,16 @@ public class NoRegistrationAfterClosingDateStrategy : IRegistrationStrategy
 
 public class NoRegistrationIfRegisteredStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
         return projects.ToDictionary(
             v => v,
             v =>
             {
-                var canRegister = v.GetUserRole(attendee.Id)
+                var canRegister = v.GetUserRole(attendeeId)
                     is not UserRoleForProject.Registered
                     and not UserRoleForProject.Waiting;
-                var canDeregister = v.GetUserRole(attendee.Id)
+                var canDeregister = v.GetUserRole(attendeeId)
                     is UserRoleForProject.Registered
                     or UserRoleForProject.Waiting;
                 return new ProjectRegistrationActions(canRegister, canDeregister);
@@ -89,10 +89,10 @@ public class NoRegistrationIfRegisteredStrategy : IRegistrationStrategy
 
 public class LogicalAndCombinationStrategy(IReadOnlyList<IRegistrationStrategy> strategies) : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(ProjectAttendee attendee, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
         return strategies
-            .Select(v => v.GetRegistrationActions(attendee, projects))
+            .Select(v => v.GetRegistrationActions(attendeeId, projects))
             .Aggregate((a, b) =>
             {
                 foreach (var pair in b)

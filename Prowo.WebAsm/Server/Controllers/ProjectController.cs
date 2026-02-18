@@ -18,7 +18,7 @@ namespace Prowo.WebAsm.Server.Controllers
 
         private static DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today);
 
-        private string UserId => HttpContext.User.GetObjectId()!;
+        private string UserId => User.GetObjectId()!;
 
         public ProjectController(
             IProjectStore projectStore,
@@ -54,8 +54,7 @@ namespace Prowo.WebAsm.Server.Controllers
                 .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v) // Sort by date, but don't change order of projects with same date
                 .ToList();
 
-            var selfAsAttendee = await userStore.GetSelfAsProjectAttendee();
-            var registrationActions = registrationStrategy.GetRegistrationActions(selfAsAttendee, projects);
+            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects);
             
             var projectDtos = new List<ProjectDto>();
             foreach (var project in projects)
@@ -95,13 +94,13 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return NotFound("Project doesn't exist or is too old.");
             }
-            var attendee = await userStore.GetSelfAsProjectAttendee();
-            var registrationActions = registrationStrategy.GetRegistrationActions(attendee, projects)[project];
+            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects)[project];
             if (!registrationActions.CanRegister)
             {
                 return BadRequest("Project registration strategy doesn't allow registration.");
             }
 
+            var attendee = await userStore.GetSelfAsProjectAttendee();
             await projectStore.AddAttendee(projectId, attendee);
             return Ok(await GetProjects());
         }
@@ -115,14 +114,13 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return NotFound("Project doesn't exist or is too old.");
             }
-            var attendee = await userStore.GetSelfAsProjectAttendee();
-            var registrationActions = registrationStrategy.GetRegistrationActions(attendee, projects)[project];
+            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects)[project];
             if (!registrationActions.CanDeregister)
             {
                 return BadRequest("Project registration strategy doesn't allow deregistration.");
             }
 
-            await projectStore.RemoveAttendee(projectId, attendee.Id);
+            await projectStore.RemoveAttendee(projectId, UserId);
             return Ok(await GetProjects());
         }
 

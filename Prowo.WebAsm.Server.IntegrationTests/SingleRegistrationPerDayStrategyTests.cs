@@ -18,7 +18,7 @@ public class SingleRegistrationPerDayStrategyTests
         };
         var sut = new SingleRegistrationPerDayStrategy();
 
-        var result = sut.GetRegistrationActions(attendee, projects);
+        var result = sut.GetRegistrationActions(attendee.Id, projects);
         var actual = new[]
         {
             result[projects[1]].CanRegister,

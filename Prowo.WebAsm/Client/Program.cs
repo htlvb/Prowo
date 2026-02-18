@@ -13,13 +13,9 @@ builder.Services.AddHttpClient("Prowo.WebAsm.ServerAPI", client => client.BaseAd
 // Supply HttpClient instances that include access tokens when making requests to the server project
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("Prowo.WebAsm.ServerAPI"));
 
-builder.Services.AddMsalAuthentication(options =>
+builder.Services.AddOidcAuthentication(options =>
 {
-    builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
-    if (builder.Configuration["ServerApiScope"] is string serverApiScope)
-    {
-        options.ProviderOptions.DefaultAccessTokenScopes.Add(serverApiScope);
-    }
+    builder.Configuration.GetSection("Oidc").Bind(options);
 });
 
 await builder.Build().RunAsync();

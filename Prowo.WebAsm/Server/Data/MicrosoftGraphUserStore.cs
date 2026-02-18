@@ -4,13 +4,13 @@ using System.Text.RegularExpressions;
 
 namespace Prowo.WebAsm.Server.Data
 {
-    public class UserStore : IUserStore
+    public class MicrosoftGraphUserStore : IUserStore
     {
         private readonly string organizerGroupId;
         private readonly string attendeeGroupId;
         private readonly GraphServiceClient graphServiceClient;
 
-        public UserStore(
+        public MicrosoftGraphUserStore(
             string organizerGroupId,
             string attendeeGroupId,
             GraphServiceClient graphServiceClient)

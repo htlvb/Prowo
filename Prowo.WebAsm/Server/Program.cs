@@ -1,9 +1,9 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
 using Prowo.WebAsm.Server.Data;
 using System.Globalization;
-using GraphServiceClient = Microsoft.Graph.GraphServiceClient;
+using System.Text.RegularExpressions;
 
 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-AT");
 
@@ -12,10 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddLocalization();
 
-builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration)
-    .EnableTokenAcquisitionToCallDownstreamApi()
-    .AddMicrosoftGraph(builder.Configuration.GetSection("Graph"))
-    .AddInMemoryTokenCaches();
+builder.Services.AddAuthentication()
+    .AddJwtBearer(options =>
+    {
+        builder.Configuration.GetSection("Oidc").Bind(options);
+    });
+builder.Services.AddTransient<IClaimsTransformation, KeycloakRolesClaimsTransformation>();
 builder.Services.AddProwoControllers();
 builder.Services.AddRazorPages();
 
@@ -27,13 +29,25 @@ builder.Services.AddSingleton<IProjectStore>(provider =>
     return new PgsqlProjectStore(connectionString);
 });
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped(provider =>
+{
+    return new KeycloakAdminApiClientFactory(
+        builder.Configuration.GetSection("Keycloak")["BaseUrl"] ?? throw new Exception("\"Keycloak:BaseUrl\" not found"),
+        provider.GetRequiredService<IHttpContextAccessor>()
+    );
+});
 builder.Services.AddScoped<IUserStore>(provider =>
 {
-    return new UserStore(
-        builder.Configuration.GetSection("AppSettings")["OrganizerGroupId"] ?? throw new Exception("\"AppSettings:OrganizerGroupId\" not found"),
-        builder.Configuration.GetSection("AppSettings")["AttendeeGroupId"] ?? throw new Exception("\"AppSettings:OrganizerGroupId\" not found"),
-        provider.GetRequiredService<GraphServiceClient>());
+    return new KeycloakUserStore(
+        builder.Configuration.GetSection("Keycloak")["RealmName"] ?? throw new Exception("\"Keycloak:RealmName\" not found"),
+        builder.Configuration.GetSection("UserStore")["OrganizerGroupId"] ?? throw new Exception("\"UserStore:OrganizerGroupId\" not found"),
+        builder.Configuration.GetSection("UserStore")["AttendeeGroupId"] ?? throw new Exception("\"UserStore:OrganizerGroupId\" not found"),
+        new Regex(builder.Configuration.GetSection("UserStore")["IncludedClasses"] ?? ""),
+        provider.GetRequiredService<KeycloakAdminApiClientFactory>(),
+        provider.GetRequiredService<IHttpContextAccessor>());
 });
+
 builder.Services.AddSingleton<IRegistrationStrategy>(new LogicalAndCombinationStrategy([
     new NoRegistrationAfterClosingDateStrategy(),
     new NoRegistrationIfRegisteredStrategy(),

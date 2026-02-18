@@ -10,13 +10,9 @@
   <ItemGroup>
     <PackageReference Include="Markdig" Version="0.44.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.1" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Authentication.WebAssembly.Msal" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <TrimmerRootAssembly Include="Microsoft.Authentication.WebAssembly.Msal" /> <!-- see https://github.com/dotnet/aspnetcore/issues/35162 -->
   </ItemGroup>
 
   <ItemGroup>
