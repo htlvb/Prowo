@@ -1,10 +1,6 @@
-﻿using Azure.Identity;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Graph;
-using Microsoft.Graph.Models;
+﻿using Microsoft.Extensions.Configuration;
 using Npgsql;
 using NpgsqlTypes;
-using System.Text.Json;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -16,23 +12,10 @@ dataSourceBuilder.EnableDynamicJson();
 await using var dataSource = dataSourceBuilder.Build();
 await using var dbConnection = await dataSource.OpenConnectionAsync();
 
-var graphServiceClient = new GraphServiceClient(new DefaultAzureCredential());
-UserCollectionResponse? usersResponse = await graphServiceClient.Users.GetAsync(v =>
-    {
-        v.QueryParameters.Filter = "surname in ('Wagner', 'Lohninger') and department eq '4BHME'";
-        v.QueryParameters.Select = ["id", "givenName", "surName", "department", "userPrincipalName"];
-    });
-List<User> users = usersResponse?.Value ?? [];
-var dbUsers = users
-    .Select(v => new { id = v.Id, first_name = v.GivenName, last_name = v.Surname, @class = v.Department, mail_address = v.UserPrincipalName })
-    .ToArray();
-if (dbUsers.Any(v => v.id == null || v.first_name == null || v.last_name == null || v.@class == null || v.mail_address == null))
-{
-    Console.WriteLine("Some user properties are null.");
-    Console.WriteLine(JsonSerializer.Serialize(dbUsers));
-    return;
-}
-Console.Write($"Found {dbUsers.Length} {(dbUsers.Length == 1 ? "user" : "users")}. Continue? [Y/n] ");
+var users = new[] {
+    new { id = "", first_name = "", last_name = "", @class = "", mail_address = "" }
+};
+Console.Write($"Continue to insert {users.Length} {(users.Length == 1 ? "user" : "users")}? [Y/n] ");
 if (string.Equals(Console.ReadLine(), "n", StringComparison.InvariantCultureIgnoreCase))
 {
     Console.WriteLine("Cancelled.");
@@ -57,10 +40,10 @@ if (projectId == null)
 // }
 await using (var cmd = new NpgsqlCommand("INSERT INTO registration_event (project_id, \"user\", action, timestamp) SELECT UNNEST(@project_id), UNNEST(@user), UNNEST(@action), UNNEST(@timestamp)", dbConnection))
 {
-    cmd.Parameters.AddWithValue("project_id", Enumerable.Repeat(projectId, users.Count).ToArray());
-    cmd.Parameters.AddWithValue("user", NpgsqlDbType.Array | NpgsqlDbType.Json, dbUsers);
-    cmd.Parameters.Add(new() { ParameterName = "action", Value = Enumerable.Repeat("register", users.Count).ToArray(), DataTypeName = "registration_action[]" });
-    cmd.Parameters.AddWithValue("timestamp", Enumerable.Repeat(DateTime.UtcNow, users.Count).ToArray());
+    cmd.Parameters.AddWithValue("project_id", Enumerable.Repeat(projectId, users.Length).ToArray());
+    cmd.Parameters.AddWithValue("user", NpgsqlDbType.Array | NpgsqlDbType.Json, users);
+    cmd.Parameters.Add(new() { ParameterName = "action", Value = Enumerable.Repeat("register", users.Length).ToArray(), DataTypeName = "registration_action[]" });
+    cmd.Parameters.AddWithValue("timestamp", Enumerable.Repeat(DateTime.UtcNow, users.Length).ToArray());
 
     await cmd.ExecuteNonQueryAsync();
 }
