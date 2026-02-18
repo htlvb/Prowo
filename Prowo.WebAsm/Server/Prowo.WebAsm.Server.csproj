@@ -14,13 +14,13 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" NoWarn="NU1605" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.1" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Kiota.Bundle" Version="1.21.3" />
     <PackageReference Include="Npgsql" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Client\Prowo.WebAsm.Client.csproj" />
     <ProjectReference Include="..\Shared\Prowo.WebAsm.Shared.csproj" />
+    <ProjectReference Include="..\..\Keycloak.AdminApi\Keycloak.AdminApi.csproj" />
   </ItemGroup>
 
 </Project>

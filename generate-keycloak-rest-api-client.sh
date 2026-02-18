@@ -6,4 +6,4 @@ dotnet kiota generate \
   --class-name KeycloakAdminApiClient \
   --namespace-name Keycloak.AdminApi \
   --openapi https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml \
-  --output ./Prowo.WebAsm/Server/Keycloak.AdminApi
+  --output ./Keycloak.AdminApi
