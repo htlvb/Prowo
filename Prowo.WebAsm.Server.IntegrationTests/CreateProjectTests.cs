@@ -16,6 +16,7 @@ public class CreateProjectTests
         using var host = await InMemoryServer.Start();
         var project = FakeData.EditingProjectDataDtoFaker.Generate();
         using var client = host.GetTestClient().AuthenticateAsProjectWriter(project.OrganizerId);
+        var timeProvider = host.Services.GetRequiredService<TimeProvider>();
         var projectStore = host.Services.GetRequiredService<IProjectStore>();
         var existingProjects = await projectStore.GetAllSince(DateTime.MinValue).ToList();
 
@@ -24,7 +25,7 @@ public class CreateProjectTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
         Assert.Single(actualNewProjects);
-        var isProjectValid = Project.TryCreateFromEditingProjectDataDto(project, actualNewProjects[0].Id, FakeData.ProjectOrganizers.ToDictionary(v => v.Id), out var expectedNewProject, out _);
+        var isProjectValid = Project.TryCreateFromEditingProjectDataDto(project, actualNewProjects[0].Id, FakeData.ProjectOrganizers.ToDictionary(v => v.Id), timeProvider, out var expectedNewProject, out _);
         Assert.True(isProjectValid, "Expected project to be valid");
         Assert.Equal(expectedNewProject, actualNewProjects[0], new ProjectEqualityComparer());
     }

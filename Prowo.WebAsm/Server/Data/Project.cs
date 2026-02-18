@@ -46,6 +46,7 @@ namespace Prowo.WebAsm.Server.Data
             EditingProjectDataDto projectData,
             string projectId,
             IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates,
+            TimeProvider timeProvider,
             [NotNullWhen(true)]out Project? project,
             [NotNullWhen(false)]out string? errorMessage
         )
@@ -75,7 +76,7 @@ namespace Prowo.WebAsm.Server.Data
             var coOrganizers = coOrganizerIds
                 .Select(v => organizerCandidates[v])
                 .ToList();
-            if (projectData.Date < DateOnly.FromDateTime(DateTime.Today))
+            if (projectData.Date < DateOnly.FromDateTime(timeProvider.GetLocalNow().Date))
             {
                 project = null;
                 errorMessage = "Project date must be in the future.";
@@ -87,7 +88,7 @@ namespace Prowo.WebAsm.Server.Data
                 errorMessage = "Project start and end times are invalid.";
                 return false;
             }
-            if (projectData.ClosingDate.FromUserTime() < DateTime.UtcNow)
+            if (projectData.ClosingDate.FromUserTime() < timeProvider.GetUtcNow())
             {
                 project = null;
                 errorMessage = "Project closing date must be in the future.";

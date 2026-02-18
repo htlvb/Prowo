@@ -23,10 +23,13 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddProwoAuthorizationRules();
 
+builder.Services.AddSingleton<TimeProvider, LocalTimeProvider>();
+
 builder.Services.AddSingleton<IProjectStore>(provider =>
 {
     var connectionString = builder.Configuration.GetConnectionString("Pgsql") ?? throw new Exception("\"ConnectionStrings:Pgsql\" not found");
-    return new PgsqlProjectStore(connectionString);
+    var timeProvider = provider.GetRequiredService<TimeProvider>();
+    return new PgsqlProjectStore(connectionString, timeProvider);
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -48,8 +51,8 @@ builder.Services.AddScoped<IUserStore>(provider =>
         provider.GetRequiredService<IHttpContextAccessor>());
 });
 
-builder.Services.AddSingleton<IRegistrationStrategy>(new LogicalAndCombinationStrategy([
-    new NoRegistrationAfterClosingDateStrategy(),
+builder.Services.AddSingleton<IRegistrationStrategy>(provider => new LogicalAndCombinationStrategy([
+    new NoRegistrationAfterClosingDateStrategy(provider.GetRequiredService<TimeProvider>()),
     new NoRegistrationIfRegisteredStrategy(),
     new NoWaitingListStrategy(),
     new SingleRegistrationPerDayStrategy()

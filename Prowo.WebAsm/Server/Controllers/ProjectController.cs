@@ -15,8 +15,9 @@ namespace Prowo.WebAsm.Server.Controllers
         private readonly IUserStore userStore;
         private readonly IAuthorizationService authService;
         private readonly IRegistrationStrategy registrationStrategy;
+        private readonly TimeProvider timeProvider;
 
-        private static DateOnly MinDate => DateOnly.FromDateTime(DateTime.Today);
+        private DateOnly MinDate => DateOnly.FromDateTime(timeProvider.GetLocalNow().Date);
 
         private string UserId => User.GetObjectId()!;
 
@@ -24,12 +25,14 @@ namespace Prowo.WebAsm.Server.Controllers
             IProjectStore projectStore,
             IUserStore userStore,
             IAuthorizationService authService,
-            IRegistrationStrategy registrationStrategy)
+            IRegistrationStrategy registrationStrategy,
+            TimeProvider timeProvider)
         {
             this.projectStore = projectStore;
             this.userStore = userStore;
             this.authService = authService;
             this.registrationStrategy = registrationStrategy;
+            this.timeProvider = timeProvider;
         }
 
         [HttpGet("")]
@@ -180,10 +183,10 @@ namespace Prowo.WebAsm.Server.Controllers
                         "",
                         UserId,
                         Array.Empty<string>(),
-                        DateOnly.FromDateTime(DateTime.Today.AddDays(14)),
+                        DateOnly.FromDateTime(timeProvider.GetLocalNow().Date.AddDays(14)),
                         TimeOnly.FromTimeSpan(TimeSpan.FromHours(9)),
                         TimeOnly.FromTimeSpan(TimeSpan.FromHours(13)),
-                        DateTime.UtcNow.Date.AddDays(7).ToUserTime(),
+                        timeProvider.GetUtcNow().Date.AddDays(7).ToUserTime(),
                         20
                     ),
                     organizerCandidates,
@@ -204,10 +207,10 @@ namespace Prowo.WebAsm.Server.Controllers
                     .Select(v => v.Id)
                     .ToArray();
                 var date = duplicate
-                    ? DateOnly.FromDateTime(DateTime.Today.AddDays(14))
+                    ? DateOnly.FromDateTime(timeProvider.GetLocalNow().Date.AddDays(14))
                     : project.Date;
                 var closingDate = duplicate
-                    ? DateTime.UtcNow.Date.AddDays(7).ToUserTime()
+                    ? timeProvider.GetUtcNow().Date.AddDays(7).ToUserTime()
                     : project.ClosingDate.ToUserTime();
                 var saveUrl = duplicate
                     ? Url.Action(nameof(CreateProject))
@@ -259,7 +262,7 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, out var project, out var errorMessage))
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, timeProvider, out var project, out var errorMessage))
             {
                 return BadRequest(errorMessage);
             }
@@ -281,7 +284,7 @@ namespace Prowo.WebAsm.Server.Controllers
             }
 
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, out var project, out var errorMessage))
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, timeProvider, out var project, out var errorMessage))
             {
                 return BadRequest(errorMessage);
             }

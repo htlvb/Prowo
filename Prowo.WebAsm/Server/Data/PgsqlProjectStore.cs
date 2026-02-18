@@ -8,13 +8,15 @@ namespace Prowo.WebAsm.Server.Data
     public class PgsqlProjectStore : IProjectStore, IDisposable
     {
         private readonly NpgsqlDataSource dataSource;
+        private readonly TimeProvider timeProvider;
 
-        public PgsqlProjectStore(string dbConnectionString)
+        public PgsqlProjectStore(string dbConnectionString, TimeProvider timeProvider)
         {
             var dataSourceBuilder = new NpgsqlDataSourceBuilder(dbConnectionString);
             dataSourceBuilder.MapEnum<DbProjectRegistrationAction>("registration_action");
             dataSourceBuilder.EnableDynamicJson();
             dataSource = dataSourceBuilder.Build();
+            this.timeProvider = timeProvider;
         }
 
         public async IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
@@ -78,7 +80,7 @@ namespace Prowo.WebAsm.Server.Data
             var dbRegistrationEvent = new DbProjectRegistrationEvent(
                 Guid.Parse(projectId),
                 DbProjectRegistrationUser.FromAttendee(attendee),
-                DateTime.UtcNow,
+                timeProvider.GetUtcNow().DateTime,
                 DbProjectRegistrationAction.Register
             );
             await using var dbConnection = await dataSource.OpenConnectionAsync();
@@ -91,7 +93,7 @@ namespace Prowo.WebAsm.Server.Data
             var dbRegistrationEvent = new DbProjectRegistrationEvent(
                 Guid.Parse(projectId),
                 new DbProjectRegistrationUser(Guid.Parse(userId), null, null, null, null),
-                DateTime.UtcNow,
+                timeProvider.GetUtcNow().DateTime,
                 DbProjectRegistrationAction.Deregister
             );
             await using var dbConnection = await dataSource.OpenConnectionAsync();

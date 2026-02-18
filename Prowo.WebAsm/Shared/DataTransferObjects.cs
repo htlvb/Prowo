@@ -84,8 +84,6 @@ namespace Prowo.WebAsm.Shared
         ProjectLinksDto Links
     )
     {
-        public bool RegistrationDisabled => ClosingDate <= DateTime.UtcNow || Attendees >= MaxAttendees;
-
         public bool IsUserProject =>
             CurrentUserStatus == UserRoleForProjectDto.Registered
             || CurrentUserStatus == UserRoleForProjectDto.Waiting

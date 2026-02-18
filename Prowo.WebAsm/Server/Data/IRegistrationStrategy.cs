@@ -53,7 +53,7 @@ public class NoWaitingListStrategy : IRegistrationStrategy
     }
 }
 
-public class NoRegistrationAfterClosingDateStrategy : IRegistrationStrategy
+public class NoRegistrationAfterClosingDateStrategy(TimeProvider timeProvider) : IRegistrationStrategy
 {
     public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
     {
@@ -61,8 +61,8 @@ public class NoRegistrationAfterClosingDateStrategy : IRegistrationStrategy
             v => v,
             v =>
             {
-                var canRegister = v.ClosingDate > DateTime.UtcNow;
-                var canDeregister = v.ClosingDate > DateTime.UtcNow;
+                var canRegister = v.ClosingDate > timeProvider.GetUtcNow();
+                var canDeregister = v.ClosingDate > timeProvider.GetUtcNow();
                 return new ProjectRegistrationActions(canRegister, canDeregister);
             });
     }
