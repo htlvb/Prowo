@@ -1,10 +1,58 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Keycloak.AdminApi;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Kiota.Abstractions.Authentication;
+using Microsoft.Kiota.Http.HttpClientLibrary;
 using Npgsql;
 using NpgsqlTypes;
 using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+
+var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+var attendeeCandidatesFilePath = Path.Combine(dir, "AttendeeCandidates.json");
+var organizerCandidatesFilePath = Path.Combine(dir, "OrganizerCandidates.json");
+
+if (!File.Exists(attendeeCandidatesFilePath) ||
+    !File.Exists(organizerCandidatesFilePath) ||
+    args is [ "--load-data", .. ])
+{
+    var accessTokenProvider = new KeycloakAccessTokenProvider("id.htlvb.at");
+    var authProvider = new BaseBearerTokenAuthenticationProvider(accessTokenProvider);
+    var adapter = new HttpClientRequestAdapter(authProvider)
+    {
+        BaseUrl = "https://id.htlvb.at"
+    };
+    var keycloakAdminApiClient = new KeycloakAdminApiClient(adapter);
+    var teachers = await keycloakAdminApiClient.Admin
+        .Realms["htlvb"]
+        .Groups["6c766d94-3dec-4cf5-94f7-b327b40c56b2"]
+        .Members
+        .GetAsync(v => v.QueryParameters.Max = -1);
+    var teacherData = teachers?
+        .Select(v => new { Id = v.Id, FirstName = v.FirstName, LastName = v.LastName, ShortName = v.Username?.ToUpper() });
+    File.WriteAllText(organizerCandidatesFilePath, JsonSerializer.Serialize(teacherData, new JsonSerializerOptions { WriteIndented = true }));
+
+    var studentGroups = await keycloakAdminApiClient.Admin
+        .Realms["htlvb"]
+        .Groups["3d6bfb52-6e94-4439-bff3-0813a500963a"]
+        .Children
+        .GetAsync(v => v.QueryParameters.Max = -1);
+    var studentDataTasks = studentGroups?
+        .Select(async studentGroup =>
+        {
+            var students = await keycloakAdminApiClient.Admin
+                .Realms["htlvb"]
+                .Groups[studentGroup.Id]
+                .Members
+                .GetAsync(v => v.QueryParameters.Max = -1);
+            return students?
+                .Select(v => new { Id = v.Id, FirstName = v.FirstName, LastName = v.LastName, Class = studentGroup.Name, MailAddress = v.Email }) ?? [];
+        }) ?? [];
+    var studentData = (await Task.WhenAll(studentDataTasks))
+        .SelectMany(v => v);
+    File.WriteAllText(attendeeCandidatesFilePath, JsonSerializer.Serialize(studentData, new JsonSerializerOptions { WriteIndented = true }));
+}
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -16,19 +64,19 @@ dataSourceBuilder.EnableDynamicJson();
 await using var dataSource = dataSourceBuilder.Build();
 await using var dbConnection = await dataSource.OpenConnectionAsync();
 
-var attendees = JsonDocument.Parse(File.ReadAllText("AttendeeCandidates.json"))
+var attendees = JsonDocument.Parse(File.ReadAllText(attendeeCandidatesFilePath))
     .RootElement
     .EnumerateArray()
     .Select(v => new
     {
         UserId = v.GetProperty("Id").GetString()!,
-        FirstName = v.GetProperty("GivenName").GetString()!,
-        LastName = v.GetProperty("Surname").GetString()!,
-        Class = v.GetProperty("Department").GetString()!,
-        MailAddress = v.GetProperty("UserPrincipalName").GetString()!
+        FirstName = v.GetProperty("FirstName").GetString()!,
+        LastName = v.GetProperty("LastName").GetString()!,
+        Class = v.GetProperty("Class").GetString()!,
+        MailAddress = v.GetProperty("MailAddress").GetString()!
     })
     .ToList();
-var organizers = JsonDocument.Parse(File.ReadAllText("OrganizerCandidates.json"))
+var organizers = JsonDocument.Parse(File.ReadAllText(organizerCandidatesFilePath))
     .RootElement
     .EnumerateArray()
     .Select(v =>
@@ -36,13 +84,13 @@ var organizers = JsonDocument.Parse(File.ReadAllText("OrganizerCandidates.json")
         return new
         {
             id = v.GetProperty("Id").GetString()!,
-            first_name = v.GetProperty("GivenName").GetString()!,
-            last_name = v.GetProperty("Surname").GetString()!,
-            short_name = Regex.Replace(v.GetProperty("UserPrincipalName").GetString()!, "@.*$", ""),
+            first_name = v.GetProperty("FirstName").GetString()!,
+            last_name = v.GetProperty("LastName").GetString()!,
+            short_name = Regex.Replace(v.GetProperty("ShortName").GetString()!, "@.*$", ""),
         };
     })
     .ToList();
-var sampleProjects = JsonDocument.Parse(File.ReadAllText("SampleProjects.json"))
+var sampleProjects = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "SampleProjects.json")))
     .RootElement
     .EnumerateArray()
     .Select(v =>

@@ -6,5 +6,3 @@ obj/
 /Prowo.WebAsm/Client/wwwroot/css/app.min.css
 /Prowo.WebAsm/Client/wwwroot/lib
 /Prowo.Web/wwwroot/css/app.min.css
-/Prowo.SampleDataGenerator/AttendeeCandidates.json
-/Prowo.SampleDataGenerator/OrganizerCandidates.json
