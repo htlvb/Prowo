@@ -10,6 +10,7 @@ WORKDIR /src
 COPY ["Prowo.WebAsm/Server/Prowo.WebAsm.Server.csproj", "Prowo.WebAsm/Server/"]
 COPY ["Prowo.WebAsm/Shared/Prowo.WebAsm.Shared.csproj", "Prowo.WebAsm/Shared/"]
 COPY ["Prowo.WebAsm/Client/Prowo.WebAsm.Client.csproj", "Prowo.WebAsm/Client/"]
+COPY ["Keycloak.AdminApi/Keycloak.AdminApi.csproj", "Keycloak.AdminApi/"]
 RUN dotnet restore "Prowo.WebAsm/Server/Prowo.WebAsm.Server.csproj"
 COPY . .
 WORKDIR "/src/Prowo.WebAsm/Server"
