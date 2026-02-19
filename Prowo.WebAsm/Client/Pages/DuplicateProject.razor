@@ -22,8 +22,11 @@ else if (projects.Count == 0)
 }
 else
 {
+    <div class="mb-2">
+        <input type="text" class="input-text" placeholder="Projekte filtern" @bind="filterText" @bind:event="oninput" />
+    </div>
     <div class="grid grid-cols-3 gap-2">
-    @foreach (var project in projects)
+    @foreach (var project in projects.Where(IsFiltered))
     {
         <div class="btn !flex flex-col" @onclick="() => EditProjectFromTemplate(project.DuplicateLink)">
             <span class="grow">@project.Title</span>
@@ -48,9 +51,17 @@ else
 
     private List<ProjectToDuplicateDto>? projects;
 
+    private string filterText = "";
+
     protected override async Task OnInitializedAsync()
     {
         projects = (await Http.GetFromJsonAsync<List<ProjectToDuplicateDto>>($"api/projects/templates", serializerOptions))!;
+    }
+
+    private bool IsFiltered(ProjectToDuplicateDto project)
+    {
+        return filterText.Split()
+            .All(v => project.Title.Contains(v, StringComparison.InvariantCultureIgnoreCase));
     }
 
     private void EditProjectFromTemplate(string projectDuplicateLink)
