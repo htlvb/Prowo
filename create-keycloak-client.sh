@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KCADM='$KCADM'
+KCADM='docker compose exec app /opt/keycloak/bin/kcadm.sh'
 
 read -p "Keycloak admin user name: " ADMIN_USER_NAME
 read -r -s -p "Keycloak admin user password: " ADMIN_USER_PASSWORD
