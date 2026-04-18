@@ -45,11 +45,11 @@ namespace Prowo.WebAsm.Shared
         string Location,
         string OrganizerId,
         IReadOnlyList<string> CoOrganizerIds,
-        DateOnly Date,
-        TimeOnly StartTime,
+        DateOnly? Date,
+        TimeOnly? StartTime,
         TimeOnly? EndTime,
-        DateTime ClosingDate,
-        int MaxAttendees
+        DateTime? ClosingDate,
+        int? MaxAttendees
     );
 
     public record EditingProjectLinksDto(

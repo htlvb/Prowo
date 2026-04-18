@@ -279,13 +279,17 @@ else if (editingProject.Links.Save != null)
         [Required(ErrorMessage = "Organisator muss ausgewählt werden.")]
         public string? OrganizerId { get; set; }
         public string[] CoOrganizerIds { get; set; } = Array.Empty<string>();
-        public DateTime Date { get; set; }
-        public DateTime StartTime { get; set; }
+        [Required(ErrorMessage = "Maximale Anzahl an Teilnehmer muss gesetzt werden.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
+        public int? MaxAttendees { get; set; }
+        [Required(ErrorMessage = "Datum muss gesetzt werden.")]
+        public DateTime? Date { get; set; }
+        [Required(ErrorMessage = "Startzeit muss gesetzt werden.")]
+        public DateTime? StartTime { get; set; }
         public bool HasEndTime { get; set; }
         public DateTime EndTime { get; set; }
-        public DateTime ClosingDate { get; set; }
-        [Range(1, int.MaxValue, ErrorMessage = "Maximale Anzahl an Teilnehmer muss mindestens 1 sein.")]
-        public int MaxAttendees { get; set; }
+        [Required(ErrorMessage = "Anmeldeschluss muss gesetzt werden.")]
+        public DateTime? ClosingDate { get; set; }
 
         public static EditingProjectData FromProjectData(EditingProjectDataDto projectData)
         {
@@ -296,11 +300,13 @@ else if (editingProject.Links.Save != null)
                 Location = projectData.Location,
                 OrganizerId = projectData.OrganizerId,
                 CoOrganizerIds = projectData.CoOrganizerIds.ToArray(),
-                Date = projectData.Date.ToDateTime(TimeOnly.MinValue),
-                StartTime = projectData.Date.ToDateTime(projectData.StartTime),
+                Date = projectData.Date?.ToDateTime(TimeOnly.MinValue),
+                StartTime = projectData.Date.HasValue && projectData.StartTime.HasValue
+                    ? projectData.Date.Value.ToDateTime(projectData.StartTime.Value)
+                    : (DateTime?)null,
                 HasEndTime = projectData.EndTime != null,
-                EndTime = projectData.Date.ToDateTime(projectData.EndTime == null ? TimeOnly.MinValue : projectData.EndTime.Value),
-                ClosingDate = projectData.ClosingDate.Date,
+                EndTime = (projectData.Date ?? DateOnly.MinValue).ToDateTime(projectData.EndTime ?? TimeOnly.MinValue),
+                ClosingDate = projectData.ClosingDate?.Date,
                 MaxAttendees = projectData.MaxAttendees
             };
         }
@@ -313,10 +319,10 @@ else if (editingProject.Links.Save != null)
                 Location,
                 OrganizerId ?? throw new InvalidOperationException("Organizer is empty. Did you forget to validate?"),
                 CoOrganizerIds,
-                DateOnly.FromDateTime(Date),
-                TimeOnly.FromDateTime(StartTime),
+                Date.HasValue ? DateOnly.FromDateTime(Date.Value) : (DateOnly?)null,
+                StartTime.HasValue ? TimeOnly.FromDateTime(StartTime.Value) : (TimeOnly?)null,
                 (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
-                ClosingDate.AddDays(1).AddSeconds(-1),
+                ClosingDate.HasValue ? ClosingDate.Value.AddDays(1).AddSeconds(-1) : (DateTime?)null,
                 MaxAttendees
             );
         }

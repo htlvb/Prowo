@@ -76,25 +76,55 @@ namespace Prowo.WebAsm.Server.Data
             var coOrganizers = coOrganizerIds
                 .Select(v => organizerCandidates[v])
                 .ToList();
-            if (projectData.Date < DateOnly.FromDateTime(timeProvider.GetLocalNow().Date))
+            if (projectData.Date == null)
+            {
+                project = null;
+                errorMessage = "Project date must be set.";
+                return false;
+            }
+            if (projectData.StartTime == null)
+            {
+                project = null;
+                errorMessage = "Project start time must be set.";
+                return false;
+            }
+            if (projectData.ClosingDate == null)
+            {
+                project = null;
+                errorMessage = "Project closing date must be set.";
+                return false;
+            }
+            if (projectData.MaxAttendees == null)
+            {
+                project = null;
+                errorMessage = "Max attendees must be set.";
+                return false;
+            }
+            if (projectData.Date.Value < DateOnly.FromDateTime(timeProvider.GetLocalNow().Date))
             {
                 project = null;
                 errorMessage = "Project date must be in the future.";
                 return false;
             }
-            if (projectData.EndTime != null && projectData.StartTime > projectData.EndTime.Value)
+            if (projectData.EndTime != null && projectData.StartTime.Value > projectData.EndTime.Value)
             {
                 project = null;
                 errorMessage = "Project start and end times are invalid.";
                 return false;
             }
-            if (projectData.ClosingDate.FromUserTime() < timeProvider.GetUtcNow())
+            if (projectData.ClosingDate.Value < timeProvider.GetLocalNow().DateTime)
             {
                 project = null;
                 errorMessage = "Project closing date must be in the future.";
                 return false;
             }
-            if (projectData.MaxAttendees < 1)
+            if (projectData.ClosingDate.Value >= projectData.Date.Value.ToDateTime(TimeOnly.MinValue))
+            {
+                project = null;
+                errorMessage = "Project closing date must be before the project date.";
+                return false;
+            }
+            if (projectData.MaxAttendees.Value < 1)
             {
                 project = null;
                 errorMessage = "Max attendees must be greater than 0.";
@@ -107,11 +137,11 @@ namespace Prowo.WebAsm.Server.Data
                 projectData.Location,
                 organizer,
                 coOrganizers,
-                projectData.Date,
-                projectData.StartTime,
+                projectData.Date.Value,
+                projectData.StartTime.Value,
                 projectData.EndTime,
-                projectData.ClosingDate.FromUserTime(),
-                projectData.MaxAttendees,
+                projectData.ClosingDate.Value.FromUserTime(),
+                projectData.MaxAttendees.Value,
                 Array.Empty<ProjectAttendee>()
             );
             errorMessage = null;
