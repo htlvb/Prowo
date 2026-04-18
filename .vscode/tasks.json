@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "watch:tailwind",
+            "type": "shell",
+            "command": "./build-tailwind.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "dependsOn": []
+        },
+        {
+            "label": "watch:webapp",
+            "type": "shell",
+            "command": "dotnet watch --project Prowo.WebAsm/Server/Prowo.WebAsm.Server.csproj",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "dependsOn": "watch:tailwind"
+        },
+        {
+            "label": "start:database",
+            "type": "shell",
+            "command": "docker compose up db",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "dependsOn": []
+        },
+        {
+            "label": "dev",
+            "dependsOn": ["start:database", "watch:webapp"],
+            "dependsOrder": "parallel",
+            "problemMatcher": []
+        }
+    ]
+}
