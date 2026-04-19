@@ -147,6 +147,42 @@ else if (editingProject.Links.Save != null)
             </label>
         </div>
 
+        <div class="input">
+            <label class="block">
+                <span class="input-label">
+                    <InputCheckbox @bind-Value=editingProject.Data.HasPaymentInfo /> Zahlungsinformationen
+                </span>
+            </label>
+        </div>
+
+        @if (editingProject.Data.HasPaymentInfo)
+        {
+            <div class="input">
+                <label class="block">
+                    <span class="input-label">IBAN</span>
+                    <InputText @bind-Value=editingProject.Data.PaymentIban class="input-text w-96 max-w-full" />
+                </label>
+            </div>
+            <div class="input">
+                <label class="block">
+                    <span class="input-label">Kontoinhaber</span>
+                    <InputText @bind-Value=editingProject.Data.PaymentAccountHolder class="input-text w-96 max-w-full" />
+                </label>
+            </div>
+            <div class="input">
+                <label class="block">
+                    <span class="input-label">Betrag (EUR)</span>
+                    <InputNumber @bind-Value=editingProject.Data.PaymentAmount ParsingErrorMessage="Kein gültiger Betrag." class="input-text w-32" />
+                </label>
+            </div>
+            <div class="input">
+                <label class="block">
+                    <span class="input-label">Verwendungszweck</span>
+                    <InputText @bind-Value=editingProject.Data.PaymentRemittanceInformation class="input-text w-96 max-w-full" />
+                </label>
+            </div>
+        }
+
         <ValidationSummary />
 
         <div class="input flex items-center gap-2">
@@ -290,6 +326,11 @@ else if (editingProject.Links.Save != null)
         public DateTime EndTime { get; set; }
         [Required(ErrorMessage = "Anmeldeschluss muss gesetzt werden.")]
         public DateTime? ClosingDate { get; set; }
+        public bool HasPaymentInfo { get; set; }
+        public string PaymentIban { get; set; } = "";
+        public string PaymentAccountHolder { get; set; } = "";
+        public decimal? PaymentAmount { get; set; }
+        public string PaymentRemittanceInformation { get; set; } = "";
 
         public static EditingProjectData FromProjectData(EditingProjectDataDto projectData)
         {
@@ -307,7 +348,12 @@ else if (editingProject.Links.Save != null)
                 HasEndTime = projectData.EndTime != null,
                 EndTime = (projectData.Date ?? DateOnly.MinValue).ToDateTime(projectData.EndTime ?? TimeOnly.MinValue),
                 ClosingDate = projectData.ClosingDate?.Date,
-                MaxAttendees = projectData.MaxAttendees
+                MaxAttendees = projectData.MaxAttendees,
+                HasPaymentInfo = projectData.HasPaymentInfo,
+                PaymentIban = projectData.PaymentData?.Iban ?? "",
+                PaymentAccountHolder = projectData.PaymentData?.AccountHolder ?? "",
+                PaymentAmount = projectData.PaymentData?.Amount,
+                PaymentRemittanceInformation = projectData.PaymentData?.RemittanceInformation ?? ""
             };
         }
 
@@ -323,7 +369,9 @@ else if (editingProject.Links.Save != null)
                 StartTime.HasValue ? TimeOnly.FromDateTime(StartTime.Value) : (TimeOnly?)null,
                 (HasEndTime ? TimeOnly.FromDateTime(EndTime) : null),
                 ClosingDate.HasValue ? ClosingDate.Value.AddDays(1).AddSeconds(-1) : (DateTime?)null,
-                MaxAttendees
+                MaxAttendees,
+                HasPaymentInfo,
+                HasPaymentInfo ? new ProjectPaymentDataDto(PaymentIban, PaymentAccountHolder, PaymentAmount, PaymentRemittanceInformation) : null
             );
         }
     }

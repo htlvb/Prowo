@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Prowo.WebAsm.Server.Data;
 using Prowo.WebAsm.Shared;
@@ -16,6 +17,8 @@ namespace Prowo.WebAsm.Server.Controllers
         private readonly IAuthorizationService authService;
         private readonly IRegistrationStrategy registrationStrategy;
         private readonly TimeProvider timeProvider;
+        private readonly EpcQrCodeService epcQrCodeService;
+        private readonly PaymentDefaults paymentDefaults;
 
         private DateOnly MinDate => DateOnly.FromDateTime(timeProvider.GetLocalNow().Date);
 
@@ -26,13 +29,17 @@ namespace Prowo.WebAsm.Server.Controllers
             IUserStore userStore,
             IAuthorizationService authService,
             IRegistrationStrategy registrationStrategy,
-            TimeProvider timeProvider)
+            TimeProvider timeProvider,
+            EpcQrCodeService epcQrCodeService,
+            IOptions<PaymentDefaults> paymentDefaults)
         {
             this.projectStore = projectStore;
             this.userStore = userStore;
             this.authService = authService;
             this.registrationStrategy = registrationStrategy;
             this.timeProvider = timeProvider;
+            this.epcQrCodeService = epcQrCodeService;
+            this.paymentDefaults = paymentDefaults.Value;
         }
 
         [HttpGet("")]
@@ -174,6 +181,10 @@ namespace Prowo.WebAsm.Server.Controllers
                 }
             }
 
+            var defaultPaymentData = !string.IsNullOrEmpty(paymentDefaults.Iban) || !string.IsNullOrEmpty(paymentDefaults.AccountHolder)
+                ? new ProjectPaymentDataDto(paymentDefaults.Iban, paymentDefaults.AccountHolder, null, "")
+                : null;
+
             if (project == null)
             {
                 var result = new EditingProjectDto(
@@ -187,7 +198,9 @@ namespace Prowo.WebAsm.Server.Controllers
                         null,
                         null,
                         null,
-                        null
+                        null,
+                        false,
+                        defaultPaymentData
                     ),
                     organizerCandidates,
                     coOrganizerCandidates,
@@ -209,6 +222,9 @@ namespace Prowo.WebAsm.Server.Controllers
                 var saveUrl = duplicate
                     ? Url.Action(nameof(CreateProject))
                     : Url.Action(nameof(UpdateProject), new { projectId = project.Id });
+                var existingPaymentData = project.PaymentInfo != null
+                    ? new ProjectPaymentDataDto(project.PaymentInfo.Iban, project.PaymentInfo.AccountHolder, project.PaymentInfo.Amount, project.PaymentInfo.RemittanceInformation)
+                    : defaultPaymentData;
                 var result = new EditingProjectDto(
                     new EditingProjectDataDto(
                         project.Title,
@@ -220,7 +236,9 @@ namespace Prowo.WebAsm.Server.Controllers
                         duplicate ? null : project.StartTime,
                         duplicate ? null : project.EndTime,
                         duplicate ? null : project.ClosingDate.ToUserTime(),
-                        duplicate ? null : project.MaxAttendees
+                        duplicate ? null : project.MaxAttendees,
+                        project.PaymentInfo != null,
+                        existingPaymentData
                     ),
                     organizerCandidates,
                     coOrganizerCandidates,
@@ -256,7 +274,10 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, timeProvider, out var project, out var errorMessage))
+            ProjectPaymentInfo? paymentInfo;
+            try { paymentInfo = BuildPaymentInfo(projectData.PaymentData); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessage))
             {
                 return BadRequest(errorMessage);
             }
@@ -278,7 +299,10 @@ namespace Prowo.WebAsm.Server.Controllers
             }
 
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, timeProvider, out var project, out var errorMessage))
+            ProjectPaymentInfo? paymentInfo;
+            try { paymentInfo = BuildPaymentInfo(projectData.PaymentData); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessage))
             {
                 return BadRequest(errorMessage);
             }
@@ -410,6 +434,13 @@ namespace Prowo.WebAsm.Server.Controllers
             return new AttendanceOverviewDto(dates, groups);
         }
 
+        private ProjectPaymentInfo? BuildPaymentInfo(ProjectPaymentDataDto? paymentData)
+        {
+            if (paymentData == null) return null;
+            var qr = epcQrCodeService.GenerateBase64Png(paymentData.Iban, paymentData.AccountHolder, paymentData.Amount, paymentData.RemittanceInformation);
+            return new ProjectPaymentInfo(paymentData.Iban, paymentData.AccountHolder, paymentData.Amount, paymentData.RemittanceInformation, qr);
+        }
+
         private async Task<Dictionary<string, ProjectOrganizer>> GetOrganizerCandidatesDictionary()
         {
             var organizerCandidates = await userStore.GetOrganizerCandidates().ToList();
@@ -426,6 +457,9 @@ namespace Prowo.WebAsm.Server.Controllers
             var canUpdate = (await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded;
             var canDelete = (await authService.AuthorizeAsync(HttpContext.User, project, "DeleteProject")).Succeeded;
             var canShowAttendees = (await authService.AuthorizeAsync(HttpContext.User, project, "CreateReport")).Succeeded;
+            var paymentInfoDto = userRole == UserRoleForProject.Registered && project.PaymentInfo != null
+                ? new ProjectPaymentInfoDto(project.PaymentInfo.Iban, project.PaymentInfo.AccountHolder, project.PaymentInfo.Amount, project.PaymentInfo.RemittanceInformation, project.PaymentInfo.QrCodeBase64Png)
+                : null;
             return new ProjectDto(
                 project.Title,
                 project.Description,
@@ -446,7 +480,8 @@ namespace Prowo.WebAsm.Server.Controllers
                     canUpdate ? $"projects/edit/{project.Id}" : default,
                     canDelete ? Url.Action(nameof(DeleteProject), new { projectId = project.Id }) : default,
                     canShowAttendees ? $"projects/attendees/{project.Id}" : default
-                )
+                ),
+                paymentInfoDto
             );
         }
     }

@@ -26,7 +26,7 @@ public class CreateProjectTests
         Assert.True(response.StatusCode == HttpStatusCode.OK, $"Expected {HttpStatusCode.OK} but got {response.StatusCode}. Body: {responseBody}");
         var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
         Assert.Single(actualNewProjects);
-        var isProjectValid = Project.TryCreateFromEditingProjectDataDto(project, actualNewProjects[0].Id, FakeData.ProjectOrganizers.ToDictionary(v => v.Id), timeProvider, out var expectedNewProject, out _);
+        var isProjectValid = Project.TryCreateFromEditingProjectDataDto(project, actualNewProjects[0].Id, FakeData.ProjectOrganizers.ToDictionary(v => v.Id), timeProvider, null, out var expectedNewProject, out _);
         Assert.True(isProjectValid, "Expected project to be valid");
         Assert.Equal(expectedNewProject, actualNewProjects[0], new ProjectEqualityComparer());
     }

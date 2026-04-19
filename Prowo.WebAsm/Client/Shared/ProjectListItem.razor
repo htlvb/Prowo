@@ -76,6 +76,18 @@
             <div class="description p-2 grow">
                 @ProjectDescription
             </div>
+            @if (Project.CurrentUserStatus == UserRoleForProjectDto.Registered && Project.PaymentInfo != null)
+            {
+                <div class="flex flex-col shrink-0 gap-1 p-2">
+                    <span class="text-sm font-semibold text-gray-700">Zahlung</span>
+                    <img src="data:image/png;base64,@Project.PaymentInfo.QrCodeBase64Png" alt="Zahlungs-QR-Code" class="w-48 h-48" />
+                    <span class="text-xs text-gray-600">@Project.PaymentInfo.AccountHolder</span>
+                    <span class="text-xs text-gray-600">@Project.PaymentInfo.Iban</span>
+                    @if (Project.PaymentInfo.Amount.HasValue) { <span class="text-xs text-gray-600">EUR @Project.PaymentInfo.Amount.Value.ToString("F2")</span> }
+                    <span class="text-xs text-gray-600">@Project.PaymentInfo.RemittanceInformation</span>
+                    <span class="text-xs text-amber-700">Bitte bis @Project.ClosingDateLocalUserTime.ToString("dd.MM.yyyy") überweisen. <br /> Erst dann gilt die Anmeldung als fix.</span>
+                </div>
+            }
             <div class="flex flex-col basis-1/6 gap-2 p-2">
                 @if (Project.Links.Edit != null)
                 {

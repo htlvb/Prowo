@@ -230,4 +230,5 @@ docker run -p 80:80 -p 443:443 prowo:latest
 - OIDC audience validation is disabled (TokenValidationParameters.ValidateAudience = false)
 - The project uses .NET 10 for the latest version
 - When creating a new project, `Date`, `StartTime`, `EndTime`, `ClosingDate`, and `MaxAttendees` in `EditingProjectDataDto` are `null` — the user must fill them in the UI; the server validates and rejects nulls
+- **DB schema changes**: always append migrations at the end of `db-schema.sql` using `ALTER TABLE ... ADD COLUMN ...`. Never modify the `CREATE TABLE` definition. The `CREATE TABLE` is for fresh installs; appended `ALTER TABLE` statements migrate the production database without data loss.
 - VSCode tasks are in `.vscode/tasks.json`; the `dev` compound task starts `start:database` and `watch:webapp` in parallel (`watch:webapp` chains `watch:tailwind` first); all shell tasks require `"type": "shell"`

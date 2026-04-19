@@ -39,6 +39,21 @@ namespace Prowo.WebAsm.Shared
         EditingProjectLinksDto Links
     );
 
+    public record ProjectPaymentDataDto(
+        string Iban,
+        string AccountHolder,
+        decimal? Amount,
+        string RemittanceInformation
+    );
+
+    public record ProjectPaymentInfoDto(
+        string Iban,
+        string AccountHolder,
+        decimal? Amount,
+        string RemittanceInformation,
+        string QrCodeBase64Png
+    );
+
     public record EditingProjectDataDto(
         string Title,
         string Description,
@@ -49,7 +64,9 @@ namespace Prowo.WebAsm.Shared
         TimeOnly? StartTime,
         TimeOnly? EndTime,
         DateTime? ClosingDate,
-        int? MaxAttendees
+        int? MaxAttendees,
+        bool HasPaymentInfo,
+        ProjectPaymentDataDto? PaymentData
     );
 
     public record EditingProjectLinksDto(
@@ -81,7 +98,8 @@ namespace Prowo.WebAsm.Shared
         int Attendees,
         int MaxAttendees,
         UserRoleForProjectDto CurrentUserStatus,
-        ProjectLinksDto Links
+        ProjectLinksDto Links,
+        ProjectPaymentInfoDto? PaymentInfo = null
     )
     {
         public bool IsUserProject =>

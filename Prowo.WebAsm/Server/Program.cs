@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Logging;
+using Microsoft.Extensions.Options;
+using Prowo.WebAsm.Server;
 using Prowo.WebAsm.Server.Data;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -24,6 +26,8 @@ builder.Services.AddRazorPages();
 builder.Services.AddProwoAuthorizationRules();
 
 builder.Services.AddSingleton<TimeProvider, LocalTimeProvider>();
+builder.Services.Configure<PaymentDefaults>(builder.Configuration.GetSection("PaymentDefaults"));
+builder.Services.AddSingleton<EpcQrCodeService>();
 
 builder.Services.AddSingleton<IProjectStore>(provider =>
 {

@@ -23,3 +23,5 @@ CREATE TABLE registration_event(
     action registration_action NOT NULL,
     FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE
 );
+
+ALTER TABLE project ADD COLUMN payment_info JSON;

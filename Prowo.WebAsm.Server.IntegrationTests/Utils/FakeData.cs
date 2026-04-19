@@ -38,7 +38,8 @@ public static class FakeData
                 v.Random.Bool() ? new TimeOnly(12, 0).AddMinutes(v.Random.Number(0, 12) * 15) : null,
                 new DateTime(v.Date.Between(v.Date.Soon(5), date.ToDateTime(TimeOnly.MinValue)).Ticks, DateTimeKind.Unspecified),
                 v.Random.Number(1, 500),
-                attendees
+                attendees,
+                null
             );
         });
 
@@ -71,7 +72,9 @@ public static class FakeData
                 new TimeOnly(7, 0).AddMinutes(v.Random.Number(0, 8) * 15),
                 v.Random.Bool() ? new TimeOnly(12, 0).AddMinutes(v.Random.Number(0, 12) * 15) : null,
                 new DateTime(v.Date.Between(closingDateMin, closingDateMax).Ticks, DateTimeKind.Unspecified),
-                v.Random.Number(1, 500)
+                v.Random.Number(1, 500),
+                false,
+                null
             );
         });
 

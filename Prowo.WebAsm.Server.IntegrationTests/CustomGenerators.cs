@@ -209,7 +209,9 @@ public static class CustomGenerators
                 startTime.Time,
                 endTime,
                 closingDate.DateTime,
-                maxAttendees
+                maxAttendees,
+                false,
+                null
             );
         return Arb.From(gen);
     }

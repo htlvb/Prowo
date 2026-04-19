@@ -22,7 +22,7 @@ namespace Prowo.WebAsm.Server.Data
         public async IAsyncEnumerable<Project> GetAllSince(DateTime timestamp)
         {
             await using var dbConnection = await dataSource.OpenConnectionAsync();
-            await using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE date >= @minDate", dbConnection);
+            await using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees, payment_info FROM project WHERE date >= @minDate", dbConnection);
             cmd.Parameters.AddWithValue("minDate", timestamp);
             await foreach (var project in ReadProjects(dbConnection, cmd))
             {
@@ -104,7 +104,7 @@ namespace Prowo.WebAsm.Server.Data
         public async Task<List<Project>> GetUserRegistrationsForDate(string attendeeId, DateOnly projectDate)
         {
             await using var dbConnection = await dataSource.OpenConnectionAsync();
-            await using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE date = @date", dbConnection);
+            await using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees, payment_info FROM project WHERE date = @date", dbConnection);
             cmd.Parameters.AddWithValue("date", projectDate.ToDateTime(TimeOnly.MinValue));
             return await ReadProjects(dbConnection, cmd).ToList();
         }
@@ -140,7 +140,7 @@ namespace Prowo.WebAsm.Server.Data
 
         private async Task<DbProject?> ReadProject(NpgsqlConnection dbConnection, Guid projectGuid)
         {
-            using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees FROM project WHERE id = @projectId", dbConnection);
+            using var cmd = new NpgsqlCommand("SELECT id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees, payment_info FROM project WHERE id = @projectId", dbConnection);
             cmd.Parameters.AddWithValue("projectId", projectGuid);
             await using var reader = await cmd.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
@@ -152,7 +152,7 @@ namespace Prowo.WebAsm.Server.Data
 
         private static async Task CreateProject(NpgsqlConnection dbConnection, DbProject project)
         {
-            using var cmd = new NpgsqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees)", dbConnection);
+            using var cmd = new NpgsqlCommand("INSERT INTO project (id, title, description, location, organizer, co_organizers, date, start_time, end_time, closing_date, maxAttendees, payment_info) VALUES (@id, @title, @description, @location, @organizer, @co_organizers, @date, @start_time, @end_time, @closing_date, @maxAttendees, @payment_info)", dbConnection);
             cmd.Parameters.AddWithValue("id", project.Id);
             cmd.Parameters.AddWithValue("title", project.Title);
             cmd.Parameters.AddWithValue("description", project.Description);
@@ -164,12 +164,13 @@ namespace Prowo.WebAsm.Server.Data
             cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("closing_date", project.ClosingDate);
             cmd.Parameters.AddWithValue("maxAttendees", project.MaxAttendees);
+            cmd.Parameters.AddWithValue("payment_info", NpgsqlDbType.Json, (object?)project.PaymentInfo ?? DBNull.Value);
             await cmd.ExecuteNonQueryAsync();
         }
 
         private static async Task UpdateProject(NpgsqlConnection dbConnection, DbProject project)
         {
-            using var cmd = new NpgsqlCommand("UPDATE project SET title=@title, description=@description, location=@location, organizer=@organizer, co_organizers=@co_organizers, date=@date, start_time=@start_time, end_time=@end_time, closing_date=@closing_date, maxAttendees=@maxAttendees WHERE id=@id", dbConnection);
+            using var cmd = new NpgsqlCommand("UPDATE project SET title=@title, description=@description, location=@location, organizer=@organizer, co_organizers=@co_organizers, date=@date, start_time=@start_time, end_time=@end_time, closing_date=@closing_date, maxAttendees=@maxAttendees, payment_info=@payment_info WHERE id=@id", dbConnection);
             cmd.Parameters.AddWithValue("id", project.Id);
             cmd.Parameters.AddWithValue("title", project.Title);
             cmd.Parameters.AddWithValue("description", project.Description);
@@ -181,6 +182,7 @@ namespace Prowo.WebAsm.Server.Data
             cmd.Parameters.AddWithValue("end_time", (object?)project.EndTime ?? DBNull.Value);
             cmd.Parameters.AddWithValue("closing_date", project.ClosingDate);
             cmd.Parameters.AddWithValue("maxAttendees", project.MaxAttendees);
+            cmd.Parameters.AddWithValue("payment_info", NpgsqlDbType.Json, (object?)project.PaymentInfo ?? DBNull.Value);
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -303,6 +305,21 @@ namespace Prowo.WebAsm.Server.Data
             }
         }
 
+        private record DbPaymentInfo(
+            [property: JsonPropertyName("iban")] string Iban,
+            [property: JsonPropertyName("account_holder")] string AccountHolder,
+            [property: JsonPropertyName("amount")] decimal? Amount,
+            [property: JsonPropertyName("remittance_information")] string RemittanceInformation,
+            [property: JsonPropertyName("qr_code_base64_png")] string QrCodeBase64Png
+        )
+        {
+            public ProjectPaymentInfo ToDomain() =>
+                new(Iban, AccountHolder, Amount, RemittanceInformation, QrCodeBase64Png);
+
+            public static DbPaymentInfo FromDomain(ProjectPaymentInfo p) =>
+                new(p.Iban, p.AccountHolder, p.Amount, p.RemittanceInformation, p.QrCodeBase64Png);
+        }
+
         private record DbProject(
             Guid Id,
             string Title,
@@ -314,7 +331,8 @@ namespace Prowo.WebAsm.Server.Data
             TimeSpan StartTime,
             TimeSpan? EndTime,
             DateTime ClosingDate,
-            int MaxAttendees
+            int MaxAttendees,
+            DbPaymentInfo? PaymentInfo
         )
         {
             public static DbProject FromReader(NpgsqlDataReader reader)
@@ -330,7 +348,8 @@ namespace Prowo.WebAsm.Server.Data
                     reader.GetTimeSpan(7),
                     reader.GetFieldValue<TimeSpan?>(8),
                     reader.GetDateTime(9),
-                    reader.GetInt32(10)
+                    reader.GetInt32(10),
+                    reader.IsDBNull(11) ? null : reader.GetFieldValue<DbPaymentInfo>(11)
                 );
             }
 
@@ -347,7 +366,8 @@ namespace Prowo.WebAsm.Server.Data
                     project.StartTime.ToTimeSpan(),
                     project.EndTime?.ToTimeSpan(),
                     project.ClosingDate,
-                    project.MaxAttendees
+                    project.MaxAttendees,
+                    project.PaymentInfo != null ? DbPaymentInfo.FromDomain(project.PaymentInfo) : null
                 );
             }
 
@@ -365,7 +385,8 @@ namespace Prowo.WebAsm.Server.Data
                     EndTime != null ? TimeOnly.FromTimeSpan(EndTime.Value) : null,
                     ClosingDate,
                     MaxAttendees,
-                    attendees
+                    attendees,
+                    PaymentInfo?.ToDomain()
                 );
             }
         }

@@ -3,6 +3,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Prowo.WebAsm.Server.Data
 {
+    public record ProjectPaymentInfo(
+        string Iban,
+        string AccountHolder,
+        decimal? Amount,
+        string RemittanceInformation,
+        string QrCodeBase64Png
+    );
+
     public sealed record Project(
         string Id,
         string Title,
@@ -15,7 +23,8 @@ namespace Prowo.WebAsm.Server.Data
         TimeOnly? EndTime,
         DateTime ClosingDate,
         int MaxAttendees,
-        IReadOnlyList<ProjectAttendee> AllAttendees
+        IReadOnlyList<ProjectAttendee> AllAttendees,
+        ProjectPaymentInfo? PaymentInfo = null
     )
     {
         public IEnumerable<ProjectAttendee> RegisteredAttendees => AllAttendees.Take(MaxAttendees);
@@ -47,6 +56,7 @@ namespace Prowo.WebAsm.Server.Data
             string projectId,
             IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates,
             TimeProvider timeProvider,
+            ProjectPaymentInfo? paymentInfo,
             [NotNullWhen(true)]out Project? project,
             [NotNullWhen(false)]out string? errorMessage
         )
@@ -142,7 +152,8 @@ namespace Prowo.WebAsm.Server.Data
                 projectData.EndTime,
                 projectData.ClosingDate.Value.FromUserTime(),
                 projectData.MaxAttendees.Value,
-                Array.Empty<ProjectAttendee>()
+                [],
+                paymentInfo
             );
             errorMessage = null;
             return true;

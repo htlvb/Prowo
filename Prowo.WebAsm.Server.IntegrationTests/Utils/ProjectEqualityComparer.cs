@@ -21,7 +21,8 @@ public class ProjectEqualityComparer : IEqualityComparer<Project?>
             Equals(x.EndTime, y.EndTime) &&
             Equals(x.ClosingDate, y.ClosingDate) &&
             Equals(x.MaxAttendees, y.MaxAttendees) &&
-            x.AllAttendees.SequenceEqual(y.AllAttendees);
+            x.AllAttendees.SequenceEqual(y.AllAttendees) &&
+            Equals(x.PaymentInfo, y.PaymentInfo);
     }
 
     public int GetHashCode([DisallowNull] Project obj)
