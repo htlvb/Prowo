@@ -22,7 +22,8 @@ public class CreateProjectTests
 
         using var response = await client.PostAsJsonAsync("/api/projects", project, host.GetJsonSerializerOptions());
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Expected {HttpStatusCode.OK} but got {response.StatusCode}. Body: {responseBody}");
         var actualNewProjects = (await projectStore.GetAllSince(DateTime.MinValue).ToList()).Except(existingProjects).ToList();
         Assert.Single(actualNewProjects);
         var isProjectValid = Project.TryCreateFromEditingProjectDataDto(project, actualNewProjects[0].Id, FakeData.ProjectOrganizers.ToDictionary(v => v.Id), timeProvider, out var expectedNewProject, out _);
@@ -42,7 +43,8 @@ public class CreateProjectTests
 
         using var response = await client.PostAsJsonAsync("/api/projects", project, host.GetJsonSerializerOptions());
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.Forbidden, $"Expected {HttpStatusCode.Forbidden} but got {response.StatusCode}. Body: {responseBody}");
     }
 
     public static IEnumerable<object[]> InvalidProjectData

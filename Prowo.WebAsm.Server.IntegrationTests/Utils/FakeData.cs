@@ -53,7 +53,9 @@ public static class FakeData
     public static Faker<EditingProjectDataDto> EditingProjectDataDtoFaker { get; } = new Faker<EditingProjectDataDto>()
         .CustomInstantiator(v =>
         {
-            var date = v.Date.SoonDateOnly(20);
+            var projectDate = DateOnly.FromDateTime(DateTime.Today.AddDays(3 + v.Random.Number(0, 17)));
+            var closingDateMin = DateTime.Now.AddHours(1);
+            var closingDateMax = projectDate.ToDateTime(TimeOnly.MinValue).AddMinutes(-1);
             var organizerIds = ProjectOrganizers!
                 .OrderBy(_ => v.Random.Double())
                 .Take(v.Random.Number(1, 5))
@@ -65,10 +67,10 @@ public static class FakeData
                 v.Address.BuildingNumber(),
                 organizerIds.First(),
                 organizerIds.Skip(1).ToList(),
-                date,
+                projectDate,
                 new TimeOnly(7, 0).AddMinutes(v.Random.Number(0, 8) * 15),
                 v.Random.Bool() ? new TimeOnly(12, 0).AddMinutes(v.Random.Number(0, 12) * 15) : null,
-                new DateTime(v.Date.Between(v.Date.Soon(5), date.ToDateTime(TimeOnly.MinValue)).Ticks, DateTimeKind.Unspecified),
+                new DateTime(v.Date.Between(closingDateMin, closingDateMax).Ticks, DateTimeKind.Unspecified),
                 v.Random.Number(1, 500)
             );
         });
