@@ -274,9 +274,8 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> CreateProject([FromBody]EditingProjectDataDto projectData)
         {
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            ProjectPaymentInfo? paymentInfo;
-            try { paymentInfo = BuildPaymentInfo(projectData.PaymentData); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            var (paymentInfo, paymentErrors) = BuildPaymentInfo(projectData.PaymentData);
+            if (paymentErrors.Length > 0) return BadRequest(paymentErrors);
             if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessage))
             {
                 return BadRequest(errorMessage);
@@ -299,9 +298,8 @@ namespace Prowo.WebAsm.Server.Controllers
             }
 
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
-            ProjectPaymentInfo? paymentInfo;
-            try { paymentInfo = BuildPaymentInfo(projectData.PaymentData); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            var (paymentInfo, paymentErrors) = BuildPaymentInfo(projectData.PaymentData);
+            if (paymentErrors.Length > 0) return BadRequest(paymentErrors);
             if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessage))
             {
                 return BadRequest(errorMessage);
@@ -434,11 +432,13 @@ namespace Prowo.WebAsm.Server.Controllers
             return new AttendanceOverviewDto(dates, groups);
         }
 
-        private ProjectPaymentInfo? BuildPaymentInfo(ProjectPaymentDataDto? paymentData)
+        private (ProjectPaymentInfo? PaymentInfo, string[] Errors) BuildPaymentInfo(ProjectPaymentDataDto? paymentData)
         {
-            if (paymentData == null) return null;
-            var qr = epcQrCodeService.GenerateBase64Png(paymentData.Iban, paymentData.AccountHolder, paymentData.Amount, paymentData.RemittanceInformation);
-            return new ProjectPaymentInfo(paymentData.Iban, paymentData.AccountHolder, paymentData.Amount, paymentData.RemittanceInformation, qr);
+            if (paymentData == null) return (null, []);
+            if (!EpcQrCodeData.TryCreate(paymentData, out var epcData, out var errors))
+                return (null, errors);
+            var qr = epcQrCodeService.GenerateBase64Png(epcData);
+            return (new ProjectPaymentInfo(epcData.Iban, epcData.AccountHolder, epcData.Amount, epcData.RemittanceInformation, qr), []);
         }
 
         private async Task<Dictionary<string, ProjectOrganizer>> GetOrganizerCandidatesDictionary()

@@ -4,20 +4,11 @@ using SixLabors.ImageSharp.Processing;
 
 namespace Prowo.WebAsm.Server;
 
-public class EpcQrCodeService
+public class EpcQrCodeService(byte[] logoBytes)
 {
-    private readonly byte[]? logoBytes;
-
-    public EpcQrCodeService(IWebHostEnvironment env)
+    public string GenerateBase64Png(EpcQrCodeData data)
     {
-        var logoPath = Path.Combine(env.ContentRootPath, "logo.png");
-        if (File.Exists(logoPath))
-            logoBytes = File.ReadAllBytes(logoPath);
-    }
-
-    public string GenerateBase64Png(string iban, string accountHolder, decimal? amount, string remittanceInformation)
-    {
-        var payload = BuildEpcPayload(iban, accountHolder, amount, remittanceInformation);
+        var payload = BuildEpcPayload(data.Iban, data.AccountHolder, data.Amount, data.RemittanceInformation);
 
         using var qrGenerator = new QRCodeGenerator();
         var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
@@ -26,15 +17,12 @@ public class EpcQrCodeService
 
         using var qrImage = Image.Load(qrPngBytes);
 
-        if (logoBytes != null)
-        {
-            using var logo = Image.Load(logoBytes);
-            var logoSize = qrImage.Width / 3;
-            logo.Mutate(op => op.Resize(logoSize, logoSize));
-            var x = (qrImage.Width - logoSize) / 2;
-            var y = (qrImage.Height - logoSize) / 2;
-            qrImage.Mutate(op => op.DrawImage(logo, new Point(x, y), opacity: 1f));
-        }
+        using var logo = Image.Load(logoBytes);
+        var logoSize = qrImage.Width / 3;
+        logo.Mutate(op => op.Resize(logoSize, logoSize));
+        var x = (qrImage.Width - logoSize) / 2;
+        var y = (qrImage.Height - logoSize) / 2;
+        qrImage.Mutate(op => op.DrawImage(logo, new Point(x, y), opacity: 1f));
 
         using var ms = new MemoryStream();
         qrImage.SaveAsPng(ms);

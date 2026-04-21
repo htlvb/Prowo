@@ -27,7 +27,7 @@ builder.Services.AddProwoAuthorizationRules();
 
 builder.Services.AddSingleton<TimeProvider, LocalTimeProvider>();
 builder.Services.Configure<PaymentDefaults>(builder.Configuration.GetSection("PaymentDefaults"));
-builder.Services.AddSingleton<EpcQrCodeService>();
+builder.Services.AddSingleton(new EpcQrCodeService(File.ReadAllBytes(Path.Combine(builder.Environment.ContentRootPath, "logo.png"))));
 
 builder.Services.AddSingleton<IProjectStore>(provider =>
 {
