@@ -27,7 +27,7 @@ public static class InMemoryServer
                             .AddScheme<TestAuthHandlerOptions, TestAuthHandler>(TestAuthHandler.SchemeName, options => { });
                         services.AddProwoAuthorizationRules();
                         services.AddProwoControllers();
-                        services.AddSingleton<EpcQrCodeService>();
+                        services.AddSingleton(new EpcQrCodeService([]));
                         services.AddSingleton<IOptions<PaymentDefaults>>(Microsoft.Extensions.Options.Options.Create(new PaymentDefaults()));
                         services.AddSingleton<IUserStore>(new InMemoryUserStore(FakeData.ProjectOrganizers, FakeData.ProjectAttendees.First()));
                         services.AddSingleton<IProjectStore, InMemoryProjectStore>();
