@@ -25,8 +25,9 @@ public class EpcQrCodeData
     {
         var errorList = new List<string>();
         var iban = dto.Iban.Replace(" ", "").ToUpperInvariant();
-        if (!IbanValidator.Validate(iban).IsValid)
-            errorList.Add("IBAN ist ungültig.");
+        var ibanValidation = IbanValidator.Validate(iban);
+        if (!ibanValidation.IsValid)
+            errorList.Add(ibanValidation.Error?.ErrorMessage ?? "IBAN ist ungültig");
         if (string.IsNullOrWhiteSpace(dto.AccountHolder))
             errorList.Add("Kontoinhaber darf nicht leer sein.");
         else if (dto.AccountHolder.Length > 70)
