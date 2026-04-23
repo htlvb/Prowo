@@ -26,17 +26,17 @@ public class EpcQrCodeData
         var errorList = new List<string>();
         var iban = dto.Iban.Replace(" ", "").ToUpperInvariant();
         if (!IbanValidator.Validate(iban).IsValid)
-            errorList.Add("IBAN is invalid.");
+            errorList.Add("IBAN ist ungültig.");
         if (string.IsNullOrWhiteSpace(dto.AccountHolder))
-            errorList.Add("Account holder is required.");
+            errorList.Add("Kontoinhaber darf nicht leer sein.");
         else if (dto.AccountHolder.Length > 70)
-            errorList.Add("Account holder must not exceed 70 characters.");
+            errorList.Add("Kontoinhaber darf maximal 70 Zeichen lang sein.");
         if (dto.Amount.HasValue && dto.Amount.Value <= 0)
-            errorList.Add("Amount must be greater than zero.");
+            errorList.Add("Betrag muss größer als null sein.");
         if (dto.Amount.HasValue && dto.Amount.Value > 999_999_999.99m)
-            errorList.Add("Amount must not exceed 999,999,999.99.");
+            errorList.Add("Betrag darf 999.999.999,99 nicht überschreiten.");
         if (dto.RemittanceInformation.Length > 140)
-            errorList.Add("Remittance information must not exceed 140 characters.");
+            errorList.Add("Verwendungszweck darf maximal 140 Zeichen lang sein.");
         if (errorList.Count > 0)
         {
             data = null;

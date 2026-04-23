@@ -11,14 +11,13 @@ public class EpcQrCodeService(byte[] logoBytes)
         var payload = BuildEpcPayload(data.Iban, data.AccountHolder, data.Amount, data.RemittanceInformation);
 
         using var qrGenerator = new QRCodeGenerator();
-        var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
+        var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.H);
         var pngQrCode = new PngByteQRCode(qrCodeData);
         var qrPngBytes = pngQrCode.GetGraphic(pixelsPerModule: 10);
 
         using var qrImage = Image.Load(qrPngBytes);
-
         using var logo = Image.Load(logoBytes);
-        var logoSize = qrImage.Width / 3;
+        var logoSize = qrImage.Width / 5;
         logo.Mutate(op => op.Resize(logoSize, logoSize));
         var x = (qrImage.Width - logoSize) / 2;
         var y = (qrImage.Height - logoSize) / 2;

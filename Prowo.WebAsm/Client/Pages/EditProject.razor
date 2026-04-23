@@ -24,7 +24,7 @@ else
 }
 else if (editingProject.Links.Save != null)
 {
-    <EditForm Context="Edit" Model=@editingProject.Data OnValidSubmit=@ValidFormSubmitted>
+    <EditForm Context="Edit" Model=@editingProject.Data OnSubmit=@FormSubmitted>
         <DataAnnotationsValidator/>
 
         <div class="input">
@@ -180,6 +180,7 @@ else if (editingProject.Links.Save != null)
                     <span class="input-label">Verwendungszweck</span>
                     <InputText @bind-Value=editingProject.Data.PaymentRemittanceInformation class="input-text w-96 max-w-full" />
                 </label>
+                <p class="text-xs mt-2">Bei Verwendung eines geteilten Kontos muss eine Überweisung eindeutig einem Projekt zuordenbar sein.</p>
             </div>
         }
 
@@ -229,6 +230,7 @@ else if (editingProject.Links.Save != null)
 
     private bool isSubmitting;
     private string? errorMessage;
+    private ValidationMessageStore? serverErrorStore;
 
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
 
@@ -264,8 +266,12 @@ else if (editingProject.Links.Save != null)
         }
     }
 
-    private async Task ValidFormSubmitted(EditContext editContext)
+    private async Task FormSubmitted(EditContext editContext)
     {
+        serverErrorStore?.Clear();
+        serverErrorStore = new ValidationMessageStore(editContext);
+        if (!editContext.Validate())
+            return;
         isSubmitting = true;
         errorMessage = null;
         StateHasChanged();
@@ -273,6 +279,14 @@ else if (editingProject.Links.Save != null)
         {
             var project = editingProject!.Data.ToProjectData();
             var response = await Http.PostAsJsonAsync(editingProject.Links.Save, project, serializerOptions);
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var errors = await response.Content.ReadFromJsonAsync<string[]>() ?? [];
+                foreach (var error in errors)
+                    serverErrorStore.Add(new FieldIdentifier(editContext.Model, string.Empty), error);
+                editContext.NotifyValidationStateChanged();
+                return;
+            }
             response.EnsureSuccessStatusCode();
             NavigationManager.NavigateTo("/projects");
         }

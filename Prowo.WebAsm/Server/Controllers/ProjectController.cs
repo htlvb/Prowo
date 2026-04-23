@@ -182,7 +182,7 @@ namespace Prowo.WebAsm.Server.Controllers
             }
 
             var defaultPaymentData = !string.IsNullOrEmpty(paymentDefaults.Iban) || !string.IsNullOrEmpty(paymentDefaults.AccountHolder)
-                ? new ProjectPaymentDataDto(paymentDefaults.Iban, paymentDefaults.AccountHolder, null, "")
+                ? new ProjectPaymentDataDto(paymentDefaults.Iban, paymentDefaults.AccountHolder, null, paymentDefaults.RemittanceInformation)
                 : null;
 
             if (project == null)
