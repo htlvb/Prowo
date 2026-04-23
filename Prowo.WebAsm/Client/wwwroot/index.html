@@ -9,6 +9,7 @@
     <link href="lib/font-awesome/css/fontawesome.css" rel="stylesheet">
     <link href="lib/font-awesome/css/brands.css" rel="stylesheet">
     <link href="lib/font-awesome/css/solid.css" rel="stylesheet">
+    <link href="lib/font-awesome/css/regular.css" rel="stylesheet">
     <link href="css/app.min.css" rel="stylesheet" />
     <link href="Prowo.WebAsm.Client.styles.css" rel="stylesheet" />
     <link href="manifest.json" rel="manifest" />
@@ -35,6 +36,10 @@
     <script src="_content/Microsoft.AspNetCore.Components.WebAssembly.Authentication/AuthenticationService.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });</script>
+    <script>
+        window.showPopover = id => document.getElementById(id)?.showPopover();
+        window.hidePopover = id => document.getElementById(id)?.hidePopover();
+    </script>
 </body>
 
 </html>

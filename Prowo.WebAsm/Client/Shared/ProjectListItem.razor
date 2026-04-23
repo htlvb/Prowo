@@ -81,10 +81,13 @@
                 <div class="flex flex-col shrink-0 gap-1 p-2">
                     <span class="text-sm font-semibold text-gray-700">Zahlung</span>
                     <img src="data:image/png;base64,@Project.PaymentInfo.QrCodeBase64Png" alt="Zahlungs-QR-Code" class="w-48 h-48" />
-                    <span class="text-xs text-gray-600">@Project.PaymentInfo.AccountHolder</span>
-                    <span class="text-xs text-gray-600">@Project.PaymentInfo.Iban</span>
-                    @if (Project.PaymentInfo.Amount.HasValue) { <span class="text-xs text-gray-600">EUR @Project.PaymentInfo.Amount.Value.ToString("N2")</span> }
-                    <span class="text-xs text-gray-600">@Project.PaymentInfo.RemittanceInformation</span>
+                    <CopyText Text="@Project.PaymentInfo.AccountHolder" />
+                    <CopyText Text="@Project.PaymentInfo.Iban" />
+                    @if (Project.PaymentInfo.Amount.HasValue)
+                    {
+                        <CopyText Text="@($"EUR {Project.PaymentInfo.Amount.Value.ToString("N2")}")" CopyValue="@Project.PaymentInfo.Amount.Value.ToString("N2")" />
+                    }
+                    <CopyText Text="@Project.PaymentInfo.RemittanceInformation" />
                     <span class="text-xs text-amber-700">Bitte bis @Project.ClosingDateLocalUserTime.ToShortDateString() überweisen. <br /> Erst dann gilt die Anmeldung als fix.</span>
                 </div>
             }

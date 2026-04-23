@@ -1,0 +1,22 @@
+@inject IJSRuntime JS
+
+<div class="flex items-center gap-1 text-xs text-gray-600">
+    <span>@Text</span>
+    <button style="anchor-name: --copy-@_uid" class="text-gray-400 hover:text-gray-600" title="Kopieren" @onclick="Copy"><i class="fa-regular fa-clipboard fa-lg"></i></button>
+    <span id="copied-@_uid" popover style="position: absolute; position-anchor: --copy-@_uid; top: anchor(top); left: anchor(center); transform: translate(-50%, calc(-100% - 4px)); margin: 0; background: white; color: inherit; padding: 0.25rem 0.75rem; font-size: 0.75rem; border: 1px solid currentColor; border-radius: 0.5rem;">Kopiert!</span>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+    [Parameter] public string? CopyValue { get; set; }
+
+    private readonly string _uid = Guid.NewGuid().ToString("N")[..8];
+
+    private async Task Copy()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", CopyValue ?? Text);
+        await JS.InvokeVoidAsync("showPopover", $"copied-{_uid}");
+        await Task.Delay(1000);
+        await JS.InvokeVoidAsync("hidePopover", $"copied-{_uid}");
+    }
+}
