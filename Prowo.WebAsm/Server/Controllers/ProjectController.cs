@@ -158,7 +158,7 @@ namespace Prowo.WebAsm.Server.Controllers
         {
             if (!EpcQrCodeData.TryCreate(paymentData, out var epcData, out var errors))
                 return BadRequest(errors);
-            return Ok(epcQrCodeService.GenerateBase64Png(epcData));
+            return Ok(epcQrCodeService.GenerateBase64Png(epcData.Iban, epcData.AccountHolder, epcData.Amount, epcData.RemittanceInformation));
         }
 
         [HttpGet("edit/{projectId}")]
