@@ -36,8 +36,8 @@ public class EpcQrCodeData
             errorList.Add("Betrag muss größer als null sein.");
         if (dto.Amount.HasValue && dto.Amount.Value > 999_999_999.99m)
             errorList.Add("Betrag darf 999.999.999,99 nicht überschreiten.");
-        if (dto.RemittanceInformation.Length > 140)
-            errorList.Add("Verwendungszweck darf maximal 140 Zeichen lang sein.");
+        if (dto.RemittanceInformation.Length > 50)
+            errorList.Add("Verwendungszweck darf maximal 50 Zeichen lang sein.");
         if (errorList.Count > 0)
         {
             data = null;

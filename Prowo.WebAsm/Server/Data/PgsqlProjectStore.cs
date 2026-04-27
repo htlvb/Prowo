@@ -309,15 +309,14 @@ namespace Prowo.WebAsm.Server.Data
             [property: JsonPropertyName("iban")] string Iban,
             [property: JsonPropertyName("account_holder")] string AccountHolder,
             [property: JsonPropertyName("amount")] decimal? Amount,
-            [property: JsonPropertyName("remittance_information")] string RemittanceInformation,
-            [property: JsonPropertyName("qr_code_base64_png")] string QrCodeBase64Png
+            [property: JsonPropertyName("remittance_information")] string RemittanceInformation
         )
         {
             public ProjectPaymentInfo ToDomain() =>
-                new(Iban, AccountHolder, Amount, RemittanceInformation, QrCodeBase64Png);
+                new(Iban, AccountHolder, Amount, RemittanceInformation);
 
             public static DbPaymentInfo FromDomain(ProjectPaymentInfo p) =>
-                new(p.Iban, p.AccountHolder, p.Amount, p.RemittanceInformation, p.QrCodeBase64Png);
+                new(p.Iban, p.AccountHolder, p.Amount, p.RemittanceInformation);
         }
 
         private record DbProject(

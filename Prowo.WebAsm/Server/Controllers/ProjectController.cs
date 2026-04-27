@@ -19,6 +19,7 @@ namespace Prowo.WebAsm.Server.Controllers
         private readonly TimeProvider timeProvider;
         private readonly EpcQrCodeService epcQrCodeService;
         private readonly PaymentDefaults paymentDefaults;
+        private readonly ILogger<ProjectController> logger;
 
         private DateOnly MinDate => DateOnly.FromDateTime(timeProvider.GetLocalNow().Date);
 
@@ -31,7 +32,8 @@ namespace Prowo.WebAsm.Server.Controllers
             IRegistrationStrategy registrationStrategy,
             TimeProvider timeProvider,
             EpcQrCodeService epcQrCodeService,
-            IOptions<PaymentDefaults> paymentDefaults)
+            IOptions<PaymentDefaults> paymentDefaults,
+            ILogger<ProjectController> logger)
         {
             this.projectStore = projectStore;
             this.userStore = userStore;
@@ -40,6 +42,7 @@ namespace Prowo.WebAsm.Server.Controllers
             this.timeProvider = timeProvider;
             this.epcQrCodeService = epcQrCodeService;
             this.paymentDefaults = paymentDefaults.Value;
+            this.logger = logger;
         }
 
         [HttpGet("")]
@@ -432,13 +435,12 @@ namespace Prowo.WebAsm.Server.Controllers
             return new AttendanceOverviewDto(dates, groups);
         }
 
-        private (ProjectPaymentInfo? PaymentInfo, string[] Errors) BuildPaymentInfo(ProjectPaymentDataDto? paymentData)
+        private static (ProjectPaymentInfo? PaymentInfo, string[] Errors) BuildPaymentInfo(ProjectPaymentDataDto? paymentData)
         {
             if (paymentData == null) return (null, []);
             if (!EpcQrCodeData.TryCreate(paymentData, out var epcData, out var errors))
                 return (null, errors);
-            var qr = epcQrCodeService.GenerateBase64Png(epcData);
-            return (new ProjectPaymentInfo(epcData.Iban, epcData.AccountHolder, epcData.Amount, epcData.RemittanceInformation, qr), []);
+            return (new ProjectPaymentInfo(epcData.Iban, epcData.AccountHolder, epcData.Amount, epcData.RemittanceInformation), []);
         }
 
         private async Task<Dictionary<string, ProjectOrganizer>> GetOrganizerCandidatesDictionary()
@@ -457,9 +459,19 @@ namespace Prowo.WebAsm.Server.Controllers
             var canUpdate = (await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded;
             var canDelete = (await authService.AuthorizeAsync(HttpContext.User, project, "DeleteProject")).Succeeded;
             var canShowAttendees = (await authService.AuthorizeAsync(HttpContext.User, project, "CreateReport")).Succeeded;
-            var paymentInfoDto = userRole == UserRoleForProject.Registered && project.PaymentInfo != null
-                ? new ProjectPaymentInfoDto(project.PaymentInfo.Iban, project.PaymentInfo.AccountHolder, project.PaymentInfo.Amount, project.PaymentInfo.RemittanceInformation, project.PaymentInfo.QrCodeBase64Png)
-                : null;
+            ProjectPaymentInfoDto? paymentInfoDto = null;
+            if (userRole == UserRoleForProject.Registered && project.PaymentInfo != null)
+            {
+                var registeredUser = project.RegisteredAttendees.First(v => v.Id == UserId);
+                var remittance = $"{project.PaymentInfo.RemittanceInformation} {registeredUser.LastName} {registeredUser.FirstName} ({registeredUser.Class})";
+                if (remittance.Length > 140)
+                {
+                    logger.LogWarning("Remittance information for project {ProjectId} and user {UserId} exceeds 140 characters and was trimmed", project.Id, UserId);
+                    remittance = remittance[..140];
+                }
+                var qrCode = epcQrCodeService.GenerateBase64Png(project.PaymentInfo.Iban, project.PaymentInfo.AccountHolder, project.PaymentInfo.Amount, remittance);
+                paymentInfoDto = new ProjectPaymentInfoDto(project.PaymentInfo.Iban, project.PaymentInfo.AccountHolder, project.PaymentInfo.Amount, remittance, qrCode);
+            }
             return new ProjectDto(
                 project.Title,
                 project.Description,

@@ -7,8 +7,7 @@ namespace Prowo.WebAsm.Server.Data
         string Iban,
         string AccountHolder,
         decimal? Amount,
-        string RemittanceInformation,
-        string QrCodeBase64Png
+        string RemittanceInformation
     );
 
     public sealed record Project(

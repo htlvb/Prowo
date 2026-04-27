@@ -178,9 +178,11 @@ else if (editingProject.Links.Save != null)
             <div class="input">
                 <label class="block">
                     <span class="input-label">Verwendungszweck</span>
-                    <InputText @bind-Value=editingProject.Data.PaymentRemittanceInformation class="input-text w-96 max-w-full" />
+                    <InputText @bind-Value=editingProject.Data.PaymentRemittanceInformation maxlength="50" class="input-text w-96 max-w-full" />
                 </label>
-                <p class="text-xs mt-2">Bei Verwendung eines geteilten Kontos muss eine Überweisung eindeutig einem Projekt zuordenbar sein.</p>
+                <p class="text-xs mt-2">Bei Verwendung eines <span class="font-bold">geteilten Kontos</span> muss eine Überweisung eindeutig einem Projekt zuordenbar sein.</p>
+                <p class="text-xs mt-1">Bei Verwendung eines <span class="font-bold">Geschäftskontos</span> müssen für die Auszahlung alle Belege vorgelegt werden.</p>
+                <p class="text-xs mt-1">Name und Klasse des Schülers werden automatisch hinzugefügt.</p>
             </div>
         }
 

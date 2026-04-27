@@ -7,9 +7,9 @@ namespace Prowo.WebAsm.Server;
 
 public class EpcQrCodeService(byte[] logoBytes)
 {
-    public string GenerateBase64Png(EpcQrCodeData data)
+    public string GenerateBase64Png(string iban, string accountHolder, decimal? amount, string remittanceInformation)
     {
-        var payload = BuildEpcPayload(data.Iban, data.AccountHolder, data.Amount, data.RemittanceInformation);
+        var payload = BuildEpcPayload(iban, accountHolder, amount, remittanceInformation);
 
         using var qrGenerator = new QRCodeGenerator();
         var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.H);
