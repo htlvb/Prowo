@@ -153,6 +153,14 @@ namespace Prowo.WebAsm.Server.Controllers
             return Ok();
         }
 
+        [HttpPost("payment-qr-code-preview")]
+        public IActionResult GetPaymentQrCodePreview([FromBody] ProjectPaymentDataDto paymentData)
+        {
+            if (!EpcQrCodeData.TryCreate(paymentData, out var epcData, out var errors))
+                return BadRequest(errors);
+            return Ok(epcQrCodeService.GenerateBase64Png(epcData));
+        }
+
         [HttpGet("edit/{projectId}")]
         public async Task<IActionResult> GetProject(string projectId, [FromQuery]bool duplicate = false)
         {

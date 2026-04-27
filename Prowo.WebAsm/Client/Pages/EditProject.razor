@@ -150,7 +150,7 @@ else if (editingProject.Links.Save != null)
         <div class="input">
             <label class="block">
                 <span class="input-label">
-                    <InputCheckbox @bind-Value=editingProject.Data.HasPaymentInfo /> Zahlungsinformationen
+                    <InputCheckbox @bind-Value=editingProject.Data.HasPaymentInfo @bind-Value:after=UpdateQrPreviewNow /> Zahlungsinformationen
                 </span>
             </label>
         </div>
@@ -160,30 +160,37 @@ else if (editingProject.Links.Save != null)
             <div class="input">
                 <label class="block">
                     <span class="input-label">IBAN</span>
-                    <InputText @bind-Value=editingProject.Data.PaymentIban class="input-text w-96 max-w-full" />
+                    <input type="text" @bind=editingProject.Data.PaymentIban @bind:event="oninput" @bind:after=ScheduleQrPreviewUpdate class="input-text w-96 max-w-full" />
                 </label>
             </div>
             <div class="input">
                 <label class="block">
                     <span class="input-label">Kontoinhaber</span>
-                    <InputText @bind-Value=editingProject.Data.PaymentAccountHolder class="input-text w-96 max-w-full" />
+                    <input type="text" @bind=editingProject.Data.PaymentAccountHolder @bind:event="oninput" @bind:after=ScheduleQrPreviewUpdate class="input-text w-96 max-w-full" />
                 </label>
             </div>
             <div class="input">
                 <label class="block">
                     <span class="input-label">Betrag (EUR)</span>
-                    <InputNumber @bind-Value=editingProject.Data.PaymentAmount ParsingErrorMessage="Kein gültiger Betrag." class="input-text w-32" />
+                    <InputNumber @bind-Value=editingProject.Data.PaymentAmount @bind-Value:after=ScheduleQrPreviewUpdate ParsingErrorMessage="Kein gültiger Betrag." class="input-text w-32" />
                 </label>
             </div>
             <div class="input">
                 <label class="block">
                     <span class="input-label">Verwendungszweck</span>
-                    <InputText @bind-Value=editingProject.Data.PaymentRemittanceInformation maxlength="50" class="input-text w-96 max-w-full" />
+                    <input type="text" @bind=editingProject.Data.PaymentRemittanceInformation @bind:event="oninput" @bind:after=ScheduleQrPreviewUpdate maxlength="50" class="input-text w-96 max-w-full" />
                 </label>
                 <p class="text-xs mt-2">Bei Verwendung eines <span class="font-bold">geteilten Kontos</span> muss eine Überweisung eindeutig einem Projekt zuordenbar sein.</p>
                 <p class="text-xs mt-1">Bei Verwendung eines <span class="font-bold">Geschäftskontos</span> müssen für die Auszahlung alle Belege vorgelegt werden.</p>
                 <p class="text-xs mt-1">Name und Klasse des Schülers werden automatisch hinzugefügt.</p>
             </div>
+            @if (previewQrCode != null)
+            {
+                <div class="input">
+                    <span class="input-label">Vorschau für "@PreviewStudentName"</span>
+                    <img src="data:image/png;base64,@previewQrCode" alt="QR-Code Vorschau" class="w-48 h-48" />
+                </div>
+            }
         }
 
         <ValidationSummary />
@@ -233,6 +240,9 @@ else if (editingProject.Links.Save != null)
     private bool isSubmitting;
     private string? errorMessage;
     private ValidationMessageStore? serverErrorStore;
+    private string? previewQrCode;
+    private CancellationTokenSource? previewDebounceCts;
+    private const string PreviewStudentName = "Max Mustermann (3B)";
 
     private JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
 
@@ -242,6 +252,7 @@ else if (editingProject.Links.Save != null)
         {
             var project = (await Http.GetFromJsonAsync<EditingProjectDto>($"api/projects/edit/{ProjectId ?? "new"}?duplicate={Duplicate}", serializerOptions))!;
             editingProject = EditingProject.FromProject(project);
+            await UpdateQrPreviewNow();
         }
         catch (AccessTokenNotAvailableException exception)
         {
@@ -266,6 +277,41 @@ else if (editingProject.Links.Save != null)
         {
             showAllCoOrganizerCandidates = true;
         }
+    }
+
+    private Task ScheduleQrPreviewUpdate() => RefreshQrPreview(400);
+    private Task UpdateQrPreviewNow() => RefreshQrPreview(0);
+
+    private async Task RefreshQrPreview(int delayMs)
+    {
+        previewDebounceCts?.Cancel();
+        previewDebounceCts = new CancellationTokenSource();
+        var token = previewDebounceCts.Token;
+        try
+        {
+            if (delayMs > 0) await Task.Delay(delayMs, token);
+            if (!editingProject!.Data.HasPaymentInfo)
+            {
+                previewQrCode = null;
+                return;
+            }
+            var remittance = string.IsNullOrEmpty(editingProject.Data.PaymentRemittanceInformation)
+                ? PreviewStudentName
+                : $"{editingProject.Data.PaymentRemittanceInformation} {PreviewStudentName}";
+            var paymentData = new ProjectPaymentDataDto(
+                editingProject.Data.PaymentIban,
+                editingProject.Data.PaymentAccountHolder,
+                editingProject.Data.PaymentAmount,
+                remittance
+            );
+            var response = await Http.PostAsJsonAsync("api/projects/payment-qr-code-preview", paymentData, serializerOptions, token);
+            previewQrCode = response.StatusCode == System.Net.HttpStatusCode.OK
+                ? await response.Content.ReadAsStringAsync(token)
+                : null;
+        }
+        catch (OperationCanceledException) { return; }
+        catch { previewQrCode = null; }
+        StateHasChanged();
     }
 
     private async Task FormSubmitted(EditContext editContext)
