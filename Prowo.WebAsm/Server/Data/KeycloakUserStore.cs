@@ -19,7 +19,7 @@ namespace Prowo.WebAsm.Server.Data
                 .Realms[realmName]
                 .Groups[organizerGroupId]
                 .Members
-                .GetAsync();
+                .GetAsync(v => v.QueryParameters.Max = -1);
             if (users == null)
             {
                 yield break;
