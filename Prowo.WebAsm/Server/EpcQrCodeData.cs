@@ -21,7 +21,7 @@ public class EpcQrCodeData
         RemittanceInformation = remittanceInformation;
     }
 
-    public static bool TryCreate(ProjectPaymentDataDto dto, [NotNullWhen(true)] out EpcQrCodeData? data, out string[] errors)
+    public static bool TryCreate(ProjectPaymentDataDto dto, bool isFullRemittanceInfo, [NotNullWhen(true)] out EpcQrCodeData? data, out string[] errors)
     {
         var errorList = new List<string>();
         var iban = dto.Iban.Replace(" ", "").ToUpperInvariant();
@@ -36,8 +36,9 @@ public class EpcQrCodeData
             errorList.Add("Betrag muss größer als null sein.");
         if (dto.Amount.HasValue && dto.Amount.Value > 999_999_999.99m)
             errorList.Add("Betrag darf 999.999.999,99 nicht überschreiten.");
-        if (dto.RemittanceInformation.Length > 50)
-            errorList.Add("Verwendungszweck darf maximal 50 Zeichen lang sein.");
+        int maxRemittanceInfoLength = isFullRemittanceInfo ? 140 : 50;
+        if (dto.RemittanceInformation.Length > maxRemittanceInfoLength)
+            errorList.Add($"Verwendungszweck darf maximal {maxRemittanceInfoLength} Zeichen lang sein.");
         if (errorList.Count > 0)
         {
             data = null;

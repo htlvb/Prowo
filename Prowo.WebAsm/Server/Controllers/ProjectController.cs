@@ -156,7 +156,7 @@ namespace Prowo.WebAsm.Server.Controllers
         [HttpPost("payment-qr-code-preview")]
         public IActionResult GetPaymentQrCodePreview([FromBody] ProjectPaymentDataDto paymentData)
         {
-            if (!EpcQrCodeData.TryCreate(paymentData, out var epcData, out var errors))
+            if (!EpcQrCodeData.TryCreate(paymentData, true, out var epcData, out var errors))
                 return BadRequest(errors);
             return Ok(epcQrCodeService.GenerateBase64Png(epcData.Iban, epcData.AccountHolder, epcData.Amount, epcData.RemittanceInformation));
         }
@@ -446,7 +446,7 @@ namespace Prowo.WebAsm.Server.Controllers
         private static (ProjectPaymentInfo? PaymentInfo, string[] Errors) BuildPaymentInfo(ProjectPaymentDataDto? paymentData)
         {
             if (paymentData == null) return (null, []);
-            if (!EpcQrCodeData.TryCreate(paymentData, out var epcData, out var errors))
+            if (!EpcQrCodeData.TryCreate(paymentData, false, out var epcData, out var errors))
                 return (null, errors);
             return (new ProjectPaymentInfo(epcData.Iban, epcData.AccountHolder, epcData.Amount, epcData.RemittanceInformation), []);
         }
