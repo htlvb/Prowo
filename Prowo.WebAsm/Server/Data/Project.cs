@@ -57,88 +57,51 @@ namespace Prowo.WebAsm.Server.Data
             TimeProvider timeProvider,
             ProjectPaymentInfo? paymentInfo,
             [NotNullWhen(true)]out Project? project,
-            [NotNullWhen(false)]out string? errorMessage
+            [NotNullWhen(false)]out string[]? errorMessages
         )
         {
+            var errors = new List<string>();
+
             if (string.IsNullOrWhiteSpace(projectData.Title))
+                errors.Add("Titel darf nicht leer sein.");
+
+            organizerCandidates.TryGetValue(projectData.OrganizerId, out var organizer);
+            if (organizer == null)
+                errors.Add("Organisator nicht gefunden.");
+
+            var coOrganizerIds = projectData.CoOrganizerIds.Except([projectData.OrganizerId]).ToList();
+            if (coOrganizerIds.Any(id => !organizerCandidates.ContainsKey(id)))
+                errors.Add("Einer oder mehrere Betreuer wurden nicht gefunden.");
+
+            if (projectData.Date == null) errors.Add("Datum muss gesetzt werden.");
+            if (projectData.StartTime == null) errors.Add("Startzeit muss gesetzt werden.");
+            if (projectData.ClosingDate == null) errors.Add("Anmeldeschluss muss gesetzt werden.");
+            if (projectData.MaxAttendees == null) errors.Add("Maximale Teilnehmerzahl muss gesetzt werden.");
+
+            if (projectData.Date != null && projectData.Date.Value < DateOnly.FromDateTime(timeProvider.GetLocalNow().Date))
+                errors.Add("Datum muss in der Zukunft liegen.");
+            if (projectData.EndTime != null && projectData.StartTime != null && projectData.StartTime.Value > projectData.EndTime.Value)
+                errors.Add("Startzeit muss vor der Endzeit liegen.");
+            if (projectData.ClosingDate != null && projectData.ClosingDate.Value < timeProvider.GetLocalNow().DateTime)
+                errors.Add("Anmeldeschluss muss in der Zukunft liegen.");
+            if (projectData.Date != null && projectData.ClosingDate != null && projectData.ClosingDate.Value >= projectData.Date.Value.ToDateTime(TimeOnly.MinValue))
+                errors.Add("Anmeldeschluss muss vor dem Projektdatum liegen.");
+            if (projectData.MaxAttendees != null && projectData.MaxAttendees.Value < 1)
+                errors.Add("Maximale Teilnehmerzahl muss mindestens 1 sein.");
+
+            if (organizer == null ||
+                projectData.Date == null ||
+                projectData.StartTime == null ||
+                projectData.ClosingDate == null ||
+                projectData.MaxAttendees == null ||
+                errors.Count > 0)
             {
                 project = null;
-                errorMessage = "Project title must not be empty.";
+                errorMessages = [..errors];
                 return false;
             }
-            if (!organizerCandidates.TryGetValue(projectData.OrganizerId, out var organizer))
-            {
-                project = null;
-                errorMessage = $"Organizer with ID \"{projectData.OrganizerId}\" not found";
-                return false;
-            }
-            var coOrganizerIds = projectData.CoOrganizerIds.Except(new[] { projectData.OrganizerId });
-            var coOrganizerErrors = coOrganizerIds
-                .Where(coOrganizerId => !organizerCandidates.ContainsKey(coOrganizerId))
-                .ToList();
-            if (coOrganizerErrors.Count > 0)
-            {
-                project = null;
-                errorMessage = $"Co-Organizers with ID(s) {string.Join(", ", coOrganizerErrors.Select(v => $"\"{v}\""))} not found";
-                return false;
-            }
-            var coOrganizers = coOrganizerIds
-                .Select(v => organizerCandidates[v])
-                .ToList();
-            if (projectData.Date == null)
-            {
-                project = null;
-                errorMessage = "Project date must be set.";
-                return false;
-            }
-            if (projectData.StartTime == null)
-            {
-                project = null;
-                errorMessage = "Project start time must be set.";
-                return false;
-            }
-            if (projectData.ClosingDate == null)
-            {
-                project = null;
-                errorMessage = "Project closing date must be set.";
-                return false;
-            }
-            if (projectData.MaxAttendees == null)
-            {
-                project = null;
-                errorMessage = "Max attendees must be set.";
-                return false;
-            }
-            if (projectData.Date.Value < DateOnly.FromDateTime(timeProvider.GetLocalNow().Date))
-            {
-                project = null;
-                errorMessage = "Project date must be in the future.";
-                return false;
-            }
-            if (projectData.EndTime != null && projectData.StartTime.Value > projectData.EndTime.Value)
-            {
-                project = null;
-                errorMessage = "Project start and end times are invalid.";
-                return false;
-            }
-            if (projectData.ClosingDate.Value < timeProvider.GetLocalNow().DateTime)
-            {
-                project = null;
-                errorMessage = "Project closing date must be in the future.";
-                return false;
-            }
-            if (projectData.ClosingDate.Value >= projectData.Date.Value.ToDateTime(TimeOnly.MinValue))
-            {
-                project = null;
-                errorMessage = "Project closing date must be before the project date.";
-                return false;
-            }
-            if (projectData.MaxAttendees.Value < 1)
-            {
-                project = null;
-                errorMessage = "Max attendees must be greater than 0.";
-                return false;
-            }
+
+            var coOrganizers = coOrganizerIds.Select(v => organizerCandidates[v]).ToList();
             project = new Project(
                 projectId,
                 projectData.Title,
@@ -154,7 +117,7 @@ namespace Prowo.WebAsm.Server.Data
                 [],
                 paymentInfo
             );
-            errorMessage = null;
+            errorMessages = null;
             return true;
         }
     }

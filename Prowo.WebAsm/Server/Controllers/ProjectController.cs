@@ -287,9 +287,9 @@ namespace Prowo.WebAsm.Server.Controllers
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var (paymentInfo, paymentErrors) = BuildPaymentInfo(projectData.PaymentData);
             if (paymentErrors.Length > 0) return BadRequest(paymentErrors);
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessage))
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessages))
             {
-                return BadRequest(errorMessage);
+                return BadRequest(errorMessages);
             }
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "CreateProject")).Succeeded)
             {
@@ -311,9 +311,9 @@ namespace Prowo.WebAsm.Server.Controllers
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var (paymentInfo, paymentErrors) = BuildPaymentInfo(projectData.PaymentData);
             if (paymentErrors.Length > 0) return BadRequest(paymentErrors);
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessage))
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessages))
             {
-                return BadRequest(errorMessage);
+                return BadRequest(errorMessages);
             }
             if (!(await authService.AuthorizeAsync(HttpContext.User, project, "UpdateProject")).Succeeded)
             {
