@@ -70,7 +70,7 @@
         allFiltered = showOnlyUserProjects ? allFiltered.Where(v => v.IsUserProject) : allFiltered;
         List<ProjectDto> filteredProjectList = allFiltered.ToList();
 
-        var visibleDates = filteredProjectList.Select(v => v.Date).Distinct().OrderBy(v => v).ToList();
+        var visibleDates = activeEvent.Projects.Select(v => v.Date).Distinct().OrderBy(v => v).ToList();
 
         <div class="flex flex-col gap-2 border-gray-400 rounded shadow p-2">
             @if (visibleDates.Count > 1)
