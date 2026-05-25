@@ -91,7 +91,7 @@ public class NoRegistrationBeforeRegistrationFromStrategy(TimeProvider timeProvi
 {
     public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
-        var now = timeProvider.GetLocalNow().DateTime;
+        var now = timeProvider.GetUtcNow().DateTime;
         return projects.ToDictionary(
             v => v,
             project =>

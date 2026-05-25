@@ -58,7 +58,7 @@ namespace Prowo.WebAsm.Server.Controllers
             var canCreateProject = (await authService.AuthorizeAsync(HttpContext.User, "CreateProject")).Succeeded;
             var canCreateReport = (await authService.AuthorizeAsync(HttpContext.User, "CreateReport")).Succeeded;
             var canManageEvents = (await authService.AuthorizeAsync(HttpContext.User, "ManageEvents")).Succeeded;
-            var now = timeProvider.GetLocalNow().DateTime;
+            var now = timeProvider.GetUtcNow().DateTime;
 
             var projects = (await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
                 .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v) // Sort by date, but don't change order of projects with same date
