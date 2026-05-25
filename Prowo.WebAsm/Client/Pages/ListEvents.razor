@@ -50,10 +50,10 @@ else
                             <span>Projektzeitraum: @e.Start.ToLongDateString() &ndash; @e.End.ToLongDateString()</span>
                         </div>
                         <div class="text-sm text-gray-600">
-                            <span>Sichtbar ab: @e.VisibleFrom.ToLocalTime().ToLongDateString()</span>
+                            <span>Sichtbar ab: @e.VisibleFrom.ToLocalTime().ToLongDateString() @e.VisibleFrom.ToLocalTime().ToLongTimeString()</span>
                         </div>
                         <div class="text-sm text-gray-600">
-                            <span>Anmeldung ab: @e.RegistrationFrom.ToLocalTime().ToLongDateString()</span>
+                            <span>Anmeldung ab: @e.RegistrationFrom.ToLocalTime().ToLongDateString() @e.RegistrationFrom.ToLocalTime().ToLongTimeString()</span>
                         </div>
                     </div>
                     <div class="flex gap-2">
