@@ -29,6 +29,30 @@ else if (editingProject.Links.Save != null)
 
         <div class="input">
             <label class="block">
+                <span class="input-label">Veranstaltung</span>
+                @switch (editingProject.AvailableEvents)
+                {
+                    case []:
+                        <span class="text-sm text-red-500">Keine aktiven Veranstaltungen vorhanden.</span>
+                        break;
+                    case [var singleEvent]:
+                        <span>@singleEvent.Title</span>
+                        break;
+                    default:
+                        <InputSelect @bind-Value=editingProject.Data.EventId class="input-select">
+                            <option value="">— Veranstaltung auswählen —</option>
+                            @foreach (var ev in editingProject.AvailableEvents)
+                            {
+                                <option value=@ev.Id>@ev.Title (@ev.Start.ToShortDateString() &ndash; @ev.End.ToShortDateString())</option>
+                            }
+                        </InputSelect>
+                        break;
+                }
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
                 <span class="input-label">Titel</span>
                 <InputText @bind-Value=editingProject.Data.Title class="input-text w-96 max-w-full" />
             </label>
@@ -114,10 +138,16 @@ else if (editingProject.Links.Save != null)
             </label>
         </div>
 
+        @{
+            var selectedEvent = editingProject.AvailableEvents.FirstOrDefault(e => e.Id == editingProject.Data.EventId);
+            var dateMin = selectedEvent?.Start.ToString("yyyy-MM-dd");
+            var dateMax = selectedEvent?.End.ToString("yyyy-MM-dd");
+        }
+
         <div class="input">
             <label class="block">
                 <span class="input-label">Datum</span>
-                <InputDate @bind-Value=editingProject.Data.Date ParsingErrorMessage="Kein gültiges Datum." class="input-text" />
+                <InputDate @bind-Value=editingProject.Data.Date ParsingErrorMessage="Kein gültiges Datum." class="input-text" min=@dateMin max=@dateMax />
             </label>
         </div>
 
@@ -352,7 +382,8 @@ else if (editingProject.Links.Save != null)
         EditingProjectData Data,
         IReadOnlyCollection<ProjectOrganizerDto> OrganizerCandidates,
         IReadOnlyCollection<ProjectOrganizerDto> CoOrganizerCandidates,
-        EditingProjectLinksDto Links
+        EditingProjectLinksDto Links,
+        IReadOnlyList<EventDto> AvailableEvents
     )
     {
         public static EditingProject FromProject(EditingProjectDto project)
@@ -361,13 +392,16 @@ else if (editingProject.Links.Save != null)
                 EditingProjectData.FromProjectData(project.Data),
                 project.OrganizerCandidates,
                 project.CoOrganizerCandidates,
-                project.Links
+                project.Links,
+                project.AvailableEvents
             );
         }
     }
 
     public class EditingProjectData
     {
+        [Required(ErrorMessage = "Veranstaltung muss ausgewählt werden.")]
+        public string? EventId { get; set; }
         [Required(ErrorMessage = "Titel darf nicht leer sein.")]
         public string Title { get; set; } = "";
         [Required(ErrorMessage = "Beschreibung darf nicht leer sein.")]
@@ -398,6 +432,7 @@ else if (editingProject.Links.Save != null)
         {
             return new EditingProjectData
             {
+                EventId = projectData.EventId,
                 Title = projectData.Title,
                 Description = projectData.Description,
                 Location = projectData.Location,
@@ -422,6 +457,7 @@ else if (editingProject.Links.Save != null)
         public EditingProjectDataDto ToProjectData()
         {
             return new EditingProjectDataDto(
+                EventId,
                 Title,
                 Description,
                 Location,

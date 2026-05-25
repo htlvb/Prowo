@@ -1,0 +1,181 @@
+@page "/events/new"
+@page "/events/edit/{EventId}"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+
+@attribute [Authorize]
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<PageTitle>Veranstaltung bearbeiten - HTLVB Prowo</PageTitle>
+
+@if (IsNew)
+{
+    <h2 class="text-2xl mb-4">Veranstaltung anlegen</h2>
+}
+else
+{
+    <h2 class="text-2xl mb-4">Veranstaltung bearbeiten</h2>
+}
+
+@if (editingEvent == null)
+{
+    <p><em>Formular wird geladen...</em></p>
+}
+else if (editingEvent.Links.Save != null)
+{
+    <EditForm Context="Edit" Model=@data OnSubmit=@FormSubmitted>
+        <DataAnnotationsValidator />
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Titel</span>
+                <InputText @bind-Value=data.Title class="input-text w-96 max-w-full" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Projektzeitraum von</span>
+                <InputDate @bind-Value=data.Start ParsingErrorMessage="Kein gültiges Datum." class="input-text" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Projektzeitraum bis</span>
+                <InputDate @bind-Value=data.End ParsingErrorMessage="Kein gültiges Datum." class="input-text" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Sichtbar ab</span>
+                <InputDate Type="InputDateType.DateTimeLocal" @bind-Value=data.VisibleFrom ParsingErrorMessage="Kein gültige Datum/Uhrzeit." class="input-text" />
+            </label>
+        </div>
+
+        <div class="input">
+            <label class="block">
+                <span class="input-label">Anmeldung ab</span>
+                <InputDate Type="InputDateType.DateTimeLocal" @bind-Value=data.RegistrationFrom ParsingErrorMessage="Kein gültige Datum/Uhrzeit." class="input-text" />
+            </label>
+        </div>
+
+        <ValidationSummary />
+
+        <div class="input flex items-center gap-2">
+            <button type="submit" class="btn btn-green" disabled=@isSubmitting>
+                @(IsNew ? "Veranstaltung anlegen" : "Veranstaltung aktualisieren")
+            </button>
+            @if (isSubmitting)
+            {
+                <span class="spinner spinner-green"></span>
+            }
+            @if (errorMessage != null)
+            {
+                <span class="inline-block ml-2 text-red-500">@errorMessage</span>
+            }
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public string? EventId { get; set; }
+
+    public bool IsNew => EventId == null;
+
+    private readonly JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+
+    private EditingEventDto? editingEvent;
+    private EventFormData data = new();
+    private bool isSubmitting;
+    private string? errorMessage;
+    private ValidationMessageStore? serverErrorStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var url = IsNew ? "api/events/edit/new" : $"api/events/edit/{EventId}";
+            editingEvent = await Http.GetFromJsonAsync<EditingEventDto>(url, serializerOptions);
+            if (editingEvent != null)
+            {
+                data = EventFormData.FromDto(editingEvent.Data);
+            }
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+
+    private async Task FormSubmitted(EditContext editContext)
+    {
+        serverErrorStore?.Clear();
+        serverErrorStore = new ValidationMessageStore(editContext);
+        if (!editContext.Validate()) return;
+        isSubmitting = true;
+        errorMessage = null;
+        StateHasChanged();
+        try
+        {
+            var dto = data.ToDto();
+            var response = await Http.PostAsJsonAsync(editingEvent!.Links.Save, dto, serializerOptions);
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var errors = await response.Content.ReadFromJsonAsync<string[]>() ?? [];
+                foreach (var error in errors)
+                    serverErrorStore.Add(new FieldIdentifier(editContext.Model, string.Empty), error);
+                editContext.NotifyValidationStateChanged();
+                return;
+            }
+            response.EnsureSuccessStatusCode();
+            NavigationManager.NavigateTo("/events");
+        }
+        catch
+        {
+            errorMessage = "Veranstaltung konnte nicht gespeichert werden.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    public class EventFormData
+    {
+        [Required(ErrorMessage = "Titel darf nicht leer sein.")]
+        public string Title { get; set; } = "";
+        [Required(ErrorMessage = "Startdatum muss gesetzt werden.")]
+        public DateTime? Start { get; set; }
+        [Required(ErrorMessage = "Enddatum muss gesetzt werden.")]
+        public DateTime? End { get; set; }
+        [Required(ErrorMessage = "Sichtbar ab muss gesetzt werden.")]
+        public DateTime? VisibleFrom { get; set; }
+        [Required(ErrorMessage = "Anmeldung ab muss gesetzt werden.")]
+        public DateTime? RegistrationFrom { get; set; }
+
+        public static EventFormData FromDto(EditingEventDataDto dto) => new()
+        {
+            Title = dto.Title,
+            Start = dto.Start?.ToDateTime(TimeOnly.MinValue),
+            End = dto.End?.ToDateTime(TimeOnly.MinValue),
+            VisibleFrom = dto.VisibleFromLocalUserTime,
+            RegistrationFrom = dto.RegistrationFromLocalUserTime
+        };
+
+        public EditingEventDataDto ToDto() => new(
+            Title,
+            Start.HasValue ? DateOnly.FromDateTime(Start.Value) : null,
+            End.HasValue ? DateOnly.FromDateTime(End.Value) : null,
+            VisibleFrom,
+            RegistrationFrom
+        );
+    }
+}

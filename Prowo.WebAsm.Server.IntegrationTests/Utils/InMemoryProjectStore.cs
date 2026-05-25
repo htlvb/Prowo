@@ -15,6 +15,12 @@ public class InMemoryProjectStore : IProjectStore
         }
     }
 
+    public async Task<bool> HasProjects(string eventId)
+    {
+        await Task.Yield();
+        return projects.Any(v => v.EventId == eventId);
+    }
+
     public async Task<Project?> Get(string projectId)
     {
         await Task.Yield();

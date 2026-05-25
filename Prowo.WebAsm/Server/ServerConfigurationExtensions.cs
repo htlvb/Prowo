@@ -66,7 +66,9 @@ public static class ServerConfigurationExtensions
                 });
             });
 
+            options.AddPolicy("SeeAllProjects", policy => policy.RequireRole("project-creator", "all-projects-editor"));
             options.AddPolicy("ChangeProjectOrganizer", policy => policy.RequireRole("all-projects-editor"));
+            options.AddPolicy("ManageEvents", policy => policy.RequireRole("all-projects-editor"));
             options.AddPolicy("AttendProject", policy => policy.RequireRole("project-attendee"));
             options.AddPolicy("CreateReport", policy => policy.RequireRole("report-viewer"));
         });

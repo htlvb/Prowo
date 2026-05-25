@@ -31,7 +31,9 @@ public static class InMemoryServer
                         services.AddSingleton<IOptions<PaymentDefaults>>(Microsoft.Extensions.Options.Options.Create(new PaymentDefaults()));
                         services.AddSingleton<IUserStore>(new InMemoryUserStore(FakeData.ProjectOrganizers, FakeData.ProjectAttendees.First()));
                         services.AddSingleton<IProjectStore, InMemoryProjectStore>();
+                        services.AddSingleton<IEventStore>(new InMemoryEventStore([FakeData.DefaultEvent]));
                         services.AddSingleton<IRegistrationStrategy>(ctx => new LogicalAndCombinationStrategy([
+                            new NoRegistrationBeforeRegistrationFromStrategy(ctx.GetRequiredService<TimeProvider>()),
                             new NoRegistrationAfterClosingDateStrategy(ctx.GetRequiredService<TimeProvider>()),
                             new NoRegistrationIfRegisteredStrategy()
                         ]));

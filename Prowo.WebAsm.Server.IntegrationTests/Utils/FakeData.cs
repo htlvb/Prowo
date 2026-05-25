@@ -7,6 +7,16 @@ namespace Prowo.WebAsm.Server.IntegrationTests.Utils;
 
 public static class FakeData
 {
+    public static Event DefaultEvent { get; } = new Event(
+        "default-event-id",
+        "Projektwoche 2026",
+        new DateOnly(2000, 1, 1),
+        new DateOnly(3000, 12, 31),
+        DateTime.MinValue,
+        DateTime.MinValue
+    );
+
+
     public static Faker<Project> ProjectFaker { get; } = new Faker<Project>()
         .CustomInstantiator(v =>
         {
@@ -27,6 +37,7 @@ public static class FakeData
                 .Take(attendeeCount)
                 .ToList();
             return new Project(
+                DefaultEvent.Id,
                 v.Random.Uuid().ToString(),
                 v.Random.Words(),
                 v.Lorem.Sentences(),
@@ -36,7 +47,7 @@ public static class FakeData
                 date,
                 new TimeOnly(7, 0).AddMinutes(v.Random.Number(0, 8) * 15),
                 v.Random.Bool() ? new TimeOnly(12, 0).AddMinutes(v.Random.Number(0, 12) * 15) : null,
-                new DateTime(v.Date.Between(v.Date.Soon(5), date.ToDateTime(TimeOnly.MinValue)).Ticks, DateTimeKind.Unspecified),
+                DateTime.SpecifyKind(v.Date.Between(v.Date.Soon(5), date.ToDateTime(TimeOnly.MinValue)), DateTimeKind.Utc),
                 v.Random.Number(1, 500),
                 attendees,
                 null
@@ -47,7 +58,7 @@ public static class FakeData
         .CustomInstantiator(v =>
         {
             var date = v.Date.RecentDateOnly(20, DateOnly.FromDateTime(DateTime.Today.AddDays(-1)));
-            var closingDate = new DateTime(v.Date.Between(DateTime.Today.AddDays(-40), date.ToDateTime(TimeOnly.MinValue)).Ticks, DateTimeKind.Unspecified);
+            var closingDate = DateTime.SpecifyKind(v.Date.Between(DateTime.Today.AddDays(-40), date.ToDateTime(TimeOnly.MinValue)), DateTimeKind.Utc);
             return ProjectFaker.Generate() with { Date = date, ClosingDate = closingDate };
         });
 
@@ -63,6 +74,7 @@ public static class FakeData
                 .Select(v => v.Id)
                 .ToList();
             return new EditingProjectDataDto(
+                DefaultEvent.Id,
                 v.Random.Words(),
                 v.Lorem.Sentences(),
                 v.Address.BuildingNumber(),

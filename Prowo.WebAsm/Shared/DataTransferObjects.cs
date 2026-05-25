@@ -36,6 +36,7 @@ namespace Prowo.WebAsm.Shared
         EditingProjectDataDto Data,
         IReadOnlyList<ProjectOrganizerDto> OrganizerCandidates,
         IReadOnlyList<ProjectOrganizerDto> CoOrganizerCandidates,
+        IReadOnlyList<EventDto> AvailableEvents,
         EditingProjectLinksDto Links
     );
 
@@ -55,6 +56,7 @@ namespace Prowo.WebAsm.Shared
     );
 
     public record EditingProjectDataDto(
+        string? EventId,
         string Title,
         string Description,
         string Location,
@@ -73,16 +75,57 @@ namespace Prowo.WebAsm.Shared
         string? Save
     );
 
+    public record EventWithProjectsDto(
+        string Id,
+        string Title,
+        DateOnly Start,
+        DateOnly End,
+        DateTime? RegistrationFromLocalUserTime,
+        IReadOnlyList<ProjectDto> Projects
+    );
+
     public record ProjectListDto(
-        IReadOnlyList<ProjectDto> Projects,
+        IReadOnlyList<EventWithProjectsDto> Events,
         ProjectListLinksDto Links
     );
 
     public record ProjectListLinksDto(
         string? ShowAllAttendees,
         string? CreateProject,
-        string? DuplicateProject
+        string? DuplicateProject,
+        string? ManageEvents = null
     );
+
+    public record EventDto(
+        string Id,
+        string Title,
+        DateOnly Start,
+        DateOnly End,
+        DateTime VisibleFrom,
+        DateTime RegistrationFrom
+    );
+
+    public record EventListDto(
+        IReadOnlyList<EventDto> Events,
+        EventListLinksDto Links
+    );
+
+    public record EventListLinksDto(string? Create);
+
+    public record EditingEventDto(
+        EditingEventDataDto Data,
+        EditingEventLinksDto Links
+    );
+
+    public record EditingEventDataDto(
+        string Title,
+        DateOnly? Start,
+        DateOnly? End,
+        DateTime? VisibleFromLocalUserTime,
+        DateTime? RegistrationFromLocalUserTime
+    );
+
+    public record EditingEventLinksDto(string? Save);
 
     public record ProjectDto(
         string Title,
@@ -93,7 +136,6 @@ namespace Prowo.WebAsm.Shared
         DateOnly Date,
         TimeOnly StartTime,
         TimeOnly? EndTime,
-        DateTime ClosingDate,
         DateTime ClosingDateLocalUserTime,
         int Attendees,
         int MaxAttendees,

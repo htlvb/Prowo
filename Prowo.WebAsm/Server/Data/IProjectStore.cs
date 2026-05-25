@@ -3,6 +3,7 @@
     public interface IProjectStore
     {
         IAsyncEnumerable<Project> GetAllSince(DateTime timestamp);
+        Task<bool> HasProjects(string eventId);
         Task<Project?> Get(string projectId);
         Task Delete(string projectId);
         Task CreateProject(Project project);

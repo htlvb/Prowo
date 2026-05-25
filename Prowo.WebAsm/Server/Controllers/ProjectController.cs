@@ -13,6 +13,7 @@ namespace Prowo.WebAsm.Server.Controllers
     public class ProjectController : ControllerBase
     {
         private readonly IProjectStore projectStore;
+        private readonly IEventStore eventStore;
         private readonly IUserStore userStore;
         private readonly IAuthorizationService authService;
         private readonly IRegistrationStrategy registrationStrategy;
@@ -27,6 +28,7 @@ namespace Prowo.WebAsm.Server.Controllers
 
         public ProjectController(
             IProjectStore projectStore,
+            IEventStore eventStore,
             IUserStore userStore,
             IAuthorizationService authService,
             IRegistrationStrategy registrationStrategy,
@@ -36,6 +38,7 @@ namespace Prowo.WebAsm.Server.Controllers
             ILogger<ProjectController> logger)
         {
             this.projectStore = projectStore;
+            this.eventStore = eventStore;
             this.userStore = userStore;
             this.authService = authService;
             this.registrationStrategy = registrationStrategy;
@@ -46,37 +49,54 @@ namespace Prowo.WebAsm.Server.Controllers
         }
 
         [HttpGet("")]
-        public async Task<ProjectListDto> GetProjectList()
+        public Task<ProjectListDto> GetProjectList() => BuildProjectList();
+
+        private async Task<ProjectListDto> BuildProjectList()
         {
-            var projectDtos = await GetProjects();
+            var events = (await eventStore.GetAll().ToList()).ToDictionary(e => e.Id);
+            var seeAll = (await authService.AuthorizeAsync(HttpContext.User, "SeeAllProjects")).Succeeded;
             var canCreateProject = (await authService.AuthorizeAsync(HttpContext.User, "CreateProject")).Succeeded;
             var canCreateReport = (await authService.AuthorizeAsync(HttpContext.User, "CreateReport")).Succeeded;
-            return new ProjectListDto(
-                projectDtos,
-                new ProjectListLinksDto(
-                    canCreateReport && projectDtos.Count > 0 ? "projects/all-attendees" : default,
-                    canCreateProject ? "projects/new" : default,
-                    canCreateProject ? "projects/duplicate" : default
-                )
-            );
-        }
+            var canManageEvents = (await authService.AuthorizeAsync(HttpContext.User, "ManageEvents")).Succeeded;
+            var now = timeProvider.GetLocalNow().DateTime;
 
-        private async Task<List<ProjectDto>> GetProjects()
-        {
             var projects = (await projectStore.GetAllSince(MinDate.ToDateTime(TimeOnly.MinValue)).ToList())
                 .GroupBy(v => v.Date).OrderBy(v => v.Key).SelectMany(v => v) // Sort by date, but don't change order of projects with same date
                 .ToList();
 
-            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects);
-            
-            var projectDtos = new List<ProjectDto>();
-            foreach (var project in projects)
+            if (!seeAll)
             {
-                var projectDto = await GetProjectDtoFromProject(project, registrationActions[project]);
-                projectDtos.Add(projectDto);
+                projects = projects.Where(p =>
+                    events.TryGetValue(p.EventId, out var ev) && ev.VisibleFrom <= now
+                ).ToList();
             }
 
-            return projectDtos;
+            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects, events);
+
+            var projectsByEventId = projects.ToLookup(p => p.EventId);
+
+            var eventGroups = (await Task.WhenAll(events.Values
+                .OrderBy(e => e.Start)
+                .Select(async e =>
+                {
+                    var eventProjects = projectsByEventId[e.Id].ToList();
+                    if (eventProjects.Count == 0) return null;
+                    var registrationFrom = e.RegistrationFrom > now ? e.RegistrationFrom.ToUserTime() : (DateTime?)null;
+                    var dtos = await Task.WhenAll(eventProjects.Select(p => GetProjectDtoFromProject(p, registrationActions[p])));
+                    return new EventWithProjectsDto(e.Id, e.Title, e.Start, e.End, registrationFrom, dtos);
+                })))
+                .OfType<EventWithProjectsDto>()
+                .ToList();
+
+            return new ProjectListDto(
+                eventGroups,
+                new ProjectListLinksDto(
+                    canCreateReport && eventGroups.Count > 0 ? "projects/all-attendees" : default,
+                    canCreateProject ? "projects/new" : default,
+                    canCreateProject ? "projects/duplicate" : default,
+                    canManageEvents ? "events" : default
+                )
+            );
         }
 
         [HttpGet("templates")]
@@ -107,7 +127,8 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return NotFound("Project doesn't exist or is too old.");
             }
-            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects)[project];
+            var events = (await eventStore.GetAll().ToList()).ToDictionary(e => e.Id);
+            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects, events)[project];
             if (!registrationActions.CanRegister)
             {
                 return BadRequest("Project registration strategy doesn't allow registration.");
@@ -115,7 +136,7 @@ namespace Prowo.WebAsm.Server.Controllers
 
             var attendee = await userStore.GetSelfAsProjectAttendee();
             await projectStore.AddAttendee(projectId, attendee);
-            return Ok(await GetProjects());
+            return Ok(await BuildProjectList());
         }
 
         [HttpPost("{projectId}/deregister")]
@@ -127,14 +148,15 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 return NotFound("Project doesn't exist or is too old.");
             }
-            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects)[project];
+            var events = (await eventStore.GetAll().ToList()).ToDictionary(e => e.Id);
+            var registrationActions = registrationStrategy.GetRegistrationActions(UserId, projects, events)[project];
             if (!registrationActions.CanDeregister)
             {
                 return BadRequest("Project registration strategy doesn't allow deregistration.");
             }
 
             await projectStore.RemoveAttendee(projectId, UserId);
-            return Ok(await GetProjects());
+            return Ok(await BuildProjectList());
         }
 
         [HttpDelete("{projectId}/attendees/{userId}")]
@@ -165,6 +187,10 @@ namespace Prowo.WebAsm.Server.Controllers
         public async Task<IActionResult> GetProject(string projectId, [FromQuery]bool duplicate = false)
         {
             var (organizerCandidates, coOrganizerCandidates) = await GetOrganizerCandidates();
+            var availableEvents = (await eventStore.GetAll().ToList())
+                .Where(e => e.End >= MinDate)
+                .Select(e => new EventDto(e.Id, e.Title, e.Start, e.End, e.VisibleFrom, e.RegistrationFrom))
+                .ToList();
 
             Project? project = null;
             if (projectId != "new")
@@ -200,6 +226,7 @@ namespace Prowo.WebAsm.Server.Controllers
             {
                 var result = new EditingProjectDto(
                     new EditingProjectDataDto(
+                        availableEvents.Count == 1 ? availableEvents[0].Id : null,
                         "",
                         "",
                         "",
@@ -215,6 +242,7 @@ namespace Prowo.WebAsm.Server.Controllers
                     ),
                     organizerCandidates,
                     coOrganizerCandidates,
+                    availableEvents,
                     new EditingProjectLinksDto(
                         Url.Action(nameof(CreateProject))
                     )
@@ -236,8 +264,10 @@ namespace Prowo.WebAsm.Server.Controllers
                 var existingPaymentData = project.PaymentInfo != null
                     ? new ProjectPaymentDataDto(project.PaymentInfo.Iban, project.PaymentInfo.AccountHolder, project.PaymentInfo.Amount, project.PaymentInfo.RemittanceInformation)
                     : defaultPaymentData;
+                var eventId = duplicate ? null : project.EventId;
                 var result = new EditingProjectDto(
                     new EditingProjectDataDto(
+                        eventId,
                         project.Title,
                         project.Description,
                         project.Location,
@@ -253,6 +283,7 @@ namespace Prowo.WebAsm.Server.Controllers
                     ),
                     organizerCandidates,
                     coOrganizerCandidates,
+                    availableEvents,
                     new EditingProjectLinksDto(saveUrl)
                 );
                 return Ok(result);
@@ -287,7 +318,8 @@ namespace Prowo.WebAsm.Server.Controllers
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var (paymentInfo, paymentErrors) = BuildPaymentInfo(projectData.PaymentData);
             if (paymentErrors.Length > 0) return BadRequest(paymentErrors);
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessages))
+            var resolvedEvent = projectData.EventId != null ? await eventStore.Get(projectData.EventId) : null;
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, Guid.NewGuid().ToString(), resolvedEvent, organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessages))
             {
                 return BadRequest(errorMessages);
             }
@@ -311,7 +343,8 @@ namespace Prowo.WebAsm.Server.Controllers
             var organizerCandidates = await GetOrganizerCandidatesDictionary();
             var (paymentInfo, paymentErrors) = BuildPaymentInfo(projectData.PaymentData);
             if (paymentErrors.Length > 0) return BadRequest(paymentErrors);
-            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessages))
+            var resolvedEvent = projectData.EventId != null ? await eventStore.Get(projectData.EventId) : null;
+            if (!Project.TryCreateFromEditingProjectDataDto(projectData, projectId, resolvedEvent, organizerCandidates, timeProvider, paymentInfo, out var project, out var errorMessages))
             {
                 return BadRequest(errorMessages);
             }
@@ -489,7 +522,6 @@ namespace Prowo.WebAsm.Server.Controllers
                 project.Date,
                 project.StartTime,
                 project.EndTime,
-                project.ClosingDate,
                 project.ClosingDate.ToUserTime(),
                 project.AllAttendees.Count,
                 project.MaxAttendees,

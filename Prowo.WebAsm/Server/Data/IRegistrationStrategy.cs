@@ -4,12 +4,12 @@ public record ProjectRegistrationActions(bool CanRegister, bool CanDeregister);
 
 public interface IRegistrationStrategy
 {
-    Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects);
+    Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events);
 }
 
 public class FreeRegistrationStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
         return projects.ToDictionary(v => v, _ => new ProjectRegistrationActions(true, true));
     }
@@ -17,7 +17,7 @@ public class FreeRegistrationStrategy : IRegistrationStrategy
 
 public class IrrevocableRegistrationStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
         return projects.ToDictionary(v => v, _ => new ProjectRegistrationActions(true, false));
     }
@@ -25,7 +25,7 @@ public class IrrevocableRegistrationStrategy : IRegistrationStrategy
 
 public class SingleRegistrationPerDayStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
         return projects.ToDictionary(
             v => v,
@@ -41,7 +41,7 @@ public class SingleRegistrationPerDayStrategy : IRegistrationStrategy
 
 public class NoWaitingListStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
         return projects.ToDictionary(
             v => v,
@@ -55,7 +55,7 @@ public class NoWaitingListStrategy : IRegistrationStrategy
 
 public class NoRegistrationAfterClosingDateStrategy(TimeProvider timeProvider) : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
         return projects.ToDictionary(
             v => v,
@@ -70,7 +70,7 @@ public class NoRegistrationAfterClosingDateStrategy(TimeProvider timeProvider) :
 
 public class NoRegistrationIfRegisteredStrategy : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
         return projects.ToDictionary(
             v => v,
@@ -87,18 +87,38 @@ public class NoRegistrationIfRegisteredStrategy : IRegistrationStrategy
     }
 }
 
+public class NoRegistrationBeforeRegistrationFromStrategy(TimeProvider timeProvider) : IRegistrationStrategy
+{
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
+    {
+        var now = timeProvider.GetLocalNow().DateTime;
+        return projects.ToDictionary(
+            v => v,
+            project =>
+            {
+                if (!events.TryGetValue(project.EventId, out var ev))
+                    return new ProjectRegistrationActions(true, true);
+                if (ev.RegistrationFrom <= now)
+                    return new ProjectRegistrationActions(true, true);
+                return new ProjectRegistrationActions(false, true);
+            });
+    }
+}
+
 public class LogicalAndCombinationStrategy(IReadOnlyList<IRegistrationStrategy> strategies) : IRegistrationStrategy
 {
-    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects)
+    public Dictionary<Project, ProjectRegistrationActions> GetRegistrationActions(string attendeeId, IReadOnlyCollection<Project> projects, IReadOnlyDictionary<string, Event> events)
     {
         return strategies
-            .Select(v => v.GetRegistrationActions(attendeeId, projects))
+            .Select(v => v.GetRegistrationActions(attendeeId, projects, events))
             .Aggregate((a, b) =>
             {
                 foreach (var pair in b)
                 {
                     var registrationActions = a.TryGetValue(pair.Key, out var actions)
-                        ? new ProjectRegistrationActions(pair.Value.CanRegister && actions.CanRegister, pair.Value.CanDeregister && actions.CanDeregister)
+                        ? new ProjectRegistrationActions(
+                            pair.Value.CanRegister && actions.CanRegister,
+                            pair.Value.CanDeregister && actions.CanDeregister)
                         : pair.Value;
                     a[pair.Key] = registrationActions;
                 }

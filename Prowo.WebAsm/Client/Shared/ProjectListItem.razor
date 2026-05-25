@@ -117,7 +117,11 @@
                 {
                     <NavLink class="btn btn-blue" href=@Project.Links.ShowAttendees>Anmeldungen anzeigen</NavLink>
                 }
-                @if (Project.Links.Register != null)
+                @if (RegistrationFromLocalUserTime.HasValue)
+                {
+                    <span class="text-sm text-gray-500">Anmeldung beginnt am @RegistrationFromLocalUserTime.Value.ToLongDateString() um @RegistrationFromLocalUserTime.Value.ToLongTimeString()</span>
+                }
+                else if (Project.Links.Register != null)
                 {
                     if (registrationState == ConfirmableActionState.None)
                     {
@@ -178,7 +182,10 @@
     }
 
     [Parameter]
-    public Action<IReadOnlyList<ProjectDto>>? OnUpdate { get; set; }
+    public DateTime? RegistrationFromLocalUserTime { get; set; }
+
+    [Parameter]
+    public Action<ProjectListDto>? OnUpdate { get; set; }
 
     [Parameter]
     public Action? OnDelete { get; set; }
@@ -231,8 +238,8 @@
         {
             var response = await Http.PostAsync(Project!.Links.Register, content: null);
             response.EnsureSuccessStatusCode();
-            var updatedProjects = (await response.Content.ReadFromJsonAsync<ProjectDto[]>(serializerOptions))!;
-            OnUpdate?.Invoke(updatedProjects);
+            var updatedList = (await response.Content.ReadFromJsonAsync<ProjectListDto>(serializerOptions))!;
+            OnUpdate?.Invoke(updatedList);
         }
         finally
         {
@@ -255,8 +262,8 @@
         {
             var response = await Http.PostAsync(Project!.Links.Deregister, content: null);
             response.EnsureSuccessStatusCode();
-            var updatedProjects = (await response.Content.ReadFromJsonAsync<ProjectDto[]>(serializerOptions))!;
-            OnUpdate?.Invoke(updatedProjects);
+            var updatedList = (await response.Content.ReadFromJsonAsync<ProjectListDto>(serializerOptions))!;
+            OnUpdate?.Invoke(updatedList);
         }
         finally
         {

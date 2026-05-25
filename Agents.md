@@ -1,10 +1,10 @@
-# CLAUDE.md
+# Agents.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 # Project Overview
 
-Prowo is a Blazor WebAssembly application for managing school events at the last school week (School Week 2026, HTLVB - Higher Technical School Lower Austria). Students can create, register for, and manage events/projects. The application uses Keycloak for OAuth2/OIDC authentication and PostgreSQL for data storage.
+Prowo is a Blazor WebAssembly application for managing school project weeks at HTLVB (Higher Technical School Lower Austria). Students can create, register for, and manage projects. Projects belong to events (e.g., "Projektwoche 2026"). The application uses Keycloak for OAuth2/OIDC authentication and PostgreSQL for data storage.
 
 # Architecture
 
@@ -36,29 +36,35 @@ Prowo.sln
   - `Keycloak.RealmName`: "htlvb"
 
 ### 2. Data Storage
-- PostgreSQL database with two tables:
-  - `project`: Events with organizer info (JSON), dates, attendees limit
+- PostgreSQL database with three main tables:
+  - `event`: Project week events with title, date range, visibility/registration timestamps
+  - `project`: Projects belonging to an event with organizer info (JSON), dates, attendee limit
   - `registration_event`: Registration history (JSON user data)
-- `IProjectStore` interface with implementations:
-  - `PgsqlProjectStore` (production)
-  - In-memory implementations (tests)
+- Every project has a mandatory `event_id` (NOT NULL FK to `event`)
+- `IEventStore` interface with implementations: `PgsqlEventStore` (production), `InMemoryEventStore` (tests)
+- `IProjectStore` interface with implementations: `PgsqlProjectStore` (production), `InMemoryProjectStore` (tests)
 
 ### 3. Authorization
 - Role-based access controlled via Keycloak roles:
-  - `all-projects-editor`: Full access
-  - `project-creator`: Can create events
+  - `all-projects-editor`: Full access including event management
+  - `project-creator`: Can create/edit/delete own projects
   - `report-viewer`: Can view attendee reports
-  - `project-attendee`: Can register for events
-- Users mapped to Keycloak groups: `Lehrer` (teachers), `Schueler` (students)
-- Authorization policies check: `CreateProject`, `UpdateProject`, `DeleteProject`, `CreateReport`, `AttendProject`
+  - `project-attendee`: Can register for projects
+- Authorization policies: `CreateProject`, `UpdateProject`, `DeleteProject`, `CreateReport`, `AttendProject`, `SeeAllProjects`, `ManageEvents`
 
 ### 4. Registration Strategy
-- `IRegistrationStrategy` with logical combination of:
-  - `NoRegistrationAfterClosingDateStrategy`
-  - `NoRegistrationIfRegisteredStrategy`
-  - `NoWaitingListStrategy`
-  - `SingleRegistrationPerDayStrategy`
-- `NoWaitingListStrategy` means only first `MaxAttendees` registrations count
+- `IRegistrationStrategy` with logical AND combination (`LogicalAndCombinationStrategy`) of:
+  - `NoRegistrationBeforeRegistrationFromStrategy` — blocks registration before event's `registration_from`
+  - `NoRegistrationAfterClosingDateStrategy` — blocks registration after project's `ClosingDate`
+  - `NoRegistrationIfRegisteredStrategy` — prevents double registration
+  - `NoWaitingListStrategy` — only `MaxAttendees` registrations count (configured per deployment)
+  - `SingleRegistrationPerDayStrategy` — one project per day (configured per deployment)
+
+### 5. Event Grouping
+- Projects are grouped by event in the project list (`ProjectListDto.Events` is `IReadOnlyList<EventWithProjectsDto>`)
+- Events have `VisibleFrom`: projects in the event are hidden from non-admins until this time
+- Events have `RegistrationFrom`: registration button is replaced with "Anmeldung beginnt am..." until this time
+- `all-projects-editor` users see all events regardless of `VisibleFrom`
 
 # Development Workflow
 
@@ -131,7 +137,7 @@ docker compose up db
 The `db-schema.sql` is automatically applied to the PostgreSQL container on startup.
 
 ### Migrations
-This project does not use traditional migrations. Database is re-created from schema on container restart.
+This project does not use traditional migrations. Database is re-created from schema on container restart. Always append migrations at the end of `db-schema.sql` using `ALTER TABLE ... ADD COLUMN ...`. Never modify the `CREATE TABLE` definition. The `CREATE TABLE` is for fresh installs; appended `ALTER TABLE` statements migrate the production database without data loss.
 
 # Configuration
 
@@ -169,12 +175,19 @@ Use `create-keycloak-client.sh` to create the OIDC client in Keycloak. This scri
 
 # Data Models
 
+## Event
+- `Id`, `Title`
+- `Start`, `End` (DateOnly — allowed date range for projects in this event)
+- `VisibleFrom` (DateTime UTC — when projects become visible to attendees)
+- `RegistrationFrom` (DateTime UTC — when registration opens)
+
 ## Project
-- Title, Description, Location
-- Organizer (JSON) + CoOrganizers array
-- Date, StartTime, EndTime, ClosingDate
-- MaxAttendees
-- Registration history (from events)
+- `EventId` (first parameter — mandatory FK to Event)
+- `Id`, `Title`, `Description`, `Location`
+- `Organizer` (ProjectOrganizer) + `CoOrganizers` array
+- `Date` (DateOnly), `StartTime`, `EndTime` (TimeOnly), `ClosingDate` (DateTime UTC)
+- `MaxAttendees`, `AllAttendees` (full list; first MaxAttendees are registered, rest are waiting)
+- `PaymentInfo` (optional QR/IBAN payment data)
 
 ## UserStore
 - Uses Keycloak to get users from groups
@@ -182,14 +195,20 @@ Use `create-keycloak-client.sh` to create the OIDC client in Keycloak. This scri
 - `OrganizerGroupId` and `AttendeeGroupId` map Keycloak groups to app roles
 
 ## Keycloak Roles → App Roles
-| Keycloak Role | App Role | Permissions |
-|---------------|----------|-------------|
-| all-projects-editor | Editor | Full CRUD |
-| project-creator | Creator | Create events |
-| report-viewer | Viewer | View reports |
-| project-attendee | Attendee | Register/deregister |
+| Keycloak Role | Permissions |
+|---------------|-------------|
+| all-projects-editor | Full CRUD on projects and events, see all projects regardless of VisibleFrom |
+| project-creator | Create/edit/delete own projects |
+| report-viewer | View attendee reports |
+| project-attendee | Register/deregister for projects |
 
 # Testing
+
+Integration tests use an in-memory server (`InMemoryServer`) with:
+- `InMemoryProjectStore` and `InMemoryEventStore`
+- `InMemoryUserStore` seeded from `FakeData.ProjectOrganizers` and `FakeData.ProjectAttendees`
+- `FakeData.DefaultEvent` always seeded into `InMemoryEventStore` (wide date range, `VisibleFrom`/`RegistrationFrom` = `DateTime.MinValue`)
+- Property-based tests use FsCheck via `CustomGenerators`
 
 ```bash
 # Run all tests
@@ -202,14 +221,24 @@ dotnet test --project Prowo.WebAsm.Server.IntegrationTests/Prowo.WebAsm.Server.I
 dotnet test --filter "FullyQualifiedName~CreateProjectTests"
 ```
 
+**DateTime conventions in tests:**
+- Domain `ClosingDate` and event timestamps are UTC (`DateTimeKind.Utc`)
+- Use `DateOnly.ToDateTime(TimeOnly, DateTimeKind.Utc)` instead of `DateTime.SpecifyKind` where possible
+- `EditingProjectDataDto` closing date is user-local time (`DateTimeKind.Unspecified`) — the server converts it with `FromUserTime()`
+- Event `start`/`end` dates in tests use relative dates (`DateOnly.FromDateTime(DateTime.UtcNow.AddDays(N))`) to stay consistent with relative `VisibleFrom`/`RegistrationFrom` offsets
+
 # Important Files
 
-- `Prowo.WebAsm/Server/Program.cs` - Server startup and dependency injection
-- `Prowo.WebAsm/Client/Program.cs` - Client (Blazor) startup
-- `Prowo.WebAsm.Server.IntegrationTests/` - Integration tests
-- `Prowo.WebAsm/Server/Data/` - Data access layer (stores)
-- `Prowo.WebAsm/Shared/` - Shared DTOs between client/server
-- `Keycloak.AdminApi/` - Keycloak admin API client
+- `Prowo.WebAsm/Server/Program.cs` — Server startup and dependency injection
+- `Prowo.WebAsm/Client/Program.cs` — Client (Blazor) startup
+- `Prowo.WebAsm/Server/Data/IProjectStore.cs` / `PgsqlProjectStore.cs` — Project data access
+- `Prowo.WebAsm/Server/Data/IEventStore.cs` / `PgsqlEventStore.cs` — Event data access
+- `Prowo.WebAsm/Server/Data/IRegistrationStrategy.cs` — Registration strategy implementations
+- `Prowo.WebAsm/Server/Controllers/ProjectController.cs` — Project API endpoints
+- `Prowo.WebAsm/Server/Controllers/EventController.cs` — Event CRUD API endpoints
+- `Prowo.WebAsm/Shared/DataTransferObjects.cs` — Shared DTOs between client/server
+- `db-schema.sql` — Full DB schema including migrations appended at the bottom
+- `Prowo.WebAsm.Server.IntegrationTests/` — Integration tests
 
 # Deployment
 
@@ -227,8 +256,9 @@ docker run -p 80:80 -p 443:443 prowo:latest
 - All UI code is in the Client project, server only exposes API endpoints
 - Tailwind CSS is built separately and copied to wwwroot
 - The project expects PostgreSQL on startup (configured via connection string)
-- OIDC audience validation is disabled (TokenValidationParameters.ValidateAudience = false)
-- The project uses .NET 10 for the latest version
+- OIDC audience validation is disabled (`TokenValidationParameters.ValidateAudience = false`)
+- The project uses .NET 10
 - When creating a new project, `Date`, `StartTime`, `EndTime`, `ClosingDate`, and `MaxAttendees` in `EditingProjectDataDto` are `null` — the user must fill them in the UI; the server validates and rejects nulls
-- **DB schema changes**: always append migrations at the end of `db-schema.sql` using `ALTER TABLE ... ADD COLUMN ...`. Never modify the `CREATE TABLE` definition. The `CREATE TABLE` is for fresh installs; appended `ALTER TABLE` statements migrate the production database without data loss.
+- `EventId` is the first parameter in both the `Project` record and `EditingProjectDataDto`
+- Deleting an event that has projects returns `409 Conflict`; the client shows the server's error message
 - VSCode tasks are in `.vscode/tasks.json`; the `dev` compound task starts `start:database` and `watch:webapp` in parallel (`watch:webapp` chains `watch:tailwind` first); all shell tasks require `"type": "shell"`

@@ -36,6 +36,12 @@ builder.Services.AddSingleton<IProjectStore>(provider =>
     return new PgsqlProjectStore(connectionString, timeProvider);
 });
 
+builder.Services.AddSingleton<IEventStore>(provider =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("Pgsql") ?? throw new Exception("\"ConnectionStrings:Pgsql\" not found");
+    return new PgsqlEventStore(connectionString);
+});
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped(provider =>
 {
@@ -58,6 +64,7 @@ builder.Services.AddScoped<IUserStore>(provider =>
 });
 
 builder.Services.AddSingleton<IRegistrationStrategy>(provider => new LogicalAndCombinationStrategy([
+    new NoRegistrationBeforeRegistrationFromStrategy(provider.GetRequiredService<TimeProvider>()),
     new NoRegistrationAfterClosingDateStrategy(provider.GetRequiredService<TimeProvider>()),
     new NoRegistrationIfRegisteredStrategy(),
     new NoWaitingListStrategy(),

@@ -11,6 +11,7 @@ namespace Prowo.WebAsm.Server.Data
     );
 
     public sealed record Project(
+        string EventId,
         string Id,
         string Title,
         string Description,
@@ -53,6 +54,7 @@ namespace Prowo.WebAsm.Server.Data
         public static bool TryCreateFromEditingProjectDataDto(
             EditingProjectDataDto projectData,
             string projectId,
+            Event? resolvedEvent,
             IReadOnlyDictionary<string, ProjectOrganizer> organizerCandidates,
             TimeProvider timeProvider,
             ProjectPaymentInfo? paymentInfo,
@@ -73,6 +75,9 @@ namespace Prowo.WebAsm.Server.Data
             if (coOrganizerIds.Any(id => !organizerCandidates.ContainsKey(id)))
                 errors.Add("Einer oder mehrere Betreuer wurden nicht gefunden.");
 
+            if (resolvedEvent == null)
+                errors.Add("Veranstaltung nicht gefunden.");
+
             if (projectData.Date == null) errors.Add("Datum muss gesetzt werden.");
             if (projectData.StartTime == null) errors.Add("Startzeit muss gesetzt werden.");
             if (projectData.ClosingDate == null) errors.Add("Anmeldeschluss muss gesetzt werden.");
@@ -88,8 +93,12 @@ namespace Prowo.WebAsm.Server.Data
                 errors.Add("Anmeldeschluss muss vor dem Projektdatum liegen.");
             if (projectData.MaxAttendees != null && projectData.MaxAttendees.Value < 1)
                 errors.Add("Maximale Teilnehmerzahl muss mindestens 1 sein.");
+            if (resolvedEvent != null && projectData.Date != null &&
+                (projectData.Date.Value < resolvedEvent.Start || projectData.Date.Value > resolvedEvent.End))
+                errors.Add($"Projektdatum muss zwischen {resolvedEvent.Start.ToLongDateString()} und {resolvedEvent.End.ToLongDateString()} liegen.");
 
             if (organizer == null ||
+                resolvedEvent == null ||
                 projectData.Date == null ||
                 projectData.StartTime == null ||
                 projectData.ClosingDate == null ||
@@ -103,6 +112,7 @@ namespace Prowo.WebAsm.Server.Data
 
             var coOrganizers = coOrganizerIds.Select(v => organizerCandidates[v]).ToList();
             project = new Project(
+                resolvedEvent.Id,
                 projectId,
                 projectData.Title,
                 projectData.Description,

@@ -1,0 +1,116 @@
+@page "/events"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.Text.Json
+
+@attribute [Authorize]
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<PageTitle>Veranstaltungen - HTLVB Prowo</PageTitle>
+
+<div class="flex items-center gap-4 mb-4">
+    <NavLink class="btn btn-blue mr-3" href="/projects" title="Zur Projektliste">
+        <i class="fa-solid fa-arrow-left"></i>
+    </NavLink>
+    <h2 class="text-2xl">Veranstaltungen</h2>
+</div>
+
+@if (eventList == null)
+{
+    <p><em>Veranstaltungen werden geladen...</em></p>
+}
+else
+{
+    @if (eventList.Links.Create != null)
+    {
+        <div class="flex flex-col mb-4">
+            <NavLink class="border-l-2 border-gray-400 hover:border-blue-500 rounded shadow hover:shadow-blue-500 p-2" href="events/new">
+                <i class="fa-solid fa-plus text-2xl text-black align-middle"></i>
+                <span class="ml-2 text-xl text-black align-middle">Neue Veranstaltung anlegen</span>
+            </NavLink>
+        </div>
+    }
+
+    @if (eventList.Events.Count == 0)
+    {
+        <p>Keine Veranstaltungen vorhanden.</p>
+    }
+    else
+    {
+        <div class="flex flex-col gap-2">
+            @foreach (var e in eventList.Events)
+            {
+                <div class="border-l-2 border-gray-400 rounded shadow p-3 flex flex-col md:flex-row md:items-center gap-2">
+                    <div class="grow">
+                        <span class="text-lg font-semibold">@e.Title</span>
+                        <div class="text-sm text-gray-600 mt-1">
+                            <span>Projektzeitraum: @e.Start.ToLongDateString() &ndash; @e.End.ToLongDateString()</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span>Sichtbar ab: @e.VisibleFrom.ToLocalTime().ToLongDateString()</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span>Anmeldung ab: @e.RegistrationFrom.ToLocalTime().ToLongDateString()</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        @if (eventList.Links.Create != null)
+                        {
+                            <NavLink class="btn btn-blue" href=@($"events/edit/{e.Id}")>Bearbeiten</NavLink>
+                            <button class="btn btn-red" @onclick="() => DeleteEvent(e.Id)">Löschen</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@if (errorMessage != null)
+{
+    <p class="text-red-500 mt-4">@errorMessage</p>
+}
+
+@code {
+    private readonly JsonSerializerOptions serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new DateOnlyJsonConverter(), new TimeOnlyJsonConverter() } };
+    private EventListDto? eventList;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            eventList = await Http.GetFromJsonAsync<EventListDto>("api/events", serializerOptions);
+            if (eventList != null && eventList.Links.Create == null)
+            {
+                NavigationManager.NavigateTo("/projects");
+            }
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+
+    private async Task DeleteEvent(string eventId)
+    {
+        errorMessage = null;
+        try
+        {
+            var response = await Http.DeleteAsync($"api/events/{eventId}");
+            response.EnsureSuccessStatusCode();
+            eventList = await Http.GetFromJsonAsync<EventListDto>("api/events", serializerOptions);
+        }
+        catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            errorMessage = "Veranstaltung enthält Projekte und kann nicht gelöscht werden.";
+        }
+        catch
+        {
+            errorMessage = "Veranstaltung konnte nicht gelöscht werden.";
+        }
+    }
+}

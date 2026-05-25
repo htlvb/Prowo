@@ -1,6 +1,7 @@
 ﻿using FsCheck;
 using FsCheck.Fluent;
 using Prowo.WebAsm.Server.Data;
+using Prowo.WebAsm.Server.IntegrationTests.Utils;
 using Prowo.WebAsm.Shared;
 using System.Net.Mail;
 
@@ -60,7 +61,7 @@ public static class CustomGenerators
         var daysToProject = Math.Abs(projectDate.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber);
         var gen =
             from offsetMinutes in Gen.Choose(0, 2 * daysToProject * 24 * 60)
-            let date = projectDate.ToDateTime(TimeOnly.MinValue).AddMinutes(-offsetMinutes)
+            let date = projectDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc).AddMinutes(-offsetMinutes)
             select new ClosingDate(date);
         return Arb.From(gen);
     }
@@ -111,6 +112,7 @@ public static class CustomGenerators
             from maxAttendees in Gen.Choose(1, 1000)
             from allAttendees in ProjectAttendeesGenerator(maxAttendees).Generator
             select new Project(
+                FakeData.DefaultEvent.Id,
                 id.ToString(),
                 title.Get,
                 description.Get,
@@ -200,6 +202,7 @@ public static class CustomGenerators
             from closingDate in ClosingDateGenerator(date).Generator
             from maxAttendees in Gen.Choose(1, 1000)
             select new EditingProjectDataDto(
+                FakeData.DefaultEvent.Id,
                 title.Get,
                 description.Get,
                 location.Get,
