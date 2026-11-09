@@ -34,6 +34,9 @@ CLIENT_ID=`$KCADM get clients --target-realm htlvb --fields id,clientId | jq '.[
 #     client-scopes/$CLIENT_SCOPE_ID/protocol-mappers/models \
 #     --target-realm htlvb
 
+ADMIN_API_SCOPE_ID=`$KCADM get client-scopes --target-realm htlvb | jq '.[] | select(.name == "kc-admin-api") | .id' --raw-output`
+$KCADM update clients/$CLIENT_ID/default-client-scopes/$ADMIN_API_SCOPE_ID --target-realm htlvb
+
 $KCADM create clients/$CLIENT_ID/roles --target-realm htlvb --set name=all-projects-editor
 $KCADM create clients/$CLIENT_ID/roles --target-realm htlvb --set name=project-creator
 $KCADM create clients/$CLIENT_ID/roles --target-realm htlvb --set name=report-viewer
